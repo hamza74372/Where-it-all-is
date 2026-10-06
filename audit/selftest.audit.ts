@@ -8,8 +8,10 @@ test('audit self-test: planted problems are all detected', async ({ page }, info
   test.skip(info.project.name !== 'chromium-pixel7-light', 'one project is enough');
   await page.goto(pathToFileURL(path.resolve('dist/app.html')).href);
   await page.getByRole('button', { name: 'Try with example numbers' }).click();
+  await page.locator('.big-number').waitFor(); // let the app finish rendering first
   await page.evaluate(() => {
-    const m = document.getElementById('main')!;
+    // Our own container: the app never re-renders it, so the planted problems can't be wiped.
+    const m = document.body.appendChild(document.createElement('div'));
     m.insertAdjacentHTML(
       'afterbegin',
       `<p style="font-size:11px">tiny text</p>

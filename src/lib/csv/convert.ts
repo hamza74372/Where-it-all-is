@@ -151,13 +151,35 @@ export function matchManualEntries(drafts: Draft[], duplicate: boolean[], existi
   return out;
 }
 
-const NOISE = new Set([
-  'POS', 'PURCHASE', 'AUTHORIZED', 'ON', 'CARD', 'DEBIT', 'CREDIT', 'PAYMENT', 'TO', 'FROM', 'DD', 'SO', 'BCC', 'VIS', 'CONTACTLESS',
-  'THE', 'AND', 'OF', 'IN', 'AT', 'BY', 'FOR', 'ONLINE', 'WEB', 'DES', 'ID', 'PPD', 'ACH', 'CHECKCARD', 'RECURRING', 'TRANSFER', 'ZELLE',
+/**
+ * Generic bank words: never offered as a rule on their own (a rule for "CHECK" would file every
+ * cheque the same way). Includes the words of multi-word terms like DIRECT DEBIT, STANDING ORDER.
+ */
+export const GENERIC_BANK_WORDS = new Set([
+  'CHECK', 'CHEQUE', 'POS', 'DEBIT', 'CREDIT', 'CARD', 'TRANSFER', 'PAYMENT', 'ACH', 'DIRECT', 'STANDING', 'ORDER', 'ATM',
+  'BANK', 'BANKING', 'PURCHASE', 'AUTHORIZED', 'WITHDRAWAL', 'DEPOSIT', 'FASTER', 'BILL', 'RECURRING', 'CHECKCARD', 'CONTACTLESS', 'ONLINE', 'WEB',
+  'BCC', 'VIS', 'DDR', 'DES', 'PPD', 'ZELLE', 'THE', 'AND', 'FOR', 'FROM', 'ON', 'TO', 'AT', 'BY', 'OF', 'IN', 'ID',
 ]);
+/** Words that can follow a merchant name without being part of it. */
+const MERCHANT_TAIL = new Set(['STORE', 'STORES', 'SHOP', 'MARKET', 'SUPERMARKET', 'INC', 'LTD', 'LLC', 'CO', 'CORP', 'PLC', 'GMBH']);
 
-/** The word a rule should look for: "PURCHASE AUTHORIZED ON 10/13 STARBUCKS STORE 05555" → "STARBUCKS". */
+/**
+ * The merchant part of a description, for "Always put X in this category" rules:
+ *   "PURCHASE AUTHORIZED ON 10/13 STARBUCKS STORE 05555" → "STARBUCKS"
+ *   "WHOLE FOODS MARKET #10234"                          → "WHOLE FOODS"
+ * A store number ends the name ("KROGER #456 COLUMBUS" → "KROGER").
+ * Returns "" when there's nothing safe to make a rule from ("CHECK 1043", ATM withdrawals).
+ */
 export function merchantKey(description: string): string {
-  const words = normaliseDescription(description).split(' ').filter((w) => w.length >= 3 && !NOISE.has(w) && !/^\d+$/.test(w));
-  return words[0] ?? normaliseDescription(description).split(' ')[0] ?? '';
+  const raw = description.toUpperCase().split(/\s+/).filter(Boolean);
+  if (raw.some((t) => t.replace(/[^A-Z]/g, '') === 'ATM')) return '';
+  const word = (t: string) => {
+    const w = t.replace(/^[^A-Z0-9&]+|[^A-Z0-9&]+$/g, '');
+    return /^[A-Z][A-Z&']{2,}$/.test(w) && !GENERIC_BANK_WORDS.has(w) ? w : null;
+  };
+  const start = raw.findIndex((t) => word(t) !== null);
+  if (start < 0) return '';
+  const first = word(raw[start])!;
+  const next = raw[start + 1] ? word(raw[start + 1]) : null;
+  return next && !MERCHANT_TAIL.has(next) ? `${first} ${next}` : first;
 }

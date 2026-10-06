@@ -191,7 +191,7 @@ test('phase 2 walkthrough + audit', async ({ page }, info) => {
   await tap(page.getByRole('button', { name: 'Continue' }));
   await expect(page.getByText('6 new transactions')).toBeVisible();
   await expect(page.getByText('1 matched to things you already logged')).toBeVisible();
-  await expect(page.getByText('3 already in your log')).toBeVisible();
+  await expect(page.getByText('3 already imported before — skipped')).toBeVisible();
   await snap('import-review');
   await tap(page.getByRole('button', { name: 'Import 6' }));
   await expect(page.getByRole('heading', { name: 'Check 1043' })).toBeVisible();

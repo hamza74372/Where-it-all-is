@@ -123,8 +123,16 @@ export function unconfirmedPaydays(
 export function accountBalance(account: Account, transactions: Transaction[], asOf: ISODate): Minor {
   return (
     account.openingBalance +
-    sum(transactions.filter((t) => t.accountId === account.id && t.date <= asOf).map((t) => t.amount))
+    sum(transactions.filter((t) => t.accountId === account.id && t.date <= asOf && !isBeforeStart(account, t)).map((t) => t.amount))
   );
+}
+
+/**
+ * True for a transaction dated before the account's opening-balance date: it's already inside
+ * that balance, so it's kept for history and Insights but doesn't move the balance again.
+ */
+export function isBeforeStart(account: Pick<Account, 'openingDate'> | undefined, t: Pick<Transaction, 'date'>): boolean {
+  return !!account?.openingDate && t.date < account.openingDate;
 }
 
 /** True when a payment for this bill's occurrence on `dueDate` has been recorded. */

@@ -66,6 +66,7 @@ export function Onboarding() {
         name,
         currency,
         decimalSeparator: dec,
+        today,
         balance: balanceCheck.state === 'ok' ? balanceCheck.value : null,
         pay:
           !noPay && payCheck.state === 'ok'

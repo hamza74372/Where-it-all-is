@@ -2,12 +2,12 @@
 // undo a batch, and the optional balance check at the end.
 
 import { uid } from '../db/db';
-import type { Category, CsvMapping, Id, ImportBatch, ISODate, Rule, Transaction } from '../db/types';
+import type { Account, Category, CsvMapping, Id, ImportBatch, ISODate, Rule, Transaction } from '../db/types';
 import { convertRows, markDuplicates, matchManualEntries, tidyDescription, type Draft, type Skipped } from '../lib/csv/convert';
 import type { MappingDraft } from '../lib/csv/detect';
 import type { Minor } from '../lib/money';
 import { applyRules } from '../lib/rules';
-import { accountBalance } from '../lib/safeToSpend';
+import { accountBalance, isBeforeStart } from '../lib/safeToSpend';
 import type { Undo } from './actions';
 import type { Store } from './store';
 
@@ -179,4 +179,27 @@ export async function addBalanceAdjustment(store: Store, accountId: Id, bankBala
     { id: uid(), date: today, amount: difference, accountId, note: 'Balance adjustment', source: 'adjustment', cleared: true },
   ]);
   return { difference, undo: () => store.remove('transactions', [tx.id]) };
+}
+
+/**
+ * Things to tell the user before importing: rows from before the account's opening date
+ * (kept for history, don't move the balance) and rows dated after today (usually a sign the
+ * day and month were read the wrong way round).
+ */
+export function importNotes(p: Prepared, account: Account | undefined, today: ISODate): { beforeStart: number; future: number } {
+  const fresh = p.items.filter((i) => !i.duplicate && !i.matchId);
+  return {
+    beforeStart: fresh.filter((i) => isBeforeStart(account, i.draft)).length,
+    future: p.items.filter((i) => !i.duplicate && i.draft.date > today).length,
+  };
+}
+
+/**
+ * A gap bigger than any single transaction in the import is more likely an import mistake
+ * (wrong account, wrong date format, a missing file) than a stray pending payment.
+ */
+export function isBigGap(difference: Minor, importedAmounts: Minor[]): boolean {
+  if (difference === 0) return false;
+  const biggest = importedAmounts.reduce((m, a) => Math.max(m, Math.abs(a)), 0);
+  return Math.abs(difference) > biggest;
 }

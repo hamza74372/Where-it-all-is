@@ -226,10 +226,25 @@ describe('rules', () => {
     expect(ruleMatches({ matchType: 'regex', pattern: '([' }, 'anything')).toBe(false);
   });
 
-  it('merchantKey picks the meaningful word', () => {
+  it('merchantKey uses the merchant part of the description', () => {
     expect(merchantKey('PURCHASE AUTHORIZED ON 10/13 STARBUCKS STORE 05555 OAKLAND CA')).toBe('STARBUCKS');
     expect(merchantKey('Debit Card Purchase - KROGER #456 COLUMBUS OH')).toBe('KROGER');
-    expect(merchantKey('Zelle payment to JOHN LANDLORD')).toBe('JOHN');
+    expect(merchantKey('WHOLE FOODS MARKET #10234 SEATTLE WA')).toBe('WHOLE FOODS');
+    expect(merchantKey('Zelle payment to JOHN LANDLORD JPM99abc123')).toBe('JOHN LANDLORD');
+    expect(merchantKey('DIRECT DEBIT OCTOPUS ENERGY A1B2C3D4')).toBe('OCTOPUS ENERGY');
+    expect(merchantKey('STANDING ORDER LANDLORD LTD RENT')).toBe('LANDLORD');
+    expect(merchantKey('POS DEBIT TESCO STORES 3297')).toBe('TESCO');
+    expect(merchantKey('CARD PAYMENT TO PRET A MANGER')).toBe('PRET');
+  });
+
+  it('never offers a rule for generic bank words alone', () => {
+    for (const desc of ['CHECK 1043', 'CHECK # 1044', 'CHEQUE 000123', 'POS 4455', 'DEBIT', 'CARD 1234', 'TRANSFER', 'PAYMENT 99',
+      'ACH 20261005', 'DIRECT DEBIT', 'STANDING ORDER', 'ATM WITHDRAWAL 123 MAIN ST', 'ATM CASH LONDON', 'Online Banking transfer']) {
+      expect([desc, merchantKey(desc)]).toEqual([desc, '']);
+    }
+  });
+
+  it('description tidying', () => {
     expect(tidyDescription('WHOLE FOODS   MARKET')).toBe('Whole Foods Market');
     expect(tidyDescription('Pret A Manger')).toBe('Pret A Manger');
     expect(tidyDescription('NETFLIX.COM NETFLIX.COM CA')).toBe('Netflix.com Netflix.com Ca');

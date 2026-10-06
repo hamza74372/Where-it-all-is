@@ -9,7 +9,7 @@ import { addDays, weekday } from '../lib/dates';
 import { amountExample, CURRENCIES, CURRENCY_INFO } from '../lib/money';
 import { accountBalance } from '../lib/safeToSpend';
 import { describeSchedule } from '../lib/schedule';
-import { clearExampleData, openingBalanceFor, saveWithUndo } from '../state/actions';
+import { anchorBalance, clearExampleData, saveWithUndo } from '../state/actions';
 import { useData, useStore } from '../state/store';
 import { checkMoney, MoneyInput, moneyText, ScheduleFields, Segmented, Select, TextInput, Toggle } from '../ui/fields';
 import { useFmt, useToday } from '../ui/hooks';
@@ -221,11 +221,16 @@ function AccountForm({ account, onDone }: { account: Account | null; onDone: () 
     const entered = c.state === 'ok' ? c.value : 0;
     const signed = isCredit ? -Math.abs(entered) : entered; // card: what you owe, stored negative
     const id = account?.id ?? uid();
+    // A new or changed balance is "true as of today"; otherwise keep the existing anchor.
+    const balanceChanged = !account || current !== signed || account.type !== type;
+    const anchor = balanceChanged
+      ? anchorBalance({ id }, signed, store, today)
+      : { openingBalance: account.openingBalance, openingDate: account.openingDate };
     const undo = await saveWithUndo(store, 'accounts', {
         id,
         name: name.trim(),
         type,
-        openingBalance: openingBalanceFor({ id }, signed, store, today),
+        ...anchor,
         includeInSafeToSpend: include,
         archived: false,
     });

@@ -4,13 +4,15 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { CsvMapping, Id, Transaction } from '../db/types';
-import { merchantKey } from '../lib/csv/convert';
+import { merchantKey, tidyDescription } from '../lib/csv/convert';
 import { DATE_FORMAT_LABELS, type DateFormat } from '../lib/csv/dates';
 import { detectMapping, type Detection, type MappingDraft } from '../lib/csv/detect';
 import { parseCsv } from '../lib/csv/parse';
+import { isBeforeStart } from '../lib/safeToSpend';
 import { saveWithUndo } from '../state/actions';
 import {
-  addBalanceAdjustment, addRule, bankStyleBalance, commitImport, countsOf, prepareImport, saveMapping, undoImport, type Prepared,
+  addBalanceAdjustment, addRule, bankStyleBalance, commitImport, countsOf, importNotes, isBigGap, prepareImport, saveMapping, undoImport,
+  type Prepared,
 } from '../state/importActions';
 import { useData, useStore } from '../state/store';
 import { checkMoney, MoneyInput, Segmented, Select, TextInput, Toggle } from '../ui/fields';
@@ -25,6 +27,8 @@ interface ImportResult {
   duplicates: number;
   matched: number;
   toSort: Id[];
+  /** Transactions added by this import (for the balance check's "check the rows" list). */
+  importedIds: Id[];
 }
 
 interface Loaded {
@@ -99,6 +103,7 @@ export function Import({ onClose }: { onClose: () => void }) {
       {step === 'review' && loaded && mapping && prepared && (
         <ReviewStep
           prepared={prepared}
+          accountId={accountId}
           onUnlink={(index) => setPrepared({ ...prepared, items: prepared.items.map((it, i) => (i === index ? { ...it, matchId: undefined } : it)) })}
           onBack={() => setStep('map')}
           onImport={async () => {
@@ -106,13 +111,16 @@ export function Import({ onClose }: { onClose: () => void }) {
             const { batch, transactions, matched } = await commitImport(store, { fileName: loaded.fileName, accountId, mappingId: saved.id, items: prepared.items });
             const toSort = transactions.filter((t) => !t.categoryId && t.amount < 0).map((t) => t.id);
             const counts = countsOf(prepared);
-            setResult({ batchId: batch.id, imported: transactions.length, duplicates: counts.duplicateCount, matched: matched.length, toSort });
+            setResult({
+              batchId: batch.id, imported: transactions.length, duplicates: counts.duplicateCount, matched: matched.length, toSort,
+              importedIds: [...transactions, ...matched].map((t) => t.id),
+            });
             setStep(toSort.length ? 'sort' : 'balance');
           }}
         />
       )}
       {step === 'sort' && result && <SortStep ids={result.toSort} onDone={() => setStep('balance')} />}
-      {step === 'balance' && result && <BalanceStep accountId={accountId} onDone={() => setStep('done')} />}
+      {step === 'balance' && result && <BalanceStep accountId={accountId} importedIds={result.importedIds} onDone={() => setStep('done')} />}
       {step === 'done' && result && (
         <DoneStep
           result={result}
@@ -243,6 +251,8 @@ function MapStep(props: {
   const set = (patch: Partial<MappingDraft>) => props.onMapping({ ...m, ...patch });
   const colOptions = headers.map((h, i) => ({ value: String(i), label: `${h}${sample(loaded.rows, m.headerRow, i)}` }));
   const preview = useMemo(() => prepareImport(store, loaded.rows, m, props.accountId), [m, props.accountId, loaded]);
+  const today = useToday();
+  const futureRows = preview.items.filter((it) => !it.duplicate && it.draft.date > today);
   const sampleDate = loaded.rows[m.headerRow + 1]?.[m.dateCol] ?? '';
   const [askDate, setAskDate] = useState(loaded.detection.ambiguousDate && !loaded.savedName);
 
@@ -283,6 +293,18 @@ function MapStep(props: {
         </div>
       )}
 
+      {futureRows.length > 0 && (
+        <div class="card card-accent" role="alert">
+          <p>
+            <strong>
+              {futureRows.length} {futureRows.length === 1 ? 'row is' : 'rows are'} dated in the future — check the date format.
+            </strong>{' '}
+            That usually means the day and month were read the wrong way round (for example {fmt.day(futureRows[0].draft.date)}). Change
+            "Date format" below if so.
+          </p>
+        </div>
+      )}
+
       <section class="card" aria-labelledby="preview-title">
         <h2 id="preview-title" class="card-title">
           Preview
@@ -291,14 +313,16 @@ function MapStep(props: {
           <p class="field-error">No transactions found with these settings — try a different date or amount column below.</p>
         ) : (
           <ul class="rows">
-            {preview.items.slice(0, 8).map((it) => (
-              <li key={it.draft.rowIndex} class="row">
+            {/* First rows of the file, plus any future-dated ones so they can't hide further down. */}
+            {[...preview.items.slice(0, 8), ...futureRows.filter((f) => preview.items.indexOf(f) >= 8).slice(0, 3)].map((it) => (
+              <li key={`${it.draft.rowIndex}-${it.draft.feeOf ?? ''}`} class="row">
                 <span class="row-main">
                   <span>{it.note || '(no description)'}</span>
                   <span class="row-sub">
                     {fmt.day(it.draft.date)}
-                    {it.duplicate ? ' · already in your log' : it.matchId ? ' · matches something you logged' : ''}
+                    {it.duplicate ? ' · already imported' : it.matchId ? ' · matches something you logged' : ''}
                   </span>
+                  {it.draft.date > today && <span class="row-flag">Dated in the future — check the date format</span>}
                 </span>
                 <span class={`mono ${it.draft.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(it.draft.amount, { signed: true })}</span>
               </li>
@@ -386,12 +410,15 @@ function MapStep(props: {
   );
 }
 
-function ReviewStep(props: { prepared: Prepared; onUnlink: (index: number) => void; onBack: () => void; onImport: () => Promise<void> }) {
+function ReviewStep(props: { prepared: Prepared; accountId: Id; onUnlink: (index: number) => void; onBack: () => void; onImport: () => Promise<void> }) {
   const { prepared, onBack, onImport } = props;
   const data = useData();
   const fmt = useFmt();
+  const today = useToday();
   const [busy, setBusy] = useState(false);
   const c = countsOf(prepared);
+  const account = data.accounts.find((a) => a.id === props.accountId);
+  const notes = importNotes(prepared, account, today);
   const matchedItems = prepared.items.map((it, index) => ({ it, index })).filter(({ it }) => !it.duplicate && it.matchId);
   return (
     <>
@@ -411,7 +438,18 @@ function ReviewStep(props: { prepared: Prepared; onUnlink: (index: number) => vo
           )}
           {c.duplicateCount > 0 && (
             <li>
-              <strong>{c.duplicateCount}</strong> already in your log — these are skipped
+              <strong>{c.duplicateCount}</strong> already imported before — skipped
+            </li>
+          )}
+          {notes.beforeStart > 0 && account?.openingDate && (
+            <li>
+              <strong>{notes.beforeStart}</strong> {notes.beforeStart === 1 ? 'is' : 'are'} from before you started on{' '}
+              {fmt.day(account.openingDate)}. They're kept for your history but don't change your balance.
+            </li>
+          )}
+          {notes.future > 0 && (
+            <li class="review-warn">
+              <strong>{notes.future}</strong> dated in the future — check the date format before importing
             </li>
           )}
           {c.needSorting > 0 && (
@@ -481,7 +519,7 @@ function ReviewStep(props: { prepared: Prepared; onUnlink: (index: number) => vo
   );
 }
 
-function BalanceStep({ accountId, onDone }: { accountId: Id; onDone: () => void }) {
+function BalanceStep({ accountId, importedIds, onDone }: { accountId: Id; importedIds: Id[]; onDone: () => void }) {
   const store = useStore();
   const data = useData();
   const fmt = useFmt();
@@ -491,8 +529,18 @@ function BalanceStep({ accountId, onDone }: { accountId: Id; onDone: () => void 
   const [text, setText] = useState('');
   const [showErrors, setShowErrors] = useState(false);
   const [entered, setEntered] = useState<number | null>(null);
+  const [showRows, setShowRows] = useState(false);
   const appBalance = bankStyleBalance(store, accountId, today);
   const diff = entered === null ? 0 : entered - appBalance;
+  const imported = data.transactions.filter((t) => importedIds.includes(t.id));
+  const big = entered !== null && isBigGap(diff, imported.map((t) => t.amount));
+
+  const adjust = async () => {
+    const { difference, undo } = await addBalanceAdjustment(store, accountId, entered!, today);
+    // Move on first: changing step clears toasts, and this one carries the Undo.
+    onDone();
+    toast(`Balance adjustment of ${fmt.money(difference, { signed: true })} added`, undo);
+  };
 
   return (
     <section class="card" aria-labelledby="balance-title">
@@ -532,27 +580,63 @@ function BalanceStep({ accountId, onDone }: { accountId: Id; onDone: () => void 
             Your bank says <strong>{fmt.money(entered)}</strong>; the app says <strong>{fmt.money(appBalance)}</strong>. That's{' '}
             <strong>{fmt.money(Math.abs(diff))}</strong> {diff > 0 ? 'more' : 'less'} at the bank.
           </p>
-          <p class="muted">Often it's a payment from before you started, or one that's still pending. An adjustment lines things up; you can undo it.</p>
-          <div class="row-gap">
-            <button
-              type="button"
-              class="btn btn-primary"
-              onClick={async () => {
-                const { difference, undo } = await addBalanceAdjustment(store, accountId, entered, today);
-                // Move on first: changing step clears toasts, and this one carries the Undo.
-                onDone();
-                toast(`Balance adjustment of ${fmt.money(difference, { signed: true })} added`, undo);
-              }}
-            >
-              Add a balance adjustment
-            </button>
-            <button type="button" class="btn" onClick={() => setEntered(null)}>
-              Re-enter
-            </button>
-            <button type="button" class="btn btn-quiet" onClick={onDone}>
-              Leave it
-            </button>
-          </div>
+          {big ? (
+            <>
+              <p class="review-warn">
+                <strong>That's a big gap — check the imported rows first.</strong> It's bigger than any single transaction in this import, which
+                often means the wrong account, a date read the wrong way round, or a missing statement.
+              </p>
+              <div class="stack">
+                <button type="button" class="btn btn-primary" aria-expanded={showRows} onClick={() => setShowRows(!showRows)}>
+                  {showRows ? 'Hide the imported rows' : 'Check the imported rows'}
+                </button>
+              </div>
+              {showRows && (
+                <ul class="rows imported-rows" aria-label="Rows from this import">
+                  {imported.map((t) => (
+                    <li key={t.id} class="row">
+                      <span class="row-main">
+                        <span>{t.note}</span>
+                        <span class="row-sub">
+                          {fmt.day(t.date)}
+                          {isBeforeStart(account, t) ? ' · before you started (doesn’t change the balance)' : ''}
+                          {t.date > today ? ' · dated in the future' : ''}
+                        </span>
+                      </span>
+                      <span class={`mono ${t.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(t.amount, { signed: true })}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p class="muted">If the rows look right, an adjustment lines things up. You can undo it.</p>
+              <div class="row-gap">
+                <button type="button" class="btn" onClick={adjust}>
+                  Add a balance adjustment anyway
+                </button>
+                <button type="button" class="btn" onClick={() => setEntered(null)}>
+                  Re-enter
+                </button>
+                <button type="button" class="btn btn-quiet" onClick={onDone}>
+                  Leave it
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p class="muted">Often it's a payment that's still pending. An adjustment lines things up; you can undo it.</p>
+              <div class="row-gap">
+                <button type="button" class="btn btn-primary" onClick={adjust}>
+                  Add a balance adjustment
+                </button>
+                <button type="button" class="btn" onClick={() => setEntered(null)}>
+                  Re-enter
+                </button>
+                <button type="button" class="btn btn-quiet" onClick={onDone}>
+                  Leave it
+                </button>
+              </div>
+            </>
+          )}
         </>
       )}
     </section>
@@ -565,36 +649,71 @@ function SortStep({ ids, onDone }: { ids: Id[]; onDone: () => void }) {
   const fmt = useFmt();
   const [queue, setQueue] = useState(ids);
   const [done, setDone] = useState(0);
-  const [always, setAlways] = useState(false);
+  // After a pick: offer to make it a rule ("Always put Starbucks in Coffee?").
+  const [offer, setOffer] = useState<{ key: string; categoryId: Id } | null>(null);
   const total = ids.length;
   const tx = data.transactions.find((t) => t.id === queue[0]);
   useEffect(() => {
-    if (!tx) onDone(); // everything sorted (or the rows were removed)
-  }, [tx]);
+    if (!tx && !offer) onDone(); // everything sorted (or the rows were removed)
+  }, [tx, offer]);
   if (!tx) return null;
-  const key = merchantKey(tx.importDescription ?? tx.note);
   const cats = data.categories.filter((c) => !c.archived);
 
-  const choose = async (categoryId: Id | null) => {
-    let rest = queue.slice(1);
-    if (categoryId) {
-      await saveWithUndo(store, 'transactions', { ...tx, categoryId });
-      if (always && key) {
-        await addRule(store, key, categoryId);
-        // The new rule also sorts any others from this import that match.
-        const matching = rest
-          .map((id) => store.data.transactions.find((t) => t.id === id))
-          .filter((t): t is Transaction => !!t && (t.importDescription ?? t.note).toUpperCase().includes(key));
-        await store.upsert('transactions', matching.map((t) => ({ ...t, categoryId })));
-        rest = rest.filter((id) => !matching.some((t) => t.id === id));
-        setDone((d) => d + matching.length);
-      }
-    }
-    setDone((d) => d + 1);
-    setAlways(false);
+  const next = (rest: Id[], extraDone = 0) => {
+    setDone((d) => d + 1 + extraDone);
+    setOffer(null);
     setQueue(rest);
     if (!rest.length) onDone();
   };
+
+  const choose = async (categoryId: Id | null) => {
+    if (!categoryId) return next(queue.slice(1));
+    await saveWithUndo(store, 'transactions', { ...tx, categoryId });
+    const key = merchantKey(tx.importDescription ?? tx.note);
+    // Only offer a rule when there's a real merchant name (never "CHECK", "ATM"…).
+    if (key) setOffer({ key, categoryId });
+    else next(queue.slice(1));
+  };
+
+  const answer = async (always: boolean) => {
+    if (!offer) return;
+    let rest = queue.slice(1);
+    let extra = 0;
+    if (always) {
+      await addRule(store, offer.key, offer.categoryId);
+      // The new rule also sorts any others from this import that match.
+      const matching = rest
+        .map((id) => store.data.transactions.find((t) => t.id === id))
+        .filter((t): t is Transaction => !!t && (t.importDescription ?? t.note).toUpperCase().includes(offer.key));
+      await store.upsert('transactions', matching.map((t) => ({ ...t, categoryId: offer.categoryId })));
+      rest = rest.filter((id) => !matching.some((t) => t.id === id));
+      extra = matching.length;
+    }
+    next(rest, extra);
+  };
+
+  if (offer) {
+    const cat = cats.find((c) => c.id === offer.categoryId);
+    return (
+      <section class="card sort-card" aria-labelledby="rule-q">
+        <p class="muted">
+          {tx.note} → {cat?.emoji} {cat?.name}
+        </p>
+        <h2 id="rule-q" class="sort-desc">
+          Always put “{tidyDescription(offer.key)}” in {cat?.name}?
+        </h2>
+        <p class="muted">Future imports with “{tidyDescription(offer.key)}” in the description will be sorted for you. You can change rules in More → Rules.</p>
+        <div class="stack">
+          <button type="button" class="btn btn-primary" onClick={() => answer(true)}>
+            Yes, always
+          </button>
+          <button type="button" class="btn" onClick={() => answer(false)}>
+            Just this once
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section class="card sort-card" aria-labelledby="sort-title">
@@ -615,14 +734,6 @@ function SortStep({ ids, onDone }: { ids: Id[]; onDone: () => void }) {
           </button>
         ))}
       </div>
-      {key && (
-        <Toggle
-          label={`Always put "${key}" in this category`}
-          checked={always}
-          onChange={setAlways}
-          hint="Turn on before you pick — future imports will be sorted for you."
-        />
-      )}
       <div class="row-gap">
         <button type="button" class="btn btn-quiet" onClick={() => choose(null)}>
           Skip this one
@@ -643,7 +754,7 @@ function DoneStep(props: { result: ImportResult; onUndo: () => void; onClose: ()
         Imported {imported} {imported === 1 ? 'transaction' : 'transactions'}
       </h2>
       {matched > 0 && <p class="muted">{matched} matched to things you'd already logged, so they weren't added twice.</p>}
-      {duplicates > 0 && <p class="muted">{duplicates} were already in your log, so they were skipped.</p>}
+      {duplicates > 0 && <p class="muted">{duplicates} were imported before, so they were skipped.</p>}
       <p>Your safe-to-spend number now includes them.</p>
       <div class="row-gap">
         <button type="button" class="btn btn-primary" onClick={props.onClose}>

@@ -79,6 +79,12 @@ export interface Account extends BaseRecord {
   name: string;
   type: 'checking' | 'savings' | 'cash' | 'credit';
   openingBalance: Minor;
+  /**
+   * The day `openingBalance` was true. That balance already includes everything before this
+   * date, so earlier transactions (e.g. from an imported statement) are kept for history but
+   * don't move the balance. Undefined = every transaction counts (older data, example data).
+   */
+  openingDate?: ISODate;
   includeInSafeToSpend: boolean;
   archived: boolean;
 }

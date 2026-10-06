@@ -84,3 +84,16 @@
 .sort-card .toggle-row {
   text-align: left;
 }
+
+/* Phase 4c: warnings in the import flow. */
+.row-flag {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--amber);
+}
+.review-warn {
+  color: var(--amber);
+}
+.imported-rows {
+  margin: 10px 0;
+}

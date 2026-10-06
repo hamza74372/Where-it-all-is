@@ -62,9 +62,9 @@ test('import a Chase-style CSV: rules sort most rows, sort the rest, re-import s
 
   // Sort: one row, with "always" on.
   await expect(page.getByRole('heading', { name: 'Check 1043' })).toBeVisible();
-  await page.getByRole('switch', { name: /Always put "CHECK" in this category/ }).click();
   await shot(page, 'sort');
   await page.getByRole('button', { name: /Home/ }).click();
+  // "CHECK" is a generic bank word, so no "always put…" offer.
   await expect(page.getByRole('heading', { name: 'Your bank says your balance is…?' })).toBeVisible();
   await page.getByRole('button', { name: 'Skip' }).click();
   await expect(page.getByRole('heading', { name: 'Imported 10 transactions' })).toBeVisible();
@@ -79,7 +79,7 @@ test('import a Chase-style CSV: rules sort most rows, sort the rest, re-import s
   await pickFile(page, 'chase-checking.csv');
   await expect(page.getByText('Using your saved settings for "Chase checking"')).toBeVisible();
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText('10 already in your log')).toBeVisible();
+  await expect(page.getByText('10 already imported before — skipped')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Nothing new to import' })).toBeDisabled();
   await page.getByRole('button', { name: 'Back' }).click();
   await page.getByRole('button', { name: 'Back' }).click();
@@ -90,10 +90,6 @@ test('import a Chase-style CSV: rules sort most rows, sort the rest, re-import s
   await page.getByRole('button', { name: '‹ Log' }).click();
   await expect(page.getByText('Netflix.com Netflix.com Ca')).toHaveCount(0);
 
-  // The rule made while sorting is listed under More → Rules.
-  await nav(page, 'More').click();
-  await page.getByRole('button', { name: /^Rules/ }).click();
-  await expect(page.locator('.row').filter({ hasText: 'contains "CHECK"' })).toContainText('Home');
   expect(problems).toEqual([]);
 });
 
@@ -178,9 +174,10 @@ test('manual logs are matched, unlinking works, the balance check fixes the numb
   await page.getByRole('button', { name: 'Import 9' }).click();
   await page.getByRole('button', { name: 'Finish later' }).click();
 
-  // App: 2,000 + 574.10 (the file) = 2,574.10. The bank says 2,524.10.
-  await expect(page.getByText('The app says $2,574.10')).toBeVisible();
-  await page.getByLabel('Balance in your bank app').fill('2524.10');
+  // Onboarded today (16 Oct) with 2,000, so every statement row (1–15 Oct) is from before you
+  // started and doesn't move the balance. App: 2,000 − 5.75 (today's coffee) = 1,994.25. Bank says 1,944.25.
+  await expect(page.getByText('The app says $1,994.25')).toBeVisible();
+  await page.getByLabel('Balance in your bank app').fill('1944.25');
   await page.getByRole('button', { name: 'Check' }).click();
   await expect(page.getByText(/That's \$50\.00 less at the bank/)).toBeVisible();
   await page.getByRole('button', { name: 'Add a balance adjustment' }).click();
@@ -189,9 +186,9 @@ test('manual logs are matched, unlinking works, the balance check fixes the numb
   await expect(page.getByText('1 matched to things')).toBeVisible();
   await page.getByRole('button', { name: 'Done' }).click();
 
-  // Corrected balance 2,524.10; the coffee was spent today, so: (2,524.10 + 5.75) ÷ 16 days = 158.11, minus 5.75 = 152.36 → $152.
+  // Corrected balance 1,944.25; the coffee was spent today: (1,944.25 + 5.75) ÷ 16 days = 121.87, minus 5.75 = 116.12 → $116.
   await nav(page, 'Today').click();
-  await expect(page.locator('.big-number')).toHaveText('$152');
+  await expect(page.locator('.big-number')).toHaveText('$116');
 
   // Undo the import: the 9 rows go; the manual coffee stays.
   await nav(page, 'Log').click();

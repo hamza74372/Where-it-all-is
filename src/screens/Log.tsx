@@ -4,6 +4,7 @@ import { useMemo, useState } from 'preact/hooks';
 import { uid } from '../db/db';
 import type { Transaction } from '../db/types';
 import { addMonthsYM, parts, ymd } from '../lib/dates';
+import { isBeforeStart } from '../lib/safeToSpend';
 import { deleteTransactions, defaultAccount, saveWithUndo } from '../state/actions';
 import { useData, useStore } from '../state/store';
 import { checkMoney, DateInput, MoneyInput, moneyText, Segmented, Select, TextInput } from '../ui/fields';
@@ -103,7 +104,7 @@ export function Log() {
                         {tx.note || cat?.name || 'Spend'}
                       </span>
                       <span class="row-sub">
-                        {[cat?.name, accById.get(tx.accountId)?.name, tag].filter(Boolean).join(' · ')}
+                        {[cat?.name, accById.get(tx.accountId)?.name, tag, isBeforeStart(accById.get(tx.accountId), tx) ? 'Before you started' : ''].filter(Boolean).join(' · ')}
                       </span>
                     </button>
                     <span class={`mono ${tx.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(tx.amount, { signed: true })}</span>

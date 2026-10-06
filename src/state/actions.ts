@@ -120,9 +120,14 @@ export async function confirmPay(store: Store, income: Income, date: ISODate, am
 }
 
 /** Set an account's current balance by adjusting its opening balance (keeps history intact). */
-export function openingBalanceFor(account: Pick<Account, 'id'>, currentBalance: Minor, store: Store, today: ISODate): Minor {
-  const txSum = accountBalance({ ...(account as Account), openingBalance: 0 }, store.data.transactions, today);
-  return currentBalance - txSum;
+/**
+ * "My balance right now is X": the balance is re-anchored to today. Returns the opening balance
+ * (X minus anything already logged today) and today's date as the new opening date, so
+ * transactions before today — already reflected in X — no longer move the balance.
+ */
+export function anchorBalance(account: Pick<Account, 'id'>, currentBalance: Minor, store: Store, today: ISODate): { openingBalance: Minor; openingDate: ISODate } {
+  const todays = accountBalance({ ...(account as Account), openingBalance: 0, openingDate: today }, store.data.transactions, today);
+  return { openingBalance: currentBalance - todays, openingDate: today };
 }
 
 export interface OnboardingInput {
@@ -132,6 +137,8 @@ export interface OnboardingInput {
   balance: Minor | null;
   pay: { amount: Minor; variable: boolean; schedule: Schedule } | null;
   bills: Array<{ name: string; amount: Minor; schedule: Schedule }>;
+  /** The day the balance was entered — it becomes the account's opening date. */
+  today: ISODate;
 }
 
 export async function completeOnboarding(store: Store, input: OnboardingInput): Promise<void> {
@@ -139,7 +146,7 @@ export async function completeOnboarding(store: Store, input: OnboardingInput): 
   const { categories } = store.data;
   await store.upsert('accounts', [
     {
-      id: accountId, name: 'Main account', type: 'checking', openingBalance: input.balance ?? 0,
+      id: accountId, name: 'Main account', type: 'checking', openingBalance: input.balance ?? 0, openingDate: input.today,
       includeInSafeToSpend: true, archived: false,
     },
   ]);
