@@ -1,0 +1,30 @@
+{
+  "name": "where-it-all-is",
+  "version": "0.1.0",
+  "description": "Where It All Is — ADHD-friendly offline budget app",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --mode app",
+    "build:demo": "vite build --mode demo",
+    "build:all": "npm run build && npm run build:demo",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "author": "Hamza",
+  "license": "UNLICENSED",
+  "type": "module",
+  "dependencies": {
+    "preact": "^11.0.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
+    "@types/node": "^26.6.4",
+    "fake-indexeddb": "^6.2.5",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.3",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^5.0.3"
+  },
+  "private": true
+}
