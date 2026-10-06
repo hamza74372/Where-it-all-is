@@ -71,6 +71,10 @@ export interface Settings extends BaseRecord {
   /** Starter categorising rules have been created once. */
   rulesSeeded?: boolean;
   lastBackupAt?: number;
+  /** Result of navigator.storage.persist(): true = the browser agreed to keep this app's data. */
+  storagePersisted?: boolean;
+  /** The one-time "Safari can delete website data" note has been read. */
+  storageNoteSeen?: boolean;
   exampleData?: boolean;
   onboarded?: boolean;
 }
@@ -245,6 +249,25 @@ export interface StoreMap {
   notes: Note;
   events: AppEvent;
   envelopeMoves: EnvelopeMove;
+  tombstones: Tombstone;
+  partner: PartnerShare;
+}
+
+/**
+ * Record of a deletion, so a merge with an older backup doesn't bring the item back.
+ * id = "<store>:<rowId>". Kept for 90 days.
+ */
+export interface Tombstone extends BaseRecord {
+  store: StoreName;
+  rowId: Id;
+  deletedAt: number;
+}
+
+/** A partner's read-only shared view (never mixed with the user's own data). */
+export interface PartnerShare extends BaseRecord {
+  id: 'partner';
+  receivedAt: number;
+  summary: import('../lib/backup/partner').PartnerSummary;
 }
 
 export type StoreName = keyof StoreMap;

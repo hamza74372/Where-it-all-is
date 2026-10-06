@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'preact/hooks';
 import type { Bill, Income } from '../db/types';
 import { catchUp, type CatchUp } from '../lib/away';
 import { getPref, setPref } from '../lib/prefs';
+import { lastBackupText } from './Backup';
 import { addDays } from '../lib/dates';
 import { nextBills, overdueOccurrences } from '../lib/bills';
 import { parseQuickLog } from '../lib/quickLog';
@@ -54,6 +55,8 @@ export function Today() {
   return (
     <>
       {data.settings.exampleData && !focus && <ExampleBanner />}
+      {!focus && !data.settings.exampleData && <StorageNote />}
+      {!focus && !data.settings.exampleData && <BackupReminder />}
       <div class="title-row">
         <h1 class="screen-title">{greeting}</h1>
         <button type="button" class="btn btn-small focus-btn" aria-pressed={focus} onClick={toggleFocus}>
@@ -560,6 +563,75 @@ function NextBillsCard({ today }: { today: string }) {
       <button type="button" class="link-btn" onClick={() => nav('bills')}>
         {items.length ? 'See all bills' : 'Add a bill'}
       </button>
+    </section>
+  );
+}
+
+/** True when running as an installed Home Screen app (then Safari won't clear the data after 7 days). */
+function isInstalled(): boolean {
+  return (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches) || (navigator as { standalone?: boolean }).standalone === true;
+}
+
+/** One-time note about Safari clearing website data. */
+function StorageNote() {
+  const store = useStore();
+  const { settings } = useData();
+  if (settings.storageNoteSeen || isInstalled()) return null;
+  return (
+    <section class="card card-note" aria-labelledby="storage-note">
+      <h2 id="storage-note" class="card-title">
+        Keep your budget safe
+      </h2>
+      <p>
+        Your budget is saved only on this device. On iPhone and iPad, Safari can delete a website’s data after 7 days without use — unless
+        you add the app to your Home Screen. Add it there, and back up once a week.
+      </p>
+      <button type="button" class="btn btn-small" onClick={() => store.saveSettings({ storageNoteSeen: true })}>
+        Got it
+      </button>
+    </section>
+  );
+}
+
+/** Gentle, dismissible reminder every N days without a backup. */
+function BackupReminder() {
+  const { settings } = useData();
+  const nav = useNav();
+  const [dismissedAt, setDismissedAt] = useState(() => getPref<number>('backupReminderDismissedAt', 0));
+  const every = settings.backupRemindDays;
+  if (!every) return null;
+  const now = Date.now();
+  const sinceBackup = settings.lastBackupAt ? now - settings.lastBackupAt : now - settings.createdAt;
+  const dueMs = every * 86_400_000;
+  if (sinceBackup < dueMs || now - dismissedAt < dueMs) return null;
+  return (
+    <section class="card card-quiet backup-reminder" aria-labelledby="backup-rem">
+      <h2 id="backup-rem" class="card-title">
+        Time for a quick backup?
+      </h2>
+      <p class="muted">{lastBackupText(settings.lastBackupAt)}. It takes a few seconds and keeps your budget safe.</p>
+      <div class="row-gap">
+        <button
+          type="button"
+          class="btn btn-small btn-primary"
+          onClick={() => {
+            setPref('openMorePage', 'backup'); // land on Backup & restore, not the More menu
+            nav('more');
+          }}
+        >
+          Back up now
+        </button>
+        <button
+          type="button"
+          class="btn btn-small btn-quiet"
+          onClick={() => {
+            setPref('backupReminderDismissedAt', Date.now());
+            setDismissedAt(Date.now());
+          }}
+        >
+          Not now
+        </button>
+      </div>
     </section>
   );
 }

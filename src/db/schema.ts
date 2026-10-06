@@ -50,14 +50,21 @@ function createStores(db: IDBDatabase, specs: StoreSpec[]) {
 }
 
 const V2_STORES: StoreSpec[] = [{ name: 'envelopeMoves', indexes: [['month', 'month']] }];
+const V3_STORES: StoreSpec[] = [{ name: 'tombstones', indexes: [['deletedAt', 'deletedAt']] }, { name: 'partner' }];
 
 export const MIGRATIONS: Migration[] = [
   // v1 — initial schema
   (db) => createStores(db, V1_STORES),
   // v2 — "move money" between envelopes (Phase 3)
   (db) => createStores(db, V2_STORES),
+  // v3 — deletion tombstones (so merges don't bring deleted things back) and the partner's
+  // read-only shared view, kept apart from the user's own data (Phase 5)
+  (db) => createStores(db, V3_STORES),
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
 
-export const ALL_STORES: StoreName[] = [...V1_STORES, ...V2_STORES].map((s) => s.name);
+export const ALL_STORES: StoreName[] = [...V1_STORES, ...V2_STORES, ...V3_STORES].map((s) => s.name);
+
+/** Everything that belongs to the user: what a backup contains and what Replace/Merge touch. */
+export const BACKUP_STORES: StoreName[] = ALL_STORES.filter((s) => s !== 'partner');

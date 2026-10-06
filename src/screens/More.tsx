@@ -3,6 +3,7 @@ import type { ComponentChildren } from 'preact';
 
 import { useState } from 'preact/hooks';
 import { DISCLAIMER } from '../copy';
+import { getPref, setPref } from '../lib/prefs';
 import { uid } from '../db/db';
 import type { Account, Category, Income, QuickPreset, Schedule, Settings } from '../db/types';
 import { addDays, weekday } from '../lib/dates';
@@ -18,9 +19,11 @@ import { Sheet } from '../ui/Sheet';
 import { dismissToast, toast } from '../ui/Toast';
 import { Notes } from './Notes';
 import { Rules } from './Rules';
+import { BackupScreen, lastBackupText } from './Backup';
+import { ShareWithPartner } from './Partner';
 import { CategoryForm } from './plan/Envelopes';
 
-type Page = 'menu' | 'accounts' | 'paychecks' | 'categories' | 'rules' | 'notes' | 'chips' | 'settings' | 'about';
+type Page = 'menu' | 'accounts' | 'paychecks' | 'categories' | 'rules' | 'notes' | 'backup' | 'share' | 'chips' | 'settings' | 'about';
 
 const PAGES: Array<{ id: Exclude<Page, 'menu'>; label: string; sub: string }> = [
   { id: 'accounts', label: 'Accounts', sub: 'Bank accounts, cash, savings, cards' },
@@ -28,13 +31,20 @@ const PAGES: Array<{ id: Exclude<Page, 'menu'>; label: string; sub: string }> = 
   { id: 'categories', label: 'Categories', sub: 'Kinds of spending and their monthly amounts' },
   { id: 'rules', label: 'Rules', sub: 'How imported transactions get their category' },
   { id: 'notes', label: 'Notes', sub: 'A brain dump for each month' },
+  { id: 'backup', label: 'Backup & restore', sub: 'Keep a copy safe, move to a new phone, export CSV' },
+  { id: 'share', label: 'Share with partner', sub: 'A read-only, locked snapshot for your partner' },
   { id: 'chips', label: 'Quick-log chips', sub: 'One-tap spends on Today' },
   { id: 'settings', label: 'Settings', sub: 'Theme, currency, cushion, how you type amounts' },
   { id: 'about', label: 'About & privacy', sub: 'Where your data lives' },
 ];
 
 export function More() {
-  const [page, setPageState] = useState<Page>('menu');
+  const [page, setPageState] = useState<Page>(() => {
+    // One-shot deep link (e.g. from the backup reminder on Today).
+    const target = getPref<Page | null>('openMorePage', null);
+    if (target) setPref('openMorePage', null);
+    return target ?? 'menu';
+  });
   const setPage = (p: Page) => {
     setPageState(p);
     dismissToast();
@@ -57,7 +67,7 @@ export function More() {
             </li>
           ))}
         </ul>
-        <p class="muted">Sharing, backups and help arrive in later updates.</p>
+        <p class="muted">An in-app help guide arrives in a later update.</p>
         <p class="footer-note">{DISCLAIMER}</p>
       </>
     );
@@ -74,6 +84,8 @@ export function More() {
       {page === 'categories' && <Categories />}
       {page === 'notes' && <Notes />}
       {page === 'rules' && <Rules />}
+      {page === 'backup' && <BackupScreen />}
+      {page === 'share' && <ShareWithPartner />}
       {page === 'chips' && <Chips />}
       {page === 'settings' && <SettingsPage />}
       {page === 'about' && <About />}
@@ -579,9 +591,15 @@ function About() {
         anywhere — the app makes no network requests at all, and there are no analytics or trackers.
       </p>
       <p>
-        That also means clearing this browser's site data deletes your budget. Backups are coming in a later update — until
-        then, avoid clearing browsing data for this app.
+        That also means clearing this browser's site data deletes your budget. Back up regularly from More → Backup &amp; restore — a
+        backup is a file you keep (Files, iCloud Drive, Google Drive, or email it to yourself), optionally locked with a passphrase.
+        {' '}{lastBackupText(settings.lastBackupAt)}.
       </p>
+      <p>
+        On iPhone and iPad, Safari can delete a website's data after 7 days without use unless the app is added to your Home Screen.
+        Add it to your Home Screen and back up weekly.
+      </p>
+      <p>Sharing with a partner uses a locked file you send yourself. There's still no server, and nothing is uploaded.</p>
       <h2 class="card-title">The small print</h2>
       <p>{DISCLAIMER}</p>
       <p>Licensed for personal and household use. Please don't resell or redistribute it.</p>

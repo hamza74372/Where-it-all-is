@@ -6,11 +6,12 @@ import type { Schedule } from '../db/types';
 import { addDays, weekday } from '../lib/dates';
 import { amountExample, CURRENCIES, CURRENCY_INFO, type Currency } from '../lib/money';
 import { completeOnboarding, loadExampleData } from '../state/actions';
+import { RestorePanel } from './Backup';
 import { useData, useStore } from '../state/store';
 import { checkMoney, MoneyInput, ScheduleFields, Select, TextInput, Toggle } from '../ui/fields';
 import { useToday } from '../ui/hooks';
 
-type Step = 'welcome' | 1 | 2 | 3 | 4;
+type Step = 'welcome' | 'restore' | 1 | 2 | 3 | 4;
 
 interface BillRow {
   id: string;
@@ -92,8 +93,21 @@ export function Onboarding() {
     }
     setShowErrors(false);
     if (step === 4) await finish();
-    else setStep(step === 'welcome' ? 1 : ((step + 1) as Step));
+    else setStep(typeof step === 'number' ? ((step + 1) as Step) : 1);
   };
+
+  if (step === 'restore') {
+    return (
+      <main class="screen onboarding" id="main">
+        <button type="button" class="link-btn back-btn" onClick={() => setStep('welcome')}>
+          ‹ Back
+        </button>
+        <h1 class="screen-title">Restore a backup</h1>
+        <p class="muted">Pick the backup file from your old phone or computer. Everything comes back exactly as it was.</p>
+        <RestorePanel />
+      </main>
+    );
+  }
 
   if (step === 'welcome') {
     return (
@@ -123,6 +137,9 @@ export function Onboarding() {
               }}
             >
               Try with example numbers
+            </button>
+            <button type="button" class="link-btn" onClick={() => setStep('restore')}>
+              Moving from another device? Restore a backup
             </button>
           </div>
         </div>

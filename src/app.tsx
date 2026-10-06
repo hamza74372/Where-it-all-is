@@ -5,10 +5,11 @@ import { Bills } from './screens/Bills';
 import { Log } from './screens/Log';
 import { More } from './screens/More';
 import { Onboarding } from './screens/Onboarding';
+import { PartnerTab } from './screens/Partner';
 import { Plan } from './screens/Plan';
 import { Today } from './screens/Today';
 import { NavContext, type Tab } from './state/nav';
-import { Store, StoreContext, useData } from './state/store';
+import { Store, StoreContext, useData, useStore } from './state/store';
 import { Icon, type IconName } from './ui/icons';
 import { dismissToast, ToastHost } from './ui/Toast';
 
@@ -60,8 +61,29 @@ export function App() {
 }
 
 function Shell() {
-  const { settings } = useData();
-  const [tab, setTab] = useState<Tab>(() => getPref<Tab>('tab', 'today'));
+  const store = useStore();
+  const { settings, partner } = useData();
+  const [tabState, setTab] = useState<Tab>(() => getPref<Tab>('tab', 'today'));
+  // The Partner tab only exists while a share is held.
+  const tab: Tab = tabState === 'partner' && !partner ? 'today' : tabState;
+  const tabs = partner ? [...TABS.slice(0, 4), { id: 'partner' as Tab, label: 'Partner', icon: 'partner' as IconName }, TABS[4]] : TABS;
+
+  // Finishing setup (or restoring a backup onto a fresh device) always lands on Today.
+  const [wasOnboarded, setWasOnboarded] = useState(settings.onboarded);
+  useEffect(() => {
+    if (settings.onboarded && !wasOnboarded) {
+      setTab('today');
+      setPref('tab', 'today');
+    }
+    setWasOnboarded(!!settings.onboarded);
+  }, [settings.onboarded]);
+
+  // Ask the browser to keep this app's data even when storage is low (best effort).
+  useEffect(() => {
+    navigator.storage?.persist?.().then((granted) => {
+      if (granted !== store.data.settings.storagePersisted) store.saveSettings({ storagePersisted: granted });
+    }, () => {});
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
@@ -93,11 +115,12 @@ function Shell() {
               {tab === 'bills' && <Bills />}
               {tab === 'plan' && <Plan />}
               {tab === 'more' && <More />}
+              {tab === 'partner' && <PartnerTab />}
             </main>
             <ToastHost />
             <nav class="bottom-nav" aria-label="Main">
               <ul>
-                {TABS.map((t) => (
+                {tabs.map((t) => (
                   <li key={t.id}>
                     <button type="button" aria-current={t.id === tab ? 'page' : undefined} onClick={() => go(t.id)}>
                       <Icon name={t.icon} />

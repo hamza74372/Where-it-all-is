@@ -97,3 +97,78 @@
 .imported-rows {
   margin: 10px 0;
 }
+
+/* Phase 5: backup, restore and partner sharing. */
+.warn-box {
+  margin: 4px 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--amber-fill);
+  background: var(--surface-2);
+}
+.restore-summary {
+  font-size: 18px;
+  margin-top: 0;
+}
+.choice-grid {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 6px;
+}
+.choice {
+  text-align: left;
+  min-height: 64px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.choice:hover,
+.choice:focus-visible {
+  border-color: var(--accent);
+}
+.choice-title {
+  font-weight: 700;
+  font-size: 17px;
+}
+.choice-sub {
+  font-size: 15px;
+  color: var(--text-muted);
+}
+.share-made {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+.qr-block {
+  margin-top: 6px;
+}
+.qr-svg {
+  width: min(280px, 100%);
+  margin: 4px auto 10px;
+  background: #fff; /* QR codes need a light background to scan, in either theme */
+  border-radius: 12px;
+  padding: 6px;
+}
+.qr-svg svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.share-code {
+  min-height: 88px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 14px;
+  word-break: break-all;
+}
+.partner-asof {
+  margin: -8px 0 14px;
+  color: var(--text-muted);
+}
+.partner-asof .badge {
+  margin: 0 6px 0 0;
+}
