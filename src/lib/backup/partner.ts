@@ -7,6 +7,7 @@ import { billsBetween, paydaysBetween } from '../bills';
 import { addDays } from '../dates';
 import { envelopeRows, monthOf } from '../envelopes';
 import { computeSafeToSpend } from '../safeToSpend';
+import { isTransfer } from '../transfers';
 import { fromBase64, isEncryptedFile, NotOurFileError, PBKDF2_ITERATIONS, type EncryptedFile } from './crypto';
 
 export interface PartnerSummary {
@@ -57,7 +58,7 @@ export function buildPartnerSummary(data: AppData, today: string, includeTransac
   if (includeTransactions) {
     const from = addDays(today, -30);
     summary.transactions = data.transactions
-      .filter((t) => t.date >= from && t.date <= today && t.source !== 'transfer' && t.source !== 'adjustment')
+      .filter((t) => t.date >= from && t.date <= today && !isTransfer(t) && t.source !== 'adjustment')
       .sort((a, b) => (a.date < b.date ? 1 : -1))
       .map((t) => ({ date: t.date, note: t.note, amount: t.amount, category: t.categoryId ? catName.get(t.categoryId) : undefined }));
   }

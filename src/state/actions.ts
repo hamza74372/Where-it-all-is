@@ -66,6 +66,25 @@ export async function logTransaction(
   return { tx, undo: () => store.remove('transactions', [tx.id]) };
 }
 
+/**
+ * Money moved between two of your own accounts: two linked sides (out of one, into the other).
+ * Never spending or income; each account's balance still moves, so safe-to-spend stays right.
+ */
+export async function addTransfer(
+  store: Store,
+  t: { fromAccountId: Id; toAccountId: Id; amount: Minor; date: ISODate; note: string },
+): Promise<{ txs: Transaction[]; undo: Undo }> {
+  if (t.fromAccountId === t.toAccountId) throw new Error('Pick two different accounts.');
+  const transferId = uid();
+  const amount = Math.abs(t.amount);
+  const base = { date: t.date, note: t.note, source: 'transfer' as const, transferId, cleared: false };
+  const txs = await store.upsert('transactions', [
+    { ...base, id: uid(), accountId: t.fromAccountId, amount: -amount },
+    { ...base, id: uid(), accountId: t.toAccountId, amount },
+  ]);
+  return { txs, undo: () => store.remove('transactions', txs.map((x) => x.id)) };
+}
+
 export async function deleteTransactions(store: Store, txs: Transaction[]): Promise<Undo> {
   // Transfers come in pairs: deleting one side deletes both.
   const pairIds = new Set(txs.map((t) => t.transferId).filter(Boolean));

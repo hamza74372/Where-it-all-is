@@ -39,6 +39,7 @@ import type { Account, Bill, Goal, ISODate, Id, Income, Settings, Transaction } 
 import { addDays, daysBetween, startOfNextMonth } from './dates';
 import { divFloor, sum, type Minor } from './money';
 import { nextOccurrence, occurrences } from './schedule';
+import { isTransfer } from './transfers';
 
 export interface SafeToSpendInput {
   today: ISODate;
@@ -153,7 +154,7 @@ export function nextPaydayAfter(today: ISODate, incomes: Income[]): ISODate | nu
 
 /** Spending that counts against today's allowance (not bills, transfers or income). */
 function isDiscretionaryOutflow(t: Transaction): boolean {
-  return t.amount < 0 && (t.source === 'manual' || t.source === 'import');
+  return t.amount < 0 && (t.source === 'manual' || t.source === 'import') && !isTransfer(t);
 }
 
 export function computeSafeToSpend(input: SafeToSpendInput): SafeToSpendResult {

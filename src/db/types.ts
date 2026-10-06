@@ -210,6 +210,8 @@ export interface CsvMapping extends BaseRecord {
   stateCol?: number;
   /** Column with a fee charged on the row (e.g. Revolut). Non-zero fees become their own transaction. */
   feeCol?: number;
+  /** Column with the bank's running balance; used to check the app against the bank after import. */
+  balanceCol?: number;
   dateFormat: 'YMD' | 'DMY' | 'MDY' | 'D MON Y' | 'MON D Y';
   decimal: '.' | ',';
   signConvention: 'negativeIsOut' | 'positiveIsOut';

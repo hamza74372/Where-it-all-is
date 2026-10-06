@@ -2,12 +2,13 @@
 
 import type { Category, EnvelopeMove, Id, ISODate, Transaction } from '../db/types';
 import type { Minor } from './money';
+import { isTransfer } from './transfers';
 
 export const monthOf = (d: ISODate) => d.slice(0, 7);
 
 /** Counts toward a category: spending out (refunds reduce it). Transfers and pay don't count. */
 function countsAsSpending(t: Transaction): boolean {
-  return t.source !== 'transfer' && t.source !== 'income' && !!t.categoryId;
+  return !isTransfer(t) && t.source !== 'income' && !!t.categoryId;
 }
 
 /** Net spending per category in a month (positive = spent). */

@@ -14,6 +14,8 @@ export interface Draft {
   description: string;
   /** For a fee draft: index (in the drafts array) of the row it was charged on. */
   feeOf?: number;
+  /** The bank's running balance after this row, when the file has a balance column. */
+  balance?: Minor;
 }
 
 export interface Skipped {
@@ -69,7 +71,8 @@ export function convertRows(rows: string[][], m: Pick<CsvMapping, Exclude<keyof 
       continue;
     }
     const description = (row[m.descCol] ?? '').replace(/\s+/g, ' ').trim();
-    drafts.push({ rowIndex: r, date, amount, description });
+    const balance = m.balanceCol !== undefined ? parseAmountStrict(row[m.balanceCol] ?? '', m.decimal) : null;
+    drafts.push({ rowIndex: r, date, amount, description, ...(balance !== null ? { balance } : {}) });
     // A fee on the row is money out on its own (the amount excludes it); keep the balance true.
     if (m.feeCol !== undefined) {
       const fee = parseAmountStrict(row[m.feeCol] ?? '', m.decimal);
@@ -100,55 +103,88 @@ export function tidyDescription(s: string): string {
 const dupKey = (date: string, amount: number, desc: string) => `${date}|${amount}|${normaliseDescription(desc)}`;
 
 /**
- * Mark drafts that are already in this account (same date + amount + normalised description).
- * Counts matter: two identical coffees in the file and one already saved → one is new.
+ * Drafts that are already in this account (same date + amount + normalised description): the id
+ * of the existing transaction each one duplicates. Counts matter: two identical coffees in the
+ * file and one already saved → one is new.
  */
-export function markDuplicates(drafts: Draft[], existing: Transaction[], accountId: string): boolean[] {
-  const have = new Map<string, number>();
+export function findDuplicates(drafts: Draft[], existing: Transaction[], accountId: string): Array<string | undefined> {
+  const have = new Map<string, string[]>();
   for (const t of existing) {
     if (t.accountId !== accountId) continue;
     const k = dupKey(t.importDate ?? t.date, t.amount, t.importDescription ?? t.note);
-    have.set(k, (have.get(k) ?? 0) + 1);
+    have.set(k, [...(have.get(k) ?? []), t.id]);
   }
-  return drafts.map((d) => {
-    const k = dupKey(d.date, d.amount, d.description);
-    const n = have.get(k) ?? 0;
-    if (n > 0) {
-      have.set(k, n - 1);
-      return true;
-    }
-    return false;
-  });
+  return drafts.map((d) => have.get(dupKey(d.date, d.amount, d.description))?.shift());
+}
+
+export function markDuplicates(drafts: Draft[], existing: Transaction[], accountId: string): boolean[] {
+  return findDuplicates(drafts, existing, accountId).map((id) => id !== undefined);
 }
 
 export const MATCH_WINDOW_DAYS = 3;
 
+const dayNum = (d: string) => Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10))) / 86_400_000;
+
+/** One draft's match: linked to one existing entry, or several could fit and the user decides. */
+export type Match = { id: string } | { candidates: string[] } | undefined;
+
 /**
- * Match import rows to things the user already logged by hand: same account, same amount,
- * within ±3 days. Closest date wins; each manual entry matches at most one row, and each row
- * at most one entry. Duplicates and fee rows are never matched. Returns the manual id per draft.
+ * Match import rows to what's already on the account — anything not yet backed by a bank row:
+ * typed spends, bills marked paid, confirmed paychecks, other money in, transfers, and earlier
+ * imports. Same amount, within ±3 days.
+ *
+ *  • One possible entry → linked, never added again. If two rows want the same entry, the closest
+ *    date wins (ties: file order) and the other row is new.
+ *  • Several possible entries → { candidates }: the user chooses; the app doesn't guess.
+ *  • Earlier imports only count inside this file's date range — the bank re-dated or re-worded a
+ *    row it already sent. Outside the range the file can't contain them, so a same-amount row is
+ *    a different payment (two coffees on different days).
+ *  • Exact duplicates, fee rows, balance adjustments and entries already linked to a bank row are
+ *    never matched.
  */
-export function matchManualEntries(drafts: Draft[], duplicate: boolean[], existing: Transaction[], accountId: string): Array<string | undefined> {
-  const manual = existing.filter((t) => t.accountId === accountId && t.source === 'manual' && !t.matchedBatchId);
-  const dayNum = (d: string) => Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10))) / 86_400_000;
-  const pairs: Array<{ di: number; mi: number; gap: number }> = [];
+export function matchExistingEntries(drafts: Draft[], duplicateOf: Array<string | undefined>, existing: Transaction[], accountId: string): Match[] {
+  const used = new Set(duplicateOf.filter((id): id is string => !!id));
+  // The dates this file covers (every row, duplicates included).
+  const dates = drafts.filter((d) => d.feeOf === undefined).map((d) => d.date).sort();
+  const span = dates.length ? { from: dates[0], to: dates[dates.length - 1] } : null;
+  const pool = existing.filter(
+    (t) =>
+      t.accountId === accountId &&
+      !used.has(t.id) &&
+      !t.matchedBatchId &&
+      t.source !== 'adjustment' &&
+      (t.source !== 'import' || (span !== null && t.date >= span.from && t.date <= span.to)),
+  );
+  const out: Match[] = drafts.map(() => undefined);
+  const single: Array<{ di: number; id: string; gap: number }> = [];
   drafts.forEach((d, di) => {
-    if (duplicate[di] || d.feeOf !== undefined) return;
-    manual.forEach((t, mi) => {
-      const gap = Math.abs(dayNum(t.date) - dayNum(d.date));
-      if (t.amount === d.amount && gap <= MATCH_WINDOW_DAYS) pairs.push({ di, mi, gap });
-    });
+    if (duplicateOf[di] || d.feeOf !== undefined) return;
+    const fits = pool.filter((t) => t.amount === d.amount && Math.abs(dayNum(t.date) - dayNum(d.date)) <= MATCH_WINDOW_DAYS);
+    if (fits.length > 1) out[di] = { candidates: fits.map((t) => t.id) };
+    else if (fits.length === 1) single.push({ di, id: fits[0].id, gap: Math.abs(dayNum(fits[0].date) - dayNum(d.date)) });
   });
-  // Closest dates first; ties keep file order, then the order entries were logged.
-  pairs.sort((a, b) => a.gap - b.gap || a.di - b.di || a.mi - b.mi);
-  const out: Array<string | undefined> = drafts.map(() => undefined);
-  const usedManual = new Set<number>();
-  for (const p of pairs) {
-    if (out[p.di] !== undefined || usedManual.has(p.mi)) continue;
-    out[p.di] = manual[p.mi].id;
-    usedManual.add(p.mi);
+  single.sort((a, b) => a.gap - b.gap || a.di - b.di);
+  const taken = new Set<string>();
+  for (const p of single) {
+    if (taken.has(p.id)) continue;
+    out[p.di] = { id: p.id };
+    taken.add(p.id);
   }
   return out;
+}
+
+/**
+ * The bank's closing balance from a balance column: the balance on the newest row. Files come
+ * oldest-first or newest-first; on the newest day the closing row is the last one listed
+ * (oldest-first) or the first (newest-first). Null when the file has no balances.
+ */
+export function statementEnd(drafts: Draft[]): { from: ISODate; date: ISODate; balance: Minor } | null {
+  const rows = drafts.filter((d) => d.feeOf === undefined && d.balance !== undefined);
+  if (!rows.length) return null;
+  const newestFirst = rows[0].date > rows[rows.length - 1].date;
+  const closing = newestFirst ? rows[0] : rows[rows.length - 1];
+  const from = rows.map((d) => d.date).sort()[0];
+  return { from, date: closing.date, balance: closing.balance! };
 }
 
 /**

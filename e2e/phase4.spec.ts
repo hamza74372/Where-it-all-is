@@ -29,11 +29,12 @@ async function setup(page: Page) {
 /** After "Import N": finish any sorting later, skip the balance check, land on the summary. */
 async function finishImport(page: Page) {
   const finish = page.getByRole('button', { name: 'Finish later' });
-  const balance = page.getByRole('heading', { name: /balance is…\?|say you owe\?/ });
+  // Files with a balance column get the automatic check; others ask you to type the balance.
+  const balance = page.getByRole('heading', { name: /balance is…\?|say you owe\?|^Your bank says|^Your bank and the app agree/ });
   await expect(finish.or(balance)).toBeVisible();
   if (await finish.isVisible()) await finish.click();
   await expect(balance).toBeVisible();
-  await page.getByRole('button', { name: 'Skip' }).click();
+  await page.getByRole('button', { name: /^(Skip|Leave it|Continue)$/ }).click();
 }
 
 async function pickFile(page: Page, file: string) {
@@ -65,8 +66,11 @@ test('import a Chase-style CSV: rules sort most rows, sort the rest, re-import s
   await shot(page, 'sort');
   await page.getByRole('button', { name: /Home/ }).click();
   // "CHECK" is a generic bank word, so no "always put…" offer.
-  await expect(page.getByRole('heading', { name: 'Your bank says your balance is…?' })).toBeVisible();
-  await page.getByRole('button', { name: 'Skip' }).click();
+  // Chase files have a balance column, so the app checks itself against the bank. They differ:
+  // the app started at 2,000.00 today, so every row here is from before you started.
+  await expect(page.getByRole('heading', { name: /^Your bank says \$[\d,.]+, the app says \$2,000\.00\. Here's what might be missing\.$/ })).toBeVisible();
+  await expect(page.getByText(/rows are from before you started/)).toBeVisible();
+  await page.getByRole('button', { name: 'Leave it' }).click();
   await expect(page.getByRole('heading', { name: 'Imported 10 transactions' })).toBeVisible();
   await shot(page, 'done');
   await page.getByRole('button', { name: 'Done' }).click();
@@ -132,7 +136,9 @@ test('all 11 sample bank exports import through the UI with the expected counts'
     await page.getByRole('button', { name: `Import ${n}` }).click();
     await finishImport(page);
     await expect(page.getByRole('heading', { name: `Imported ${n} transaction` }), file).toBeVisible();
-    await page.getByRole('button', { name: 'Done' }).click();
+    // Each file stands alone: these are different banks' statements for the same dates, so in one
+    // account their same-amount rows would (rightly) be linked to each other.
+    await page.getByRole('button', { name: 'Undo this import' }).click();
   }
   expect(problems).toEqual([]);
 });
@@ -163,32 +169,31 @@ test('manual logs are matched, unlinking works, the balance check fixes the numb
   await page.getByRole('button', { name: 'Continue' }).click();
 
   await expect(page.getByText('9 new transactions')).toBeVisible();
-  await expect(page.getByText('1 matched to things you already logged')).toBeVisible();
+  await expect(page.getByText('1 already in the app — linked, not added twice')).toBeVisible();
   // Unlink → it becomes new; going back and forward re-matches.
   await page.getByRole('button', { name: /^Unlink/ }).click();
   await expect(page.getByText('10 new transactions')).toBeVisible();
-  await expect(page.getByText('matched to things you already logged')).toHaveCount(0);
+  await expect(page.getByText('already in the app — linked, not added twice')).toHaveCount(0);
   await page.getByRole('button', { name: 'Back' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
-  await expect(page.getByText('1 matched to things you already logged')).toBeVisible();
+  await expect(page.getByText('1 already in the app — linked, not added twice')).toBeVisible();
   await page.getByRole('button', { name: 'Import 9' }).click();
   await page.getByRole('button', { name: 'Finish later' }).click();
 
   // Onboarded today (16 Oct) with 2,000, so every statement row (1–15 Oct) is from before you
-  // started and doesn't move the balance. App: 2,000 − 5.75 (today's coffee) = 1,994.25. Bank says 1,944.25.
-  await expect(page.getByText('The app says $1,994.25')).toBeVisible();
-  await page.getByLabel('Balance in your bank app').fill('1944.25');
-  await page.getByRole('button', { name: 'Check' }).click();
-  await expect(page.getByText(/That's \$50\.00 less at the bank/)).toBeVisible();
-  await page.getByRole('button', { name: 'Add a balance adjustment' }).click();
-  await expect(page.getByRole('status')).toContainText('Balance adjustment of -$50.00 added');
+  // started and doesn't move the balance. App: 2,000 − 5.75 (today's coffee) = 1,994.25. The file's
+  // balance column says 2,824.10 at the close of 15 Oct, so the check is automatic.
+  await expect(page.getByRole('heading', { name: "Your bank says $2,824.10, the app says $1,994.25. Here's what might be missing." })).toBeVisible();
+  await expect(page.getByText(/That's \$829\.85 more at the bank/)).toBeVisible();
+  await page.getByRole('button', { name: 'Add a balance adjustment of +$829.85' }).click();
+  await expect(page.getByRole('status')).toContainText('Balance adjustment of +$829.85 added');
   await expect(page.getByRole('heading', { name: 'Imported 9 transactions' })).toContainText('9');
-  await expect(page.getByText('1 matched to things')).toBeVisible();
+  await expect(page.getByText('1 already in the app, so linked instead of added twice')).toBeVisible();
   await page.getByRole('button', { name: 'Done' }).click();
 
-  // Corrected balance 1,944.25; the coffee was spent today: (1,944.25 + 5.75) ÷ 16 days = 121.87, minus 5.75 = 116.12 → $116.
+  // Corrected balance 2,824.10; the coffee was spent today: (2,824.10 + 5.75) ÷ 16 days = 176.86, minus 5.75 = 171.11 → $171.
   await nav(page, 'Today').click();
-  await expect(page.locator('.big-number')).toHaveText('$116');
+  await expect(page.locator('.big-number')).toHaveText('$171');
 
   // Undo the import: the 9 rows go; the manual coffee stays.
   await nav(page, 'Log').click();

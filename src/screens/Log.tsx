@@ -5,7 +5,8 @@ import { uid } from '../db/db';
 import type { Transaction } from '../db/types';
 import { addMonthsYM, parts, ymd } from '../lib/dates';
 import { isBeforeStart } from '../lib/safeToSpend';
-import { deleteTransactions, defaultAccount, saveWithUndo } from '../state/actions';
+import { addTransfer, deleteTransactions, defaultAccount, saveWithUndo } from '../state/actions';
+import { isTransfer } from '../lib/transfers';
 import { useData, useStore } from '../state/store';
 import { checkMoney, DateInput, MoneyInput, moneyText, Segmented, Select, TextInput } from '../ui/fields';
 import { useFmt, useToday } from '../ui/hooks';
@@ -47,7 +48,7 @@ export function Log() {
     return [...out.entries()];
   }, [data.transactions, prefix, query, catById]);
 
-  const monthOut = groups.flatMap(([, rows]) => rows).filter((r) => r.amount < 0 && r.source !== 'transfer').reduce((s, r) => s - r.amount, 0);
+  const monthOut = groups.flatMap(([, rows]) => rows).filter((r) => r.amount < 0 && !isTransfer(r) && r.source !== 'adjustment').reduce((s, r) => s - r.amount, 0);
 
   if (importing) return <Import onClose={() => setImporting(false)} />;
 
@@ -95,7 +96,7 @@ export function Log() {
             <ul class="card rows">
               {rows.map((tx) => {
                 const cat = catById.get(tx.categoryId ?? '');
-                const tag = SOURCE_LABEL[tx.source];
+                const tag = tx.transferId && tx.source !== 'transfer' ? 'Transfer' : SOURCE_LABEL[tx.source];
                 return (
                   <li key={tx.id} class="row">
                     <button type="button" class="row-main row-button" onClick={() => setEditing(tx)}>
@@ -128,21 +129,33 @@ function TxForm({ tx, onDone }: { tx: Transaction | null; onDone: () => void }) 
   const store = useStore();
   const data = useData();
   const today = useToday();
+  const fmt = useFmt();
   const dec = data.settings.decimalSeparator;
-  const [direction, setDirection] = useState<'out' | 'in'>(tx && tx.amount > 0 ? 'in' : 'out');
+  const [direction, setDirection] = useState<'out' | 'in' | 'transfer'>(tx && tx.amount > 0 ? 'in' : 'out');
   const [amount, setAmount] = useState(moneyText(tx ? Math.abs(tx.amount) : null, dec));
   const [note, setNote] = useState(tx?.note ?? '');
   const [date, setDate] = useState(tx?.date ?? today);
   const [categoryId, setCategoryId] = useState(tx?.categoryId ?? '');
   const [accountId, setAccountId] = useState(tx?.accountId ?? defaultAccount(store)?.id ?? '');
+  const live = data.accounts.filter((a) => !a.archived);
+  const [toAccountId, setToAccountId] = useState(live.find((a) => a.id !== accountId)?.id ?? '');
   const [showErrors, setShowErrors] = useState(false);
-  const locked = tx?.source === 'transfer'; // edit transfers by deleting + re-marking the bill
+  // Either side of a transfer: change it by deleting (both sides go) and adding it again.
+  const locked = !!tx && isTransfer(tx);
+  const partner = locked ? data.transactions.find((t) => t.transferId === tx.transferId && t.id !== tx.id) : undefined;
+  const accName = (id?: string) => data.accounts.find((a) => a.id === id)?.name ?? 'another account';
 
   const save = async (e: Event) => {
     e.preventDefault();
     const c = checkMoney(amount, dec);
     if (c.state !== 'ok' || !accountId) return setShowErrors(true);
     const value = Math.abs(c.value);
+    if (direction === 'transfer') {
+      if (!toAccountId || toAccountId === accountId) return setShowErrors(true);
+      const { undo } = await addTransfer(store, { fromAccountId: accountId, toAccountId, amount: value, date, note: note.trim() || 'Transfer' });
+      toast(`Moved ${fmt.money(value)} to ${accName(toAccountId)}`, undo);
+      return onDone();
+    }
     const undo = await saveWithUndo(store, 'transactions', {
         ...(tx ?? { id: uid(), source: 'manual' as const, cleared: false }),
         date,
@@ -167,7 +180,11 @@ function TxForm({ tx, onDone }: { tx: Transaction | null; onDone: () => void }) 
   return (
     <form class="form" onSubmit={save}>
       {locked ? (
-        <p class="muted">This is a card payment (a transfer between your accounts). To change it, delete it and mark the bill paid again.</p>
+        <p class="muted">
+          {tx.billId
+            ? 'This is a card payment (a transfer between your accounts). To change it, delete it and mark the bill paid again.'
+            : `This is a transfer ${tx.amount < 0 ? 'to' : 'from'} ${accName(partner?.accountId)}. It isn't spending or income. To change it, delete it (both sides go) and add it again.`}
+        </p>
       ) : (
         <>
           <Segmented
@@ -177,24 +194,34 @@ function TxForm({ tx, onDone }: { tx: Transaction | null; onDone: () => void }) 
             options={[
               { value: 'out', label: 'Money out' },
               { value: 'in', label: 'Money in' },
+              ...(!tx && live.length > 1 ? [{ value: 'transfer' as const, label: 'Transfer' }] : []),
             ]}
           />
           <MoneyInput label="Amount" value={amount} onInput={setAmount} showErrors={showErrors} autoFocus={!tx} />
-          <TextInput label="Note" value={note} onInput={setNote} placeholder="What was it?" />
-          <Select
-            label="Category"
-            value={categoryId}
-            onChange={setCategoryId}
-            options={[{ value: '', label: 'None' }, ...data.categories.filter((c) => !c.archived).map((c) => ({ value: c.id, label: `${c.emoji} ${c.name}` }))]}
-          />
-          <DateInput label="Date" value={date} onInput={setDate} />
-          {data.accounts.filter((a) => !a.archived).length > 1 && (
+          <TextInput label="Note" value={note} onInput={setNote} placeholder={direction === 'transfer' ? 'e.g. To savings' : 'What was it?'} />
+          {direction !== 'transfer' && (
             <Select
-              label="Account"
+              label="Category"
+              value={categoryId}
+              onChange={setCategoryId}
+              options={[{ value: '', label: 'None' }, ...data.categories.filter((c) => !c.archived).map((c) => ({ value: c.id, label: `${c.emoji} ${c.name}` }))]}
+            />
+          )}
+          <DateInput label="Date" value={date} onInput={setDate} />
+          {(live.length > 1 || direction === 'transfer') && (
+            <Select
+              label={direction === 'transfer' ? 'From' : 'Account'}
               value={accountId}
               onChange={setAccountId}
-              options={data.accounts.filter((a) => !a.archived).map((a) => ({ value: a.id, label: a.name }))}
+              options={live.map((a) => ({ value: a.id, label: a.name }))}
             />
+          )}
+          {direction === 'transfer' && (
+            <>
+              <Select label="To" value={toAccountId} onChange={setToAccountId} options={live.map((a) => ({ value: a.id, label: a.name }))} />
+              {showErrors && toAccountId === accountId && <p class="field-error">Pick two different accounts.</p>}
+              <p class="field-hint">A transfer isn't spending or income — it just moves money between your accounts.</p>
+            </>
           )}
           <div class="form-actions">
             <button type="submit" class="btn btn-primary btn-grow">

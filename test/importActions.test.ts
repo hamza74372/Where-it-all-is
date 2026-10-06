@@ -7,7 +7,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { DB, uid } from '../src/db/db';
 import type { Transaction } from '../src/db/types';
-import { matchManualEntries, type Draft } from '../src/lib/csv/convert';
+import { matchExistingEntries, type Draft } from '../src/lib/csv/convert';
 import { detectMapping } from '../src/lib/csv/detect';
 import { parseCsv } from '../src/lib/csv/parse';
 import { computeSafeToSpend } from '../src/lib/safeToSpend';
@@ -19,38 +19,69 @@ const manual = (id: string, date: string, amount: number, extra: Partial<Transac
   id, date, amount, accountId: 'chk', note: 'Coffee', source: 'manual', cleared: false, updatedAt: 0, ...extra,
 });
 
-describe('matching imported rows to manual logs', () => {
-  const match = (drafts: Draft[], existing: Transaction[], dup = drafts.map(() => false)) => matchManualEntries(drafts, dup, existing, 'chk');
+describe('matching imported rows to what is already on the account', () => {
+  const match = (drafts: Draft[], existing: Transaction[], dupOf: Array<string | undefined> = drafts.map(() => undefined)) =>
+    matchExistingEntries(drafts, dupOf, existing, 'chk');
 
   it('the same amount 2 days apart matches', () => {
-    expect(match([draft('2026-10-07', -450)], [manual('m1', '2026-10-05', -450)])).toEqual(['m1']);
+    expect(match([draft('2026-10-07', -450)], [manual('m1', '2026-10-05', -450)])).toEqual([{ id: 'm1' }]);
   });
 
   it('the same amount 5 days apart does not', () => {
     expect(match([draft('2026-10-10', -450)], [manual('m1', '2026-10-05', -450)])).toEqual([undefined]);
   });
 
-  it('two coffees of the same amount on the same day match one-to-one', () => {
-    const r = match([draft('2026-10-05', -450), draft('2026-10-05', -450)], [manual('m1', '2026-10-05', -450), manual('m2', '2026-10-05', -450)]);
-    expect(r).toHaveLength(2);
-    expect(new Set(r)).toEqual(new Set(['m1', 'm2']));
+  it('matches every kind of entry: bills marked paid, confirmed pay, other money in, transfer sides', () => {
+    const existing = [
+      manual('rent', '2026-10-01', -80000, { source: 'bill', billId: 'b-rent', note: 'Rent' }),
+      manual('pay', '2026-10-02', 150000, { source: 'income', incomeId: 'i-pay', note: 'Paycheck' }),
+      manual('refund', '2026-10-04', 2599, { note: 'Refund' }),
+      manual('card', '2026-10-06', -30000, { source: 'transfer', transferId: 't1', note: 'Card payment' }),
+    ];
+    const r = match([draft('2026-10-01', -80000), draft('2026-10-03', 150000), draft('2026-10-05', 2599), draft('2026-10-07', -30000)], existing);
+    expect(r).toEqual([{ id: 'rent' }, { id: 'pay' }, { id: 'refund' }, { id: 'card' }]);
   });
 
-  it('picks the closest date when several could match', () => {
-    expect(match([draft('2026-10-06', -450)], [manual('far', '2026-10-03', -450), manual('near', '2026-10-07', -450)])).toEqual(['near']);
+  it('a row that could be more than one entry is left for the user to pick, never guessed', () => {
+    // Was "closest date wins"; now the user decides.
+    expect(match([draft('2026-10-06', -450)], [manual('far', '2026-10-03', -450), manual('near', '2026-10-07', -450)])).toEqual([
+      { candidates: ['far', 'near'] },
+    ]);
+    // Two coffees on the same day, logged twice: both rows could be either entry.
+    const two = match([draft('2026-10-05', -450), draft('2026-10-05', -450)], [manual('m1', '2026-10-05', -450), manual('m2', '2026-10-05', -450)]);
+    expect(two).toEqual([{ candidates: ['m1', 'm2'] }, { candidates: ['m1', 'm2'] }]);
   });
 
-  it('never matches one manual entry to two rows', () => {
-    expect(match([draft('2026-10-05', -450), draft('2026-10-06', -450)], [manual('m1', '2026-10-05', -450)])).toEqual(['m1', undefined]);
+  it('never links one entry to two rows (closest row wins, the other is new)', () => {
+    expect(match([draft('2026-10-05', -450), draft('2026-10-06', -450)], [manual('m1', '2026-10-05', -450)])).toEqual([{ id: 'm1' }, undefined]);
   });
 
-  it('needs the same account and the exact amount; skips duplicates, fees and already-matched entries', () => {
+  it('earlier imports match only inside this file\'s dates (the bank re-dated or re-worded a row)', () => {
+    const earlier = manual('old', '2026-10-05', -450, { source: 'import', importBatchId: 'b0', importDescription: 'STARBUCKS PENDING' });
+    // File covers 1–10 Oct: the earlier row should be in it, so the re-worded row is the same payment.
+    expect(match([draft('2026-10-01', -999, 'X'), draft('2026-10-06', -450), draft('2026-10-10', -999, 'Y')], [earlier])).toEqual([
+      undefined,
+      { id: 'old' },
+      undefined,
+    ]);
+    // File covers 7–20 Oct only: a coffee on the 7th is a different coffee.
+    expect(match([draft('2026-10-07', -450), draft('2026-10-20', -999, 'Y')], [earlier])).toEqual([undefined, undefined]);
+  });
+
+  it('needs the same account and the exact amount; skips duplicates, fees, adjustments and already-linked entries', () => {
     expect(match([draft('2026-10-05', -451)], [manual('m1', '2026-10-05', -450)])).toEqual([undefined]);
     expect(match([draft('2026-10-05', -450)], [manual('m1', '2026-10-05', -450, { accountId: 'other' })])).toEqual([undefined]);
-    expect(match([draft('2026-10-05', -450)], [manual('m1', '2026-10-05', -450)], [true])).toEqual([undefined]);
+    expect(match([draft('2026-10-05', -450)], [manual('m1', '2026-10-05', -450)], ['m1'])).toEqual([undefined]);
     expect(match([draft('2026-10-05', -450, 'X (fee)', { feeOf: 0 })], [manual('m1', '2026-10-05', -450)])).toEqual([undefined]);
     expect(match([draft('2026-10-05', -450)], [manual('m1', '2026-10-05', -450, { matchedBatchId: 'b0' })])).toEqual([undefined]);
-    expect(match([draft('2026-10-05', -450)], [manual('m1', '2026-10-05', -450, { source: 'import' })])).toEqual([undefined]);
+    expect(match([draft('2026-10-05', -450)], [manual('m1', '2026-10-05', -450, { source: 'adjustment' })])).toEqual([undefined]);
+  });
+
+  it('an exact duplicate uses up its entry, so a second, re-dated row can still match a different one', () => {
+    const a = manual('a', '2026-10-05', -450, { source: 'import', importBatchId: 'b0', importDescription: 'STARBUCKS #1234' });
+    const b = manual('b', '2026-10-06', -450, { source: 'import', importBatchId: 'b0', importDescription: 'STARBUCKS #1234' });
+    // Row 1 is an exact duplicate of a; row 2 (bank moved it to the 7th) can only be b.
+    expect(match([draft('2026-10-05', -450), draft('2026-10-07', -450)], [a, b], ['a', undefined])).toEqual([undefined, { id: 'b' }]);
   });
 });
 

@@ -29,10 +29,22 @@ async function startedOct6ImportOct16(page: Page) {
   await page.getByRole('button', { name: 'Import statement' }).click();
 }
 
-test('rows from before you started: shown in the review, kept, but not added to the balance', async ({ page }) => {
+test('rows from before you started: shown in the review, kept, but not added to the balance', async ({ page }, info) => {
   const problems = guard(page);
   await startedOct6ImportOct16(page);
-  await page.locator('input[type=file]').setInputFiles(FIX('chase-checking.csv')); // 1–15 Oct
+  // Without the balance column, so this exercises the "type your bank's balance" check and its
+  // big-gap guidance (files with a balance column are checked automatically — reconcile.spec.ts).
+  const noBalance = path.join(info.outputDir, 'chase-no-balance.csv');
+  fs.mkdirSync(info.outputDir, { recursive: true });
+  fs.writeFileSync(
+    noBalance,
+    fs
+      .readFileSync(FIX('chase-checking.csv'), 'utf8')
+      .split('\n')
+      .map((l) => l.replace(/^(([^,"]*|"[^"]*"),){5}([^,]*),/, (m) => m.slice(0, m.lastIndexOf(',', m.length - 2) + 1)))
+      .join('\n'),
+  );
+  await page.locator('input[type=file]').setInputFiles(noBalance); // 1–15 Oct
   await page.getByRole('button', { name: 'Continue' }).click();
   // 10/01, 10/02, 10/03 and the two 10/05 rows are before 6 Oct.
   await expect(page.getByText("5 are from before you started on Tue, Oct 6. They're kept for your history but don't change your balance.")).toBeVisible();

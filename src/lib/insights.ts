@@ -4,6 +4,7 @@ import type { Category, Debt, Goal, Id, ISODate, Transaction } from '../db/types
 import { addMonthsYM, parts } from './dates';
 import { spentByCategory } from './envelopes';
 import type { Minor } from './money';
+import { isTransfer } from './transfers';
 
 export function previousMonth(month: string): string {
   const [y, m] = month.split('-').map(Number);
@@ -28,7 +29,7 @@ export function compareMonths(transactions: Transaction[], categories: Category[
     .map((c) => ({ categoryId: c.id, name: c.name, emoji: c.emoji, thisMonth: now.get(c.id) ?? 0, lastMonth: before.get(c.id) ?? 0 }));
   const uncategorised = (m: string) =>
     transactions
-      .filter((t) => t.date.startsWith(m) && !t.categoryId && t.amount < 0 && (t.source === 'manual' || t.source === 'import'))
+      .filter((t) => t.date.startsWith(m) && !t.categoryId && t.amount < 0 && (t.source === 'manual' || t.source === 'import') && !isTransfer(t))
       .reduce((s, t) => s - t.amount, 0);
   const u = { now: uncategorised(month), before: uncategorised(previousMonth(month)) };
   if (u.now || u.before) rows.push({ categoryId: null, name: 'No category', emoji: '•', thisMonth: u.now, lastMonth: u.before });
@@ -39,7 +40,7 @@ export function compareMonths(transactions: Transaction[], categories: Category[
 export function topPlaces(transactions: Transaction[], month: string, count = 5): Array<{ label: string; total: Minor; times: number }> {
   const groups = new Map<string, { label: string; total: Minor; times: number; latest: string }>();
   for (const t of transactions) {
-    if (!t.date.startsWith(month) || t.amount >= 0 || t.source === 'transfer' || t.source === 'adjustment' || !t.note.trim()) continue;
+    if (!t.date.startsWith(month) || t.amount >= 0 || isTransfer(t) || t.source === 'adjustment' || !t.note.trim()) continue;
     const key = t.note.toLowerCase().replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
     if (!key) continue;
     const g = groups.get(key) ?? { label: t.note.trim(), total: 0, times: 0, latest: '' };
@@ -69,7 +70,7 @@ export function milestones(transactions: Transaction[], debts: Debt[], goals: Go
   // First finished month where money in beat money out (transfers ignored).
   const byMonth = new Map<string, { inn: Minor; out: Minor }>();
   for (const t of transactions) {
-    if (t.source === 'transfer' || t.source === 'adjustment') continue;
+    if (isTransfer(t) || t.source === 'adjustment') continue;
     const m = t.date.slice(0, 7);
     if (m >= current) continue;
     const b = byMonth.get(m) ?? { inn: 0, out: 0 };

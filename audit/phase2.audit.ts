@@ -175,7 +175,8 @@ test('phase 2 walkthrough + audit', async ({ page }, info) => {
   await page.locator('input[type=file]').setInputFiles({ name: 'chase-part.csv', mimeType: 'text/csv', buffer: Buffer.from(firstThree) });
   await tap(page.getByRole('button', { name: 'Continue' }));
   await tap(page.getByRole('button', { name: 'Import 3' }));
-  await tap(page.getByRole('button', { name: 'Skip' }));
+  // The Chase file has a balance column, so the check is automatic.
+  await tap(page.getByRole('button', { name: /^(Leave it|Continue)$/ }));
   await tap(page.getByRole('button', { name: 'Done' }));
 
   await tap(nav('Today'));
@@ -190,19 +191,17 @@ test('phase 2 walkthrough + audit', async ({ page }, info) => {
   await snap('import-column-preview');
   await tap(page.getByRole('button', { name: 'Continue' }));
   await expect(page.getByText('6 new transactions')).toBeVisible();
-  await expect(page.getByText('1 matched to things you already logged')).toBeVisible();
+  await expect(page.getByText('1 already in the app — linked, not added twice')).toBeVisible();
   await expect(page.getByText('3 already imported before — skipped')).toBeVisible();
   await snap('import-review');
   await tap(page.getByRole('button', { name: 'Import 6' }));
   await expect(page.getByRole('heading', { name: 'Check 1043' })).toBeVisible();
   await snap('import-sort');
   await tap(page.getByRole('button', { name: /Home/ }));
-  await expect(page.getByRole('heading', { name: 'Your bank says your balance is…?' })).toBeVisible();
+  // Automatic: the file's balance column against the app ("Your bank says $X, the app says $Y…").
+  await expect(page.getByRole('heading', { name: /^Your bank says/ })).toBeVisible();
   await snap('import-balance-check');
-  await type(page.getByLabel('Balance in your bank app'), '1000');
-  await tap(page.getByRole('button', { name: 'Check' }));
-  await snap('import-balance-difference');
-  await tap(page.getByRole('button', { name: 'Add a balance adjustment' }));
+  await tap(page.getByRole('button', { name: /^Add a balance adjustment/ }));
   await snap('import-done');
   await tap(page.getByRole('button', { name: 'Done' }));
   await tap(nav('Today'));

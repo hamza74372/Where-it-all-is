@@ -148,6 +148,12 @@ export function detectMapping(rows: string[][], regionOrder: 'DMY' | 'MDY'): Det
   const fee = byName(['fee', 'fees', 'commission'], (i) => i !== amountCol && numericShare(i) >= 0.8);
   const feeCol = fee >= 0 ? fee : undefined;
 
+  // ---- Balance column (running balance after each row) — for the after-import balance check.
+  const bal = rawHeaders
+    ? names.findIndex((h, i) => /^(running )?bal(ance)?( [a-z]{3})?$/.test(h) && i !== amountCol && numericShare(i) >= 0.8)
+    : -1;
+  const balanceCol = bal >= 0 ? bal : undefined;
+
   // ---- Sign: card exports sometimes show purchases as positive and payments as negative.
   let signConvention: CsvMapping['signConvention'] = 'negativeIsOut';
   if (amountMode === 'single' && amountCol >= 0 && typeCol === undefined) {
@@ -169,6 +175,7 @@ export function detectMapping(rows: string[][], regionOrder: 'DMY' | 'MDY'): Det
     ...(typeCol !== undefined ? { typeCol } : {}),
     ...(stateCol !== undefined ? { stateCol } : {}),
     ...(feeCol !== undefined ? { feeCol } : {}),
+    ...(balanceCol !== undefined ? { balanceCol } : {}),
     dateFormat: dd?.format ?? regionOrder,
     decimal,
     signConvention,

@@ -247,7 +247,7 @@ test('filled data', async ({ page }, info) => {
     await h.shot('import-review');
     await page.getByRole('button', { name: /^Import \d+/ }).click();
     const sortHeading = page.getByRole('heading', { name: 'Check 1043' });
-    const balance = page.getByRole('heading', { name: /balance is…\?/ });
+    const balance = page.getByRole('heading', { name: /balance is…\?|^Your bank says|^Your bank and the app agree/ });
     await expect(sortHeading.or(balance)).toBeVisible();
     if (await sortHeading.isVisible()) {
       await h.shot('import-sort');
@@ -255,7 +255,7 @@ test('filled data', async ({ page }, info) => {
     }
     await expect(balance).toBeVisible();
     await h.shot('import-balance-check');
-    await page.getByRole('button', { name: 'Skip' }).click();
+    await page.getByRole('button', { name: /^(Skip|Leave it|Continue)$/ }).click();
     await h.shot('import-done');
     await page.getByRole('button', { name: 'Done' }).click();
   });
