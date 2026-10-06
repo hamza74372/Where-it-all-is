@@ -74,6 +74,7 @@ test('demo: banner, 30-entry limit, export off — and it never touches the real
   const banner = page.getByRole('note').filter({ hasText: 'Demo — data resets' });
   await expect(banner).toBeVisible();
   await expect(banner.getByRole('link', { name: 'Get the full version' })).toHaveAttribute('href', cfg.etsyUrl);
+  await expect(banner).toContainText('This is a demo. It isn’t meant to be installed.');
   await expect(page.locator('.big-number')).toBeVisible(); // seeded, no setup needed
 
   // Export is off.

@@ -38,18 +38,20 @@ export const ARTICLES: Article[] = [
           </li>
         </Steps>
         <h3>Put it on your Home Screen</h3>
-        <p>Open the app from the link in your Start Here guide, then:</p>
+        <p>
+          Open the app from the link in your Start Here guide (on a computer you can also double-click <strong>{__DOWNLOAD_NAME__}</strong>), then:
+        </p>
         <ul>
           <li>
             <strong>iPhone or iPad (Safari):</strong> tap the Share button (the square with an arrow), scroll down, tap{' '}
             <em>Add to Home Screen</em>, then <em>Add</em>.
           </li>
           <li>
-            <strong>Android (Chrome):</strong> tap the ⋮ menu, then <em>Install app</em> or <em>Add to Home screen</em>.
+            <strong>Android (Chrome):</strong> tap the ⋮ menu, then <em>Install app</em> (or <em>Add to Home screen</em>).
           </li>
           <li>
             <strong>Computer (Chrome or Edge):</strong> click the install icon at the right of the address bar, or ⋮ menu →{' '}
-            <em>Install</em>. On a Mac with Safari: File → <em>Add to Dock</em>.
+            <em>Install</em>. On a Mac with Safari: File → <em>Add to Dock</em> (macOS 14 or later).
           </li>
         </ul>
         <p class="help-warn">

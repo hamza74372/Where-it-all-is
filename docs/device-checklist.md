@@ -16,7 +16,7 @@ wide), one Android phone (Chrome), one Windows PC (Chrome or Edge), one Mac (Saf
 
 - [ ] iPhone Safari: the app link opens and shows the welcome screen within ~2 s on mobile data.
 - [ ] Android Chrome: same.
-- [ ] Windows: double-click `WhereItAllIs-Budget-App.html` → opens in the default browser from `file://`, welcome screen shows, no blank page.
+- [ ] Windows: double-click `Where-It-All-Is-Budget-App.html` → opens in the default browser from `file://`, welcome screen shows, no blank page.
 - [ ] Mac: double-click the .html file → opens in Safari from `file://`; set up a budget; close and reopen the file → data is still there.
 - [ ] Windows/Mac: open the .html file **with Wi-Fi off** → works the same.
 - [ ] iPhone: open the .html file from the Files app → note what happens (iOS often shows a preview, not a real browser). If it doesn't work, the Start-Here PDF steering phones to the link is correct.
@@ -116,7 +116,7 @@ wide), one Android phone (Chrome), one Windows PC (Chrome or Edge), one Mac (Saf
 ## 10. Help, Start-Here PDF, listing
 
 - [ ] More → Help: all 8 articles open; the Home Screen steps match what you actually saw on each device in section 2 (update wording if iOS/Android menus changed).
-- [ ] Start-Here PDF: open on a phone and a computer; the app link in the PDF is correct and tappable/copyable; print one copy on Letter and on A4 to check margins (set `startHere.paper` for A4 buyers if needed).
+- [ ] Start-Here PDF: open on a phone and a computer; the app link in the PDF is correct and tappable/copyable; print Start-Here-Letter.pdf on Letter paper and Start-Here-A4.pdf on A4 to check margins; scan the QR code on page 1 with an iPhone and an Android camera → it opens the app link; tap both links in the PDF on a phone.
 - [ ] Optional: take real Add-to-Home-Screen screenshots on iPhone and Android, set `startHere.iphoneAddToHomeScreenImage` / `androidInstallImage` in `site.config.json`, rebuild the PDF, and check it's still 2 pages.
 - [ ] Replace the placeholder icons in `branding/` with the real logo, rebuild, and check the icons on the iPhone home screen, Android launcher and desktop.
 - [ ] Footer disclaimer visible in the app and on the landing page.

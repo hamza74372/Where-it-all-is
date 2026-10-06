@@ -125,6 +125,8 @@ function Shell() {
           <div class="demo-banner" role="note">
             <span>
               <strong>Demo — data resets</strong> when you close this tab. Up to {DEMO_MAX_ENTRIES} entries.
+              <br />
+              This is a demo. It isn’t meant to be installed.
             </span>
             <a class="demo-cta" href={__ETSY_URL__} target="_blank" rel="noopener noreferrer">
               Get the full version

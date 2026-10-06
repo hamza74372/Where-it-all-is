@@ -15,6 +15,7 @@ const site = JSON.parse(fs.readFileSync('site.config.json', 'utf8')) as {
   appPath: string;
   etsyUrl: string;
   themeColor: string;
+  downloadFileName: string;
 };
 const HOSTED = process.env.HOSTED === '1';
 
@@ -74,6 +75,7 @@ export default defineConfig(({ mode }) => {
       __HOSTED__: JSON.stringify(HOSTED),
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0'),
       __ETSY_URL__: JSON.stringify(site.etsyUrl),
+      __DOWNLOAD_NAME__: JSON.stringify(site.downloadFileName),
       __PRODUCT_NAME__: JSON.stringify(site.productName),
     },
     plugins: [

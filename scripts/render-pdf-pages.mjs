@@ -1,12 +1,12 @@
 // Render each page of a PDF to PNG with pdf.js in Chromium — to check what the printed PDF really
 // looks like (not just the HTML it came from). Dev tool only.
-// Usage: node scripts/render-pdf-pages.mjs dist/Start-Here.pdf screenshots/phase6/pdf
+// Usage: node scripts/render-pdf-pages.mjs dist/Start-Here-Letter.pdf screenshots/phase6/pdf-letter
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 
-const [pdfPath = 'dist/Start-Here.pdf', outPrefix = 'screenshots/phase6/pdf'] = process.argv.slice(2);
+const [pdfPath = 'dist/Start-Here-Letter.pdf', outPrefix = 'screenshots/phase6/pdf-letter'] = process.argv.slice(2);
 const files = {
   '/doc.pdf': [path.resolve(pdfPath), 'application/pdf'],
   '/pdf.mjs': [path.resolve('node_modules/pdfjs-dist/build/pdf.min.mjs'), 'text/javascript'],

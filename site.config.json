@@ -12,10 +12,9 @@
     "icon512": "branding/icon-512.png",
     "maskable512": "branding/icon-maskable-512.png"
   },
-  "downloadFileName": "WhereItAllIs-Budget-App.html",
+  "downloadFileName": "Where-It-All-Is-Budget-App.html",
   "startHere": {
-    "_readme": "Start-Here PDF settings. paper: Letter or A4. Leave a screenshot path empty to use the drawn illustration; set it to a PNG to use a real device screenshot instead.",
-    "paper": "Letter",
+    "_readme": "Start-Here PDF settings. npm run package makes both Start-Here-Letter.pdf and Start-Here-A4.pdf. Leave a screenshot path empty to use the drawn illustration; set it to a PNG to use a real device screenshot instead.",
     "iphoneAddToHomeScreenImage": "",
     "androidInstallImage": ""
   }
