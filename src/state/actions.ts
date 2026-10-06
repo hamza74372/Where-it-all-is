@@ -3,6 +3,7 @@
 import { buildDefaultCategories, buildExampleData, COMMON_BILLS } from '../data/defaults';
 import { uid } from '../db/db';
 import type { Account, Bill, Category, Id, Income, ISODate, Schedule, Transaction } from '../db/types';
+import { buildStarterRules } from '../lib/rules';
 import { accountBalance } from '../lib/safeToSpend';
 import type { Minor } from '../lib/money';
 import { LIST_STORES, type AppData, type ListStore, type Store } from './store';
@@ -181,6 +182,7 @@ export async function loadExampleData(store: Store, today: ISODate): Promise<voi
 /** "Clear examples": remove everything and go back to setup. Categories are reset to defaults. */
 export async function clearExampleData(store: Store): Promise<void> {
   await store.clearData(LIST_STORES);
-  await store.upsert('categories', buildDefaultCategories());
+  const categories = await store.upsert('categories', buildDefaultCategories());
+  await store.upsert('rules', buildStarterRules(categories, uid));
   await store.saveSettings({ onboarded: false, exampleData: false, defaultAccountId: undefined });
 }

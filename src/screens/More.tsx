@@ -17,14 +17,16 @@ import { Icon } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
 import { dismissToast, toast } from '../ui/Toast';
 import { Notes } from './Notes';
+import { Rules } from './Rules';
 import { CategoryForm } from './plan/Envelopes';
 
-type Page = 'menu' | 'accounts' | 'paychecks' | 'categories' | 'notes' | 'chips' | 'settings' | 'about';
+type Page = 'menu' | 'accounts' | 'paychecks' | 'categories' | 'rules' | 'notes' | 'chips' | 'settings' | 'about';
 
 const PAGES: Array<{ id: Exclude<Page, 'menu'>; label: string; sub: string }> = [
   { id: 'accounts', label: 'Accounts', sub: 'Bank accounts, cash, savings, cards' },
   { id: 'paychecks', label: 'Paychecks', sub: 'When money comes in' },
   { id: 'categories', label: 'Categories', sub: 'Kinds of spending and their monthly amounts' },
+  { id: 'rules', label: 'Rules', sub: 'How imported transactions get their category' },
   { id: 'notes', label: 'Notes', sub: 'A brain dump for each month' },
   { id: 'chips', label: 'Quick-log chips', sub: 'One-tap spends on Today' },
   { id: 'settings', label: 'Settings', sub: 'Theme, currency, cushion, how you type amounts' },
@@ -55,7 +57,7 @@ export function More() {
             </li>
           ))}
         </ul>
-        <p class="muted">Rules, sharing, backups and help arrive in later updates.</p>
+        <p class="muted">Sharing, backups and help arrive in later updates.</p>
         <p class="footer-note">{DISCLAIMER}</p>
       </>
     );
@@ -71,6 +73,7 @@ export function More() {
       {page === 'paychecks' && <Paychecks />}
       {page === 'categories' && <Categories />}
       {page === 'notes' && <Notes />}
+      {page === 'rules' && <Rules />}
       {page === 'chips' && <Chips />}
       {page === 'settings' && <SettingsPage />}
       {page === 'about' && <About />}

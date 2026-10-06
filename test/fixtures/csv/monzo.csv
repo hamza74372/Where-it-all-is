@@ -1,0 +1,7 @@
+Transaction ID,Date,Time,Type,Name,Emoji,Category,Amount,Currency,Local amount,Local currency,Notes and #tags,Address,Receipt,Description,Category split,Money Out,Money In
+tx_0000AbCdEf01,01/10/2026,08:14:22,Card payment,Pret A Manger,🥪,Eating out,-4.20,GBP,-4.20,GBP,,1 King Street,,PRET A MANGER LONDON GBR,,-4.20,
+tx_0000AbCdEf02,02/10/2026,18:40:01,Card payment,Lidl,🛒,Groceries,-26.31,GBP,-26.31,GBP,weekly shop,,,LIDL GB LONDON,,-26.31,
+tx_0000AbCdEf03,05/10/2026,09:00:00,Faster payment,ACME LTD,,Income,1580.00,GBP,1580.00,GBP,,,,ACME LTD SALARY,,,1580.00
+tx_0000AbCdEf04,07/10/2026,07:55:13,Card payment,Uber,🚕,Transport,-12.74,GBP,-12.74,GBP,,,,UBER* TRIP,,-12.74,
+tx_0000AbCdEf05,10/10/2026,21:12:45,Card payment,Netflix,📺,Entertainment,-10.99,GBP,-10.99,GBP,,,,NETFLIX.COM,,-10.99,
+tx_0000AbCdEf06,13/10/2026,12:30:00,Direct Debit,EE Limited,📱,Bills,-25.00,GBP,-25.00,GBP,,,,EE LIMITED,,-25.00,

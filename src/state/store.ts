@@ -6,7 +6,9 @@ import { useContext, useEffect, useState } from 'preact/hooks';
 import { buildDefaultCategories } from '../data/defaults';
 import type { DB } from '../db/db';
 import { loadSettings } from '../db/settings';
-import type { Account, Bill, Category, Debt, EnvelopeMove, Goal, Income, Note, Settings, Transaction } from '../db/types';
+import type { Account, Bill, Category, CsvMapping, Debt, EnvelopeMove, Goal, ImportBatch, Income, Note, Rule, Settings, Transaction } from '../db/types';
+import { uid } from '../db/db';
+import { buildStarterRules } from '../lib/rules';
 
 export interface AppData {
   settings: Settings;
@@ -19,6 +21,9 @@ export interface AppData {
   debts: Debt[];
   notes: Note[];
   envelopeMoves: EnvelopeMove[];
+  rules: Rule[];
+  csvMappings: CsvMapping[];
+  importBatches: ImportBatch[];
 }
 
 export type ListStore =
@@ -30,10 +35,15 @@ export type ListStore =
   | 'goals'
   | 'debts'
   | 'notes'
-  | 'envelopeMoves';
+  | 'envelopeMoves'
+  | 'rules'
+  | 'csvMappings'
+  | 'importBatches';
 type Row<S extends ListStore> = AppData[S][number];
 
-export const LIST_STORES: ListStore[] = ['accounts', 'incomes', 'bills', 'categories', 'transactions', 'goals', 'debts', 'notes', 'envelopeMoves'];
+export const LIST_STORES: ListStore[] = [
+  'accounts', 'incomes', 'bills', 'categories', 'transactions', 'goals', 'debts', 'notes', 'envelopeMoves', 'rules', 'csvMappings', 'importBatches',
+];
 
 export class Store {
   private listeners = new Set<() => void>();
@@ -53,7 +63,12 @@ export class Store {
       }
       settings = await db.put('settings', { ...settings, seeded: true });
     }
-    const [accounts, incomes, bills, categories, transactions, goals, debts, notes, envelopeMoves] = await Promise.all([
+    if (!settings.rulesSeeded) {
+      const cats = await db.all('categories');
+      await db.batch(['rules'], (w) => buildStarterRules(cats, uid).forEach((r) => w.put('rules', r)));
+      settings = await db.put('settings', { ...settings, rulesSeeded: true });
+    }
+    const [accounts, incomes, bills, categories, transactions, goals, debts, notes, envelopeMoves, rules, csvMappings, importBatches] = await Promise.all([
       db.all('accounts'),
       db.all('incomes'),
       db.all('bills'),
@@ -63,11 +78,14 @@ export class Store {
       db.all('debts'),
       db.all('notes'),
       db.all('envelopeMoves'),
+      db.all('rules'),
+      db.all('csvMappings'),
+      db.all('importBatches'),
     ]);
     categories.sort((a, b) => a.order - b.order);
     return new Store(
       db,
-      { settings, accounts, incomes, bills, categories, transactions, goals, debts, notes, envelopeMoves },
+      { settings, accounts, incomes, bills, categories, transactions, goals, debts, notes, envelopeMoves, rules, csvMappings, importBatches },
       previousOpenedAt,
     );
   }

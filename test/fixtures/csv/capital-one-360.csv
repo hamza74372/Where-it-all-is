@@ -1,0 +1,7 @@
+Account Number,Transaction Description,Transaction Date,Transaction Type,Transaction Amount,Balance
+36012345678,Debit Card Purchase - KROGER #456 COLUMBUS OH,10/02/26,Debit,52.18,1947.82
+36012345678,Debit Card Purchase - CVS/PHARMACY #01234 COLUMBUS OH,10/04/26,Debit,18.07,1929.75
+36012345678,Deposit from ACME CORP PAYROLL,10/09/26,Credit,1850.00,3779.75
+36012345678,Withdrawal to VERIZON WIRELESS,10/10/26,Debit,65.00,3714.75
+36012345678,Debit Card Purchase - TARGET 00012345 COLUMBUS OH,10/13/26,Debit,41.62,3673.13
+36012345678,Interest Paid,10/15/26,Credit,0.42,3673.55

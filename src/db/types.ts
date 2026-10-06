@@ -68,6 +68,8 @@ export interface Settings extends BaseRecord {
   presets: QuickPreset[];
   /** Default categories have been created once (don't re-create if the user deletes them). */
   seeded?: boolean;
+  /** Starter categorising rules have been created once. */
+  rulesSeeded?: boolean;
   lastBackupAt?: number;
   exampleData?: boolean;
   onboarded?: boolean;
@@ -127,6 +129,8 @@ export interface Transaction extends BaseRecord {
   note: string;
   source: 'manual' | 'import' | 'bill' | 'income' | 'transfer';
   importBatchId?: Id;
+  /** The bank's original description (notes can be renamed); used to spot duplicates on re-import. */
+  importDescription?: string;
   billId?: Id;
   /** For source 'bill': which due date this payment covers. */
   billDueDate?: ISODate;
@@ -170,16 +174,26 @@ export interface ImportBatch extends BaseRecord {
   mappingId?: Id;
 }
 
+/** How to read one bank's CSV export. Saved by name and re-used when the same headers appear. */
 export interface CsvMapping extends BaseRecord {
   name: string;
+  /** Normalised header names (or "no-header:<columns>") used to recognise the same export next time. */
+  signature: string;
+  /** Index of the header row in the parsed rows, or -1 when the file has no header. */
+  headerRow: number;
   dateCol: number;
+  descCol: number;
+  amountMode: 'single' | 'debitCredit';
   amountCol?: number;
   debitCol?: number;
   creditCol?: number;
-  descCol: number;
-  dateFormat: string;
+  /** Column whose words (Debit/Credit, DR/CR) decide the sign when amounts are all positive. */
+  typeCol?: number;
+  /** Column with a status (e.g. COMPLETED / REVERTED); only completed rows are imported. */
+  stateCol?: number;
+  dateFormat: 'YMD' | 'DMY' | 'MDY' | 'D MON Y' | 'MON D Y';
+  decimal: '.' | ',';
   signConvention: 'negativeIsOut' | 'positiveIsOut';
-  headerRow: number;
 }
 
 export interface Note extends BaseRecord {

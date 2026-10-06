@@ -1,0 +1,86 @@
+/* Phase 4: bank CSV import and rules. */
+
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 18px;
+  padding: 22px 18px;
+  text-align: center;
+  background: var(--surface);
+  margin-bottom: 14px;
+}
+.drop-zone.is-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.drop-zone .lead {
+  margin-top: 0;
+}
+.file-btn {
+  position: relative;
+  margin: 6px 0 4px;
+}
+.file-btn:focus-within {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.mapping-details > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin: 0;
+}
+.mapping-details[open] > summary {
+  margin-bottom: 12px;
+}
+
+.review-list {
+  margin: 0;
+  padding-left: 1.1em;
+}
+.review-list > li {
+  margin: 6px 0;
+}
+.skipped-list {
+  padding-left: 1.1em;
+  font-size: 15px;
+}
+
+.sort-card {
+  text-align: center;
+}
+.sort-desc {
+  font-size: 22px;
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+.sort-meta {
+  font-size: 18px;
+  margin: 0 0 14px;
+}
+.sort-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.sort-choice {
+  min-height: 64px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sort-choice span:first-child {
+  font-size: 22px;
+}
+.sort-card .toggle-row {
+  text-align: left;
+}

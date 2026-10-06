@@ -11,6 +11,7 @@ import { useFmt, useToday } from '../ui/hooks';
 import { Icon } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
+import { Import } from './Import';
 
 const SOURCE_LABEL: Record<Transaction['source'], string> = {
   manual: '',
@@ -28,6 +29,7 @@ export function Log() {
   const [ym, setYm] = useState({ y: t.y, m: t.m });
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Transaction | 'new' | null>(null);
+  const [importing, setImporting] = useState(false);
   const prefix = ymd(ym.y, ym.m, 1).slice(0, 7);
   const catById = useMemo(() => new Map(data.categories.map((c) => [c.id, c])), [data.categories]);
   const accById = useMemo(() => new Map(data.accounts.map((a) => [a.id, a])), [data.accounts]);
@@ -45,13 +47,20 @@ export function Log() {
 
   const monthOut = groups.flatMap(([, rows]) => rows).filter((r) => r.amount < 0 && r.source !== 'transfer').reduce((s, r) => s - r.amount, 0);
 
+  if (importing) return <Import onClose={() => setImporting(false)} />;
+
   return (
     <>
       <div class="title-row">
         <h1 class="screen-title">Log</h1>
-        <button type="button" class="btn btn-small btn-primary" onClick={() => setEditing('new')}>
-          <Icon name="plus" /> Add
-        </button>
+        <div class="row-gap">
+          <button type="button" class="btn btn-small" onClick={() => setImporting(true)}>
+            Import statement
+          </button>
+          <button type="button" class="btn btn-small btn-primary" onClick={() => setEditing('new')}>
+            <Icon name="plus" /> Add
+          </button>
+        </div>
       </div>
       <div class="cal-head">
         <button type="button" class="icon-btn" onClick={() => setYm(addMonthsYM(ym.y, ym.m, -1))} aria-label="Previous month">
