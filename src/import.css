@@ -172,3 +172,27 @@
 .partner-asof .badge {
   margin: 0 6px 0 0;
 }
+
+/* Phase 6: help articles. */
+.help-title {
+  font-size: 24px;
+  margin: 4px 0 14px;
+}
+.help-article h3 {
+  font-size: 17px;
+  margin: 18px 0 6px;
+}
+.help-article ul,
+.help-steps {
+  padding-left: 1.2em;
+  margin: 8px 0 12px;
+}
+.help-article li {
+  margin: 6px 0;
+}
+.help-warn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--amber-fill);
+  background: var(--surface-2);
+}

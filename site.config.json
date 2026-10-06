@@ -1,0 +1,22 @@
+{
+  "_readme": "Hosting + branding settings. appPath is the private path of the full app: keep it stable (customers bookmark it) and never link it publicly. Replace the icon files at these paths with the real logo (PNG, square).",
+  "productName": "Where It All Is",
+  "shortName": "Where It All Is",
+  "siteUrl": "https://where-it-all-is.pages.dev",
+  "appPath": "app-qkp36e2gkm8f",
+  "etsyUrl": "https://www.etsy.com/listing/0000000000/where-it-all-is-budget-app",
+  "themeColor": "#2f6f62",
+  "backgroundColor": "#f6f4ef",
+  "icons": {
+    "icon192": "branding/icon-192.png",
+    "icon512": "branding/icon-512.png",
+    "maskable512": "branding/icon-maskable-512.png"
+  },
+  "downloadFileName": "WhereItAllIs-Budget-App.html",
+  "startHere": {
+    "_readme": "Start-Here PDF settings. paper: Letter or A4. Leave a screenshot path empty to use the drawn illustration; set it to a PNG to use a real device screenshot instead.",
+    "paper": "Letter",
+    "iphoneAddToHomeScreenImage": "",
+    "androidInstallImage": ""
+  }
+}

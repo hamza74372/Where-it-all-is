@@ -8,6 +8,7 @@ import { merchantKey, tidyDescription } from '../lib/csv/convert';
 import { DATE_FORMAT_LABELS, type DateFormat } from '../lib/csv/dates';
 import { detectMapping, type Detection, type MappingDraft } from '../lib/csv/detect';
 import { parseCsv } from '../lib/csv/parse';
+import { DEMO_MAX_ENTRIES, demoRemaining } from '../lib/demo';
 import { isBeforeStart } from '../lib/safeToSpend';
 import { saveWithUndo } from '../state/actions';
 import {
@@ -419,6 +420,8 @@ function ReviewStep(props: { prepared: Prepared; accountId: Id; onUnlink: (index
   const c = countsOf(prepared);
   const account = data.accounts.find((a) => a.id === props.accountId);
   const notes = importNotes(prepared, account, today);
+  const remaining = demoRemaining(data.transactions.length);
+  const overDemoLimit = c.newCount > remaining;
   const matchedItems = prepared.items.map((it, index) => ({ it, index })).filter(({ it }) => !it.duplicate && it.matchId);
   return (
     <>
@@ -499,6 +502,15 @@ function ReviewStep(props: { prepared: Prepared; accountId: Id; onUnlink: (index
           </ul>
         </section>
       )}
+      {overDemoLimit && (
+        <p class="card card-note" role="note">
+          The demo holds up to {DEMO_MAX_ENTRIES} entries, and this file has {c.newCount} new ones ({remaining} left). Try a shorter file, or{' '}
+          <a href={__ETSY_URL__} target="_blank" rel="noopener noreferrer">
+            get the full version
+          </a>
+          .
+        </p>
+      )}
       <div class="form-actions">
         <button type="button" class="btn" onClick={onBack}>
           Back
@@ -506,7 +518,7 @@ function ReviewStep(props: { prepared: Prepared; accountId: Id; onUnlink: (index
         <button
           type="button"
           class="btn btn-primary btn-grow"
-          disabled={busy || c.newCount + c.matchedCount === 0}
+          disabled={busy || c.newCount + c.matchedCount === 0 || overDemoLimit}
           onClick={async () => {
             setBusy(true);
             await onImport();

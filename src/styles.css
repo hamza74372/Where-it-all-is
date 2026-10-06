@@ -125,11 +125,28 @@ textarea {
 }
 
 .demo-banner {
+  flex: none;
   background: var(--accent-soft);
   color: var(--text);
-  text-align: center;
   font-size: 14px;
   padding: calc(6px + env(safe-area-inset-top)) 12px 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 12px;
+  text-align: center;
+}
+.demo-cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+  text-decoration: none;
 }
 
 main.screen {

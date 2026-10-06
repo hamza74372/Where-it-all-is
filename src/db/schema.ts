@@ -6,7 +6,11 @@
 
 import type { StoreName } from './types';
 
-export const DB_NAME = 'where-it-all-is';
+/**
+ * The demo keeps its data apart: on the website the demo and the full app share one origin, and
+ * trying the demo must never touch a real budget.
+ */
+export const DB_NAME = typeof __DEMO__ !== 'undefined' && __DEMO__ ? 'where-it-all-is-demo' : 'where-it-all-is';
 
 type Migration = (db: IDBDatabase, tx: IDBTransaction) => void;
 

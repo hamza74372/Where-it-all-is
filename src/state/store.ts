@@ -16,6 +16,7 @@ import type {
 } from '../db/types';
 import type { Snapshot } from '../lib/backup/format';
 import { TOMBSTONE_DAYS } from '../lib/backup/merge';
+import { DemoLimitError, demoRemaining } from '../lib/demo';
 import { buildStarterRules } from '../lib/rules';
 
 export interface AppData {
@@ -126,6 +127,11 @@ export class Store {
 
   /** Insert or replace rows (one IndexedDB transaction). Clears any tombstone for them. */
   async upsert<S extends ListStore>(store: S, rows: Array<Omit<Row<S>, 'updatedAt'> & { updatedAt?: number }>): Promise<Row<S>[]> {
+    if (store === 'transactions' && __DEMO__) {
+      const have = new Set(this.data.transactions.map((t) => t.id));
+      const adding = rows.filter((r) => !have.has(r.id)).length;
+      if (adding > demoRemaining(this.data.transactions.length)) throw new DemoLimitError();
+    }
     const saved: Row<S>[] = [];
     await this.db.batch([store, 'tombstones'], (w) =>
       rows.forEach((r) => {

@@ -1,7 +1,8 @@
 // UI-only preferences in localStorage (spec §4: never user data).
 // Every access is guarded: storage can be disabled or throw (private mode, file:// quirks).
 
-const PREFIX = 'wiai.';
+// The demo uses its own prefix so it never changes the real app's preferences on the same site.
+const PREFIX = typeof __DEMO__ !== 'undefined' && __DEMO__ ? 'wiai-demo.' : 'wiai.';
 
 export function getPref<T>(key: string, fallback: T): T {
   try {

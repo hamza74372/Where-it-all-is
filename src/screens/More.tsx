@@ -20,10 +20,11 @@ import { dismissToast, toast } from '../ui/Toast';
 import { Notes } from './Notes';
 import { Rules } from './Rules';
 import { BackupScreen, lastBackupText } from './Backup';
+import { HelpScreen } from './Help';
 import { ShareWithPartner } from './Partner';
 import { CategoryForm } from './plan/Envelopes';
 
-type Page = 'menu' | 'accounts' | 'paychecks' | 'categories' | 'rules' | 'notes' | 'backup' | 'share' | 'chips' | 'settings' | 'about';
+type Page = 'menu' | 'accounts' | 'paychecks' | 'categories' | 'rules' | 'notes' | 'backup' | 'share' | 'chips' | 'settings' | 'help' | 'about';
 
 const PAGES: Array<{ id: Exclude<Page, 'menu'>; label: string; sub: string }> = [
   { id: 'accounts', label: 'Accounts', sub: 'Bank accounts, cash, savings, cards' },
@@ -35,6 +36,7 @@ const PAGES: Array<{ id: Exclude<Page, 'menu'>; label: string; sub: string }> = 
   { id: 'share', label: 'Share with partner', sub: 'A read-only, locked snapshot for your partner' },
   { id: 'chips', label: 'Quick-log chips', sub: 'One-tap spends on Today' },
   { id: 'settings', label: 'Settings', sub: 'Theme, currency, cushion, how you type amounts' },
+  { id: 'help', label: 'Help', sub: 'Short guides: setup, safe to spend, importing, backups…' },
   { id: 'about', label: 'About & privacy', sub: 'Where your data lives' },
 ];
 
@@ -67,7 +69,6 @@ export function More() {
             </li>
           ))}
         </ul>
-        <p class="muted">An in-app help guide arrives in a later update.</p>
         <p class="footer-note">{DISCLAIMER}</p>
       </>
     );
@@ -84,10 +85,11 @@ export function More() {
       {page === 'categories' && <Categories />}
       {page === 'notes' && <Notes />}
       {page === 'rules' && <Rules />}
-      {page === 'backup' && <BackupScreen />}
-      {page === 'share' && <ShareWithPartner />}
+      {page === 'backup' && (__DEMO__ ? <DemoOff what="Backups, restore and CSV export" /> : <BackupScreen />)}
+      {page === 'share' && (__DEMO__ ? <DemoOff what="Sharing with a partner" /> : <ShareWithPartner />)}
       {page === 'chips' && <Chips />}
       {page === 'settings' && <SettingsPage />}
+      {page === 'help' && <HelpScreen />}
       {page === 'about' && <About />}
     </>
   );
@@ -610,5 +612,18 @@ function About() {
         </button>
       )}
     </div>
+  );
+}
+
+/** Demo: exporting is turned off (the demo's data isn't yours to keep). */
+function DemoOff({ what }: { what: string }) {
+  return (
+    <section class="card">
+      <h2 class="card-title">{what} {what.includes(',') ? 'are' : 'is'} turned off in the demo</h2>
+      <p class="muted">The demo resets when you close the tab, so there's nothing to save yet. The full version backs up, restores, exports and shares.</p>
+      <a class="btn btn-primary" href={__ETSY_URL__} target="_blank" rel="noopener noreferrer">
+        Get the full version
+      </a>
+    </section>
   );
 }

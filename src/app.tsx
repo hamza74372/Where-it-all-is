@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'preact/hooks';
 import { DB } from './db/db';
+import { DB_NAME } from './db/schema';
+import { todayISO } from './lib/dates';
+import { DEMO_MAX_ENTRIES, DemoLimitError } from './lib/demo';
+import { loadExampleData } from './state/actions';
+import { toast } from './ui/Toast';
 import { getPref, setPref } from './lib/prefs';
 import { Bills } from './screens/Bills';
 import { Log } from './screens/Log';
@@ -29,7 +34,10 @@ export function App() {
   useEffect(() => {
     (async () => {
       try {
+        if (__DEMO__) await resetDemoIfNewSession();
         const store = await Store.load(await DB.open());
+        // The demo starts with example numbers already in, so people can explore straight away.
+        if (__DEMO__ && !store.data.settings.onboarded) await loadExampleData(store, todayISO());
         setBoot({ state: 'ready', store });
       } catch (e) {
         setBoot({ state: 'error', message: e instanceof Error ? e.message : String(e) });
@@ -78,6 +86,19 @@ function Shell() {
     setWasOnboarded(!!settings.onboarded);
   }, [settings.onboarded]);
 
+  // Demo: the 30-entry limit surfaces as a friendly message wherever an entry was being added.
+  useEffect(() => {
+    if (!__DEMO__) return;
+    const onReject = (e: PromiseRejectionEvent) => {
+      if (e.reason instanceof DemoLimitError) {
+        e.preventDefault();
+        toast(e.reason.message);
+      }
+    };
+    window.addEventListener('unhandledrejection', onReject);
+    return () => window.removeEventListener('unhandledrejection', onReject);
+  }, []);
+
   // Ask the browser to keep this app's data even when storage is low (best effort).
   useEffect(() => {
     navigator.storage?.persist?.().then((granted) => {
@@ -102,7 +123,12 @@ function Shell() {
       <div class="shell">
         {__DEMO__ && (
           <div class="demo-banner" role="note">
-            Demo — data resets. Nothing leaves your device.
+            <span>
+              <strong>Demo — data resets</strong> when you close this tab. Up to {DEMO_MAX_ENTRIES} entries.
+            </span>
+            <a class="demo-cta" href={__ETSY_URL__} target="_blank" rel="noopener noreferrer">
+              Get the full version
+            </a>
           </div>
         )}
         {!settings.onboarded ? (
@@ -136,4 +162,18 @@ function Shell() {
       </div>
     </NavContext.Provider>
   );
+}
+
+/** "Demo — data resets": each new browser tab starts the demo fresh (reloading keeps it). */
+async function resetDemoIfNewSession(): Promise<void> {
+  try {
+    if (sessionStorage.getItem('wiai-demo-session')) return;
+    sessionStorage.setItem('wiai-demo-session', '1');
+  } catch {
+    return; // no session storage: keep whatever is there
+  }
+  await new Promise<void>((resolve) => {
+    const r = indexedDB.deleteDatabase(DB_NAME);
+    r.onsuccess = r.onerror = r.onblocked = () => resolve();
+  });
 }
