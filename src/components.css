@@ -52,7 +52,7 @@
   height: 18px;
 }
 .btn-small {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 12px;
   font-size: 15px;
@@ -251,15 +251,26 @@
   gap: 16px;
   margin-bottom: 14px;
 }
+/* 56×44 tap area around a 52×32 track. */
 .switch {
   flex: none;
+  width: 56px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.switch-track {
+  position: relative;
   width: 52px;
   height: 32px;
   border-radius: 16px;
   border: 1px solid var(--border);
   background: var(--surface-2);
-  position: relative;
-  cursor: pointer;
   transition: background 0.15s;
 }
 .switch-knob {
@@ -272,7 +283,7 @@
   background: var(--text-muted);
   transition: transform 0.15s;
 }
-.switch[aria-checked='true'] {
+.switch[aria-checked='true'] .switch-track {
   background: var(--accent);
   border-color: var(--accent);
 }
@@ -292,7 +303,9 @@
 }
 .segmented button {
   flex: 1;
-  min-height: 42px;
+  min-height: 44px;
+  padding: 0 6px;
+  line-height: 1.2;
   border: 0;
   border-radius: 10px;
   background: none;
@@ -300,9 +313,10 @@
   color: var(--text-muted);
   cursor: pointer;
 }
+/* Selected = solid accent, so it's unmistakable in both themes. */
 .segmented button[aria-checked='true'] {
-  background: var(--surface);
-  color: var(--text);
+  background: var(--accent);
+  color: var(--accent-text);
   box-shadow: var(--shadow);
 }
 
@@ -390,9 +404,9 @@
   padding: 1px 8px;
   border-radius: 10px;
   background: var(--accent-soft);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 600;
-  vertical-align: 2px;
+  vertical-align: 1px;
 }
 
 /* ---------- Log ---------- */
@@ -406,6 +420,16 @@
 }
 
 /* ---------- Calendar ---------- */
+.card.cal-card {
+  padding-inline: 8px; /* room for seven 44px days on a 375px phone */
+}
+.cal-card .cal-head,
+.cal-card .cal-legend,
+.cal-card .cal-sel-title,
+.cal-card > .rows,
+.cal-card > p {
+  padding-inline: 8px;
+}
 .cal-head {
   display: flex;
   align-items: center;
@@ -418,17 +442,17 @@
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 2px; /* keeps each day ≥ 44px wide on a 390px phone */
   text-align: center;
 }
 .cal-dow {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-muted);
   padding: 4px 0;
 }
 .cal-day {
   aspect-ratio: 1;
-  min-height: 40px;
+  min-height: 44px;
   border: 1px solid transparent;
   border-radius: 10px;
   background: none;
@@ -533,15 +557,15 @@ dialog.sheet::backdrop {
 
 /* ---------- Toast ---------- */
 .toast-region {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(76px + env(safe-area-inset-bottom));
-  z-index: 20;
+  flex: none;
   display: flex;
   justify-content: center;
   padding: 0 16px;
-  pointer-events: none;
+}
+.toast-region:not(:empty) {
+  padding-block: 8px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
 }
 .toast {
   pointer-events: auto;
@@ -557,7 +581,7 @@ dialog.sheet::backdrop {
   animation: toast-in 0.18s ease-out;
 }
 .toast-undo {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   border: 0;
   border-radius: 10px;
@@ -633,12 +657,38 @@ dialog.sheet::backdrop {
 .bill-quick-inputs .field {
   margin: 0;
 }
-/* The bill name above already labels these inputs visually; keep labels for screen readers. */
-.bill-quick-inputs .grow .field-label,
+.day-field {
+  flex: none;
+  width: 124px;
+}
+.day-field .input {
+  width: 100%;
+}
 .day-field .field-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.bill-quick-inputs .field-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* Dates are always spelled out under the picker ("Friday 9 October"). */
+.date-words {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+/* Dropdowns: same look in every browser (Safari draws its own grey box otherwise). */
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 44px;
+  background-color: var(--surface);
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 22px) 52%, calc(100% - 16px) 52%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
 }

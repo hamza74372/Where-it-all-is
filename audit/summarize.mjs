@@ -23,6 +23,8 @@ for (const r of reports) {
   for (const f of uniq(all('smallTargets'), (f) => `${f.label.replace(/\d+/g, '#')}|${f.w}x${f.h}`)) console.log(`  ${f.w}x${f.h}  "${f.label}"  (first at ${f.step})`);
   console.log('clipped:');
   for (const f of uniq(all('clipped'), (f) => `${f.text}|${f.why}`)) console.log(`  "${f.text}" ${f.why}  (${f.step})`);
+  console.log('low contrast:');
+  for (const f of uniq(all('lowContrast'), (f) => f.text)) console.log(`  ${f.ratio}:1 (needs ${f.need})  "${f.text}"  (${f.step})`);
   console.log('overlaps:');
   for (const f of uniq(all('overlaps'), (f) => `${f.a}|${f.b}`)) console.log(`  "${f.a}" × "${f.b}"  (${f.step})`);
 }

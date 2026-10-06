@@ -76,11 +76,20 @@ export function DebtPlan() {
               onInput={(e) => setExtra(Number(e.currentTarget.value))}
             />
           </Field>
-          <div class="compare">
-            <PlanCard title="Snowball" sub="Smallest balance first — quick wins keep you going" r={cmp.snowball} today={today} fmt={fmt} debts={open} />
-            <PlanCard title="Avalanche" sub="Highest interest first — usually costs the least" r={cmp.avalanche} today={today} fmt={fmt} debts={open} />
-          </div>
-          {cmp.snowball.months != null && cmp.avalanche.months != null && <Verdict snowball={cmp.snowball} avalanche={cmp.avalanche} diff={cmp.interestDifference} fmt={fmt} />}
+          {open.length === 1 ? (
+            // One debt: snowball and avalanche are the same plan, so don't show a comparison.
+            <div class="compare">
+              <PlanCard title="Your plan" sub={`Minimum plus extra, every month`} r={cmp.snowball} today={today} fmt={fmt} debts={open} single />
+            </div>
+          ) : (
+            <>
+              <div class="compare">
+                <PlanCard title="Snowball" sub="Smallest balance first — quick wins keep you going" r={cmp.snowball} today={today} fmt={fmt} debts={open} />
+                <PlanCard title="Avalanche" sub="Highest interest first — usually costs the least" r={cmp.avalanche} today={today} fmt={fmt} debts={open} />
+              </div>
+              {cmp.snowball.months != null && cmp.avalanche.months != null && <Verdict snowball={cmp.snowball} avalanche={cmp.avalanche} diff={cmp.interestDifference} fmt={fmt} />}
+            </>
+          )}
           <details class="assumptions">
             <summary>How this is estimated</summary>
             <ul>
@@ -100,7 +109,7 @@ export function DebtPlan() {
   );
 }
 
-function PlanCard(props: { title: string; sub: string; r: PayoffResult; today: string; fmt: Fmt; debts: Debt[] }) {
+function PlanCard(props: { title: string; sub: string; r: PayoffResult; today: string; fmt: Fmt; debts: Debt[]; single?: boolean }) {
   const { r, fmt } = props;
   const first = r.order.find((id) => r.paidOffMonth[id] != null);
   const firstName = props.debts.find((d) => d.id === r.order[0])?.name;
@@ -116,7 +125,7 @@ function PlanCard(props: { title: string; sub: string; r: PayoffResult; today: s
           <p class="row-sub">
             {r.months} {r.months === 1 ? 'month' : 'months'} · {fmt.money(r.totalInterest)} interest
           </p>
-          {first && firstName && (
+          {!props.single && first && firstName && (
             <p class="row-sub">
               Starts with {firstName} — gone in {r.paidOffMonth[r.order[0]]} {r.paidOffMonth[r.order[0]] === 1 ? 'month' : 'months'}
             </p>

@@ -5,7 +5,7 @@ import { daysInMonth, parts } from '../lib/dates';
 import { parseAmount, toInputString, type DecimalMark, type Minor } from '../lib/money';
 import { describeSchedule } from '../lib/schedule';
 import { useData } from '../state/store';
-import { useFmt } from './hooks';
+import { useFmt, useToday } from './hooks';
 
 export const capitalise = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
 
@@ -74,6 +74,8 @@ export function MoneyInput(props: {
   autoFocus?: boolean;
   /** Force the "did you mean" prompt / error to show (e.g. after a save attempt). */
   showErrors?: boolean;
+  /** Fuller name for screen readers when the visible label is short (e.g. "Rent amount"). */
+  ariaLabel?: string;
 }) {
   const id = useId('money');
   const { settings } = useData();
@@ -96,6 +98,7 @@ export function MoneyInput(props: {
         autoFocus={props.autoFocus}
         onInput={(e) => props.onInput(e.currentTarget.value)}
         onBlur={() => setTouched(true)}
+        aria-label={props.ariaLabel}
         aria-invalid={show && parsed?.kind === 'invalid' ? 'true' : undefined}
       />
       {show && parsed?.kind === 'confirm' && (
@@ -124,6 +127,10 @@ export function MoneyInput(props: {
 
 export function DateInput(props: { label: string; value: ISODate; onInput: (v: ISODate) => void; hint?: string }) {
   const id = useId('date');
+  const fmt = useFmt();
+  const today = useToday();
+  // "10/09" means different days in the US and UK, so always spell the date out.
+  const words = fmt.dayLong(props.value) + (props.value.slice(0, 4) !== today.slice(0, 4) ? ` ${props.value.slice(0, 4)}` : '');
   return (
     <Field label={props.label} hint={props.hint} htmlFor={id}>
       <input
@@ -132,8 +139,12 @@ export function DateInput(props: { label: string; value: ISODate; onInput: (v: I
         type="date"
         value={props.value}
         required
+        aria-describedby={`${id}-words`}
         onInput={(e) => e.currentTarget.value && props.onInput(e.currentTarget.value)}
       />
+      <p id={`${id}-words`} class="date-words" aria-live="polite">
+        {words}
+      </p>
     </Field>
   );
 }
@@ -174,7 +185,9 @@ export function Toggle(props: { label: string; checked: boolean; onChange: (v: b
         aria-label={props.label}
         onClick={() => props.onChange(!props.checked)}
       >
-        <span class="switch-knob" />
+        <span class="switch-track">
+          <span class="switch-knob" />
+        </span>
       </button>
     </div>
   );

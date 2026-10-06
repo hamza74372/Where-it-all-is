@@ -64,7 +64,7 @@ test('onboarding → log → undo → mark bill paid → calendar', async ({ pag
 
   // Today: 1,240 − phone 45 (due 8 Oct, before payday 9 Oct) = 1,195 over 3 days → 398.33
   await expect(page.getByRole('heading', { name: 'Hi Sam' })).toBeVisible();
-  await expect(page.locator('.big-number')).toHaveText('$398.33');
+  await expect(page.locator('.big-number')).toHaveText('$398');
   await expect(page.getByText(/Until payday .*: \$1,195/)).toBeVisible();
   await shot(page, '06-today');
 
@@ -76,16 +76,16 @@ test('onboarding → log → undo → mark bill paid → calendar', async ({ pag
 
   // Quick log + undo
   await page.getByRole('textbox', { name: 'Log a spend' }).fill('12.50 coffee');
-  await expect(page.locator('#ql-preview')).toContainText('Eating out');
+  await expect(page.locator('#ql-preview')).toContainText('Coffee');
   await page.getByRole('textbox', { name: 'Log a spend' }).press('Enter');
-  await expect(page.getByRole('status')).toContainText('Logged $12.50 · Eating out');
-  await expect(page.locator('.big-number')).toHaveText('$385.83');
+  await expect(page.getByRole('status')).toContainText('Logged $12.50 · Coffee');
+  await expect(page.locator('.big-number')).toHaveText('$385');
   await page.getByRole('button', { name: 'Undo' }).click();
-  await expect(page.locator('.big-number')).toHaveText('$398.33');
+  await expect(page.locator('.big-number')).toHaveText('$398');
 
   // One-tap chip
   await page.getByRole('button', { name: /Coffee \$5/ }).click();
-  await expect(page.locator('.big-number')).toHaveText('$393.33');
+  await expect(page.locator('.big-number')).toHaveText('$393');
   await shot(page, '08-today-after-chip');
 
   // Bills: mark phone paid → number unchanged (it was already set aside)
@@ -100,7 +100,7 @@ test('onboarding → log → undo → mark bill paid → calendar', async ({ pag
   await expect(page.locator('.cal-sel-title')).toContainText('October 9');
 
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Today' }).click();
-  await expect(page.locator('.big-number')).toHaveText('$393.33');
+  await expect(page.locator('.big-number')).toHaveText('$393');
 
   // Log tab shows the entries
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Log' }).click();
@@ -110,7 +110,7 @@ test('onboarding → log → undo → mark bill paid → calendar', async ({ pag
   // Data survives a reload (IndexedDB over file://)
   await page.reload();
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Today' }).click();
-  await expect(page.locator('.big-number')).toHaveText('$393.33');
+  await expect(page.locator('.big-number')).toHaveText('$393');
 
   expect(problems).toEqual([]);
 });
@@ -140,7 +140,7 @@ test('payday: confirm-your-pay card leads Today, rent today still set aside', as
   await card.getByRole('button', { name: "Yes, it's in" }).click();
   await expect(card).toBeHidden();
   // After: 300 + 1850 − 950 = 1,200 over 14 days → 85.71
-  await expect(page.locator('.big-number')).toHaveText('$85.71');
+  await expect(page.locator('.big-number')).toHaveText('$85');
   await shot(page, '13-payday-after');
   expect(problems).toEqual([]);
 });

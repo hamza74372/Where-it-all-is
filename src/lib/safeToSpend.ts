@@ -4,9 +4,10 @@
 //
 //   available        = balances of accounts marked "include in safe to spend"
 //   upcomingBills    = unpaid bill occurrences due today … day before next payday
+//   lookAheadSetAside= max(0, next period's bills − pay expected on the next payday)
 //   goalSetAside     = one planned contribution per goal (if the user turned this on)
 //   buffer           = user cushion
-//   startOfDay       = available + spentToday − upcomingBills − goalSetAside − buffer
+//   startOfDay       = available + spentToday − upcomingBills − lookAheadSetAside − goalSetAside − buffer
 //   dailyAllowance   = floor(startOfDay / daysLeft)
 //   safeToSpendToday = dailyAllowance − spentToday
 //   safeToSpendPeriod= startOfDay − spentToday   (what's left for the rest of the period)
@@ -22,6 +23,9 @@
 //    the user turns on `billsBeforePayOnPayday` ("Some bills come out before my pay
 //    arrives on payday"). Month-end periods with no income have no payday, so the
 //    setting doesn't apply there.
+//  • Look-ahead: if the bills due in the *next* pay period add up to more than the pay
+//    expected on the next payday, the difference is set aside now, so today's money isn't
+//    spent on what next period's rent will need. One period ahead; no income → no look-ahead.
 //  • spentToday is added back before dividing, so today's spending isn't counted twice
 //    (it is already inside the balance) and the daily allowance stays stable all day.
 //  • Credit cards: a card excluded from safe-to-spend never touches `available`; its
@@ -55,6 +59,18 @@ export interface BillLine {
   amountSource: 'fixed' | 'cardBalance';
 }
 
+export interface LookAhead {
+  /** The next pay period: next payday … day before the payday after it. */
+  periodStart: ISODate;
+  periodEnd: ISODate;
+  billLines: BillLine[];
+  billsTotal: Minor;
+  /** Pay due on the next payday (average for pay that varies). */
+  expectedPay: Minor;
+  /** max(0, billsTotal − expectedPay). */
+  setAside: Minor;
+}
+
 export interface GoalLine {
   goalId: Id;
   name: string;
@@ -71,6 +87,10 @@ export interface SafeToSpendResult {
   available: Minor;
   billLines: BillLine[];
   upcomingBills: Minor;
+  /** Next pay period's bills vs the pay expected on the next payday (null without a following payday). */
+  lookAhead: LookAhead | null;
+  /** Shortfall for the next period, set aside from today's money. */
+  lookAheadSetAside: Minor;
   goalLines: GoalLine[];
   goalSetAside: Minor;
   buffer: Minor;
@@ -156,32 +176,63 @@ export function computeSafeToSpend(input: SafeToSpendInput): SafeToSpendResult {
   );
 
   const paydayIsReal = payday !== null;
-  const billWindowEnd = paydayIsReal && settings.billsBeforePayOnPayday ? nextPayday : lastDay;
+  const early = paydayIsReal && !!settings.billsBeforePayOnPayday;
+  const billWindowEnd = early ? nextPayday : lastDay;
 
-  const billLines: BillLine[] = [];
-  for (const bill of bills) {
-    if (!bill.active) continue;
-    // Bills that pay an included card are already reflected in `available` as you spend.
-    if (bill.payToAccountId && includedIds.has(bill.payToAccountId)) continue;
-    if (!includedIds.has(bill.accountId)) continue; // paid from money outside safe-to-spend
-    const followsCard =
-      !!bill.payToAccountId && excludedCards.has(bill.payToAccountId) && bill.amountSource !== 'fixed';
-    let cardReserved = false;
-    for (const date of occurrences(bill.schedule, today, billWindowEnd)) {
-      if (isBillPaid(bill, date, transactions)) continue;
-      if (followsCard) {
-        // Reserve what's owed on the card once; a second due date in the period owes nothing new yet.
-        if (cardReserved) continue;
-        cardReserved = true;
-        const owed = cardOwed.get(bill.payToAccountId!) ?? 0;
-        if (owed > 0) billLines.push({ billId: bill.id, name: bill.name, date, amount: owed, amountSource: 'cardBalance' });
-      } else {
-        billLines.push({ billId: bill.id, name: bill.name, date, amount: bill.amount, amountSource: 'fixed' });
+  // Card balances are reserved once, in whichever window their bill falls first.
+  const cardsReserved = new Set<Id>();
+  const reserveBills = (from: ISODate, to: ISODate): BillLine[] => {
+    const lines: BillLine[] = [];
+    for (const bill of bills) {
+      if (!bill.active) continue;
+      // Bills that pay an included card are already reflected in `available` as you spend.
+      if (bill.payToAccountId && includedIds.has(bill.payToAccountId)) continue;
+      if (!includedIds.has(bill.accountId)) continue; // paid from money outside safe-to-spend
+      const followsCard =
+        !!bill.payToAccountId && excludedCards.has(bill.payToAccountId) && bill.amountSource !== 'fixed';
+      for (const date of occurrences(bill.schedule, from, to)) {
+        if (isBillPaid(bill, date, transactions)) continue;
+        if (followsCard) {
+          // What's owed on the card is reserved once; a later due date owes nothing new yet.
+          if (cardsReserved.has(bill.payToAccountId!)) continue;
+          cardsReserved.add(bill.payToAccountId!);
+          const owed = cardOwed.get(bill.payToAccountId!) ?? 0;
+          if (owed > 0) lines.push({ billId: bill.id, name: bill.name, date, amount: owed, amountSource: 'cardBalance' });
+        } else {
+          lines.push({ billId: bill.id, name: bill.name, date, amount: bill.amount, amountSource: 'fixed' });
+        }
       }
     }
-  }
-  billLines.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.name.localeCompare(b.name)));
+    return lines.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.name.localeCompare(b.name)));
+  };
+
+  const billLines = reserveBills(today, billWindowEnd);
   const upcomingBills = sum(billLines.map((l) => l.amount));
+
+  // Look-ahead: if the bills in the next pay period come to more than the pay expected on
+  // the next payday, the gap has to come out of today's money — set it aside now.
+  let lookAhead: LookAhead | null = null;
+  if (paydayIsReal) {
+    const following = nextPaydayAfter(nextPayday, incomes);
+    if (following) {
+      const from = addDays(billWindowEnd, 1);
+      const to = early ? following : addDays(following, -1);
+      const nextBills = reserveBills(from, to);
+      const expectedPay = sum(
+        incomes.filter((i) => i.active && occurrences(i.schedule, nextPayday, nextPayday).length > 0).map((i) => i.amount),
+      );
+      const billsTotal = sum(nextBills.map((l) => l.amount));
+      lookAhead = {
+        periodStart: nextPayday,
+        periodEnd: addDays(following, -1),
+        billLines: nextBills,
+        billsTotal,
+        expectedPay,
+        setAside: Math.max(0, billsTotal - expectedPay),
+      };
+    }
+  }
+  const lookAheadSetAside = lookAhead?.setAside ?? 0;
 
   const goalLines: GoalLine[] = settings.setAsideGoals
     ? goals.flatMap((g) => {
@@ -198,7 +249,7 @@ export function computeSafeToSpend(input: SafeToSpendInput): SafeToSpendResult {
   );
 
   const buffer = Math.max(0, settings.buffer);
-  const startOfDay = available + spentToday - upcomingBills - goalSetAside - buffer;
+  const startOfDay = available + spentToday - upcomingBills - lookAheadSetAside - goalSetAside - buffer;
   const dailyAllowance = divFloor(startOfDay, daysLeft);
   const safeToSpendToday = dailyAllowance - spentToday;
   const safeToSpendPeriod = startOfDay - spentToday;
@@ -213,6 +264,8 @@ export function computeSafeToSpend(input: SafeToSpendInput): SafeToSpendResult {
     available,
     billLines,
     upcomingBills,
+    lookAhead,
+    lookAheadSetAside,
     goalLines,
     goalSetAside,
     buffer,

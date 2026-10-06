@@ -17,6 +17,14 @@ export function toast(text: string, undo?: ToastMsg['undo']): void {
   listeners.forEach((fn) => fn());
 }
 
+/** Clear any toast (used when the user moves to another screen). */
+export function dismissToast(): void {
+  if (current) {
+    current = null;
+    listeners.forEach((fn) => fn());
+  }
+}
+
 function dismiss(id: number) {
   if (current?.id === id) {
     current = null;

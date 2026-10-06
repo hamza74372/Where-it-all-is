@@ -16,7 +16,7 @@ describe('parseQuickLog', () => {
   });
   it('decimal amount, keyword category', () => {
     const r = parseQuickLog('12.50 coffee', cats, '.');
-    expect(r).toMatchObject({ kind: 'ok', amount: 1250, categoryId: 'Eating out', note: 'Coffee' });
+    expect(r).toMatchObject({ kind: 'ok', amount: 1250, categoryId: 'Coffee', note: 'Coffee' });
   });
   it('words then amount, currency symbol', () => {
     expect(parseQuickLog('uber £8.40', cats, '.')).toMatchObject({ amount: 840, categoryId: 'Transport', note: 'Uber' });
@@ -48,6 +48,9 @@ describe('matchCategory', () => {
     expect(cat('grocerys')).toBe('Groceries');
     expect(cat('tesco')).toBe('Groceries');
     expect(cat('lunch with sam')).toBe('Eating out');
+    expect(cat('coffee')).toBe('Coffee');
+    expect(cat('flat white')).toBe('Coffee');
+    expect(cat('Starbucks')).toBe('Coffee');
     expect(cat('netflix')).toBe('Subscriptions');
     expect(cat('petrol')).toBe('Transport');
     expect(cat('vet bill')).toBe('Kids & pets');

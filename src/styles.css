@@ -114,10 +114,14 @@ textarea {
 }
 
 /* ---------- Shell ---------- */
+/* App-style layout: the screen area scrolls; the toast and nav sit below it in the flow,
+   so neither ever covers content. */
 .shell {
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .demo-banner {
@@ -130,10 +134,12 @@ textarea {
 
 main.screen {
   flex: 1;
+  min-height: 0;
   width: 100%;
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 20px 16px calc(96px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Centre a 640px column while the scrollbar stays at the window edge. */
+  padding: 20px max(16px, calc((100% - 640px) / 2)) 24px;
 }
 
 .screen-title {
@@ -185,7 +191,7 @@ main.screen {
 }
 
 .footer-note {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-muted);
   text-align: center;
   margin-top: 28px;
@@ -193,11 +199,7 @@ main.screen {
 
 /* ---------- Bottom nav ---------- */
 nav.bottom-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
+  flex: none;
   background: var(--surface);
   border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);
@@ -222,7 +224,7 @@ nav.bottom-nav button {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;

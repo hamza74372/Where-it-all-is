@@ -383,4 +383,92 @@ describe('safe to spend', () => {
       expect(r.upcomingBills).toBe(20000);
     });
   });
+
+  describe('look-ahead: next period bills vs next pay', () => {
+    it('40. monthly pay: next month’s rent + car exceed the pay → shortfall set aside now', () => {
+      // Paid 1,800 on the 25th. Next period 25 Oct – 24 Nov holds rent 1,500 (1 Nov) + car 400 (10 Nov) = 1,900.
+      const r = run({
+        incomes: [income('pay', sched('monthly', '2026-01-25'), { amount: 180000 })],
+        bills: [bill('rent', 150000, sched('monthly', '2026-01-01')), bill('car', 40000, sched('monthly', '2026-01-10'))],
+      });
+      expect(r.nextPayday).toBe('2026-10-25');
+      expect(r.upcomingBills).toBe(40000); // car on 10 Oct, this period
+      expect(r.lookAhead).toMatchObject({ periodStart: '2026-10-25', periodEnd: '2026-11-24', billsTotal: 190000, expectedPay: 180000, setAside: 10000 });
+      expect(r.lookAhead!.billLines.map((l) => [l.name, l.date])).toEqual([['rent', '2026-11-01'], ['car', '2026-11-10']]);
+      expect(r.startOfDay).toBe(100000 - 40000 - 10000);
+      expect(r.daysLeft).toBe(19);
+    });
+
+    it('41. biweekly pay: rent in the next fortnight is bigger than the next paycheck', () => {
+      // Paid 1,000 every 2nd Friday from 9 Oct. Rent 1,200 on the 15th falls in 9–22 Oct.
+      const r = run({
+        incomes: [income('pay', sched('biweekly', '2026-10-09'), { amount: 100000 })],
+        bills: [bill('rent', 120000, sched('monthly', '2026-01-15'))],
+      });
+      expect(r.upcomingBills).toBe(0);
+      expect(r.lookAhead).toMatchObject({ periodStart: '2026-10-09', periodEnd: '2026-10-22', billsTotal: 120000, expectedPay: 100000, setAside: 20000 });
+      expect(r.safeToSpendPeriod).toBe(80000);
+      expect(r.safeToSpendToday).toBe(26666);
+    });
+
+    it('42. no set-aside when the next pay covers next period’s bills', () => {
+      const r = run({ bills: [bill('rent', 120000, sched('monthly', '2026-01-15'))] }); // pay 2,000
+      expect(r.lookAhead).toMatchObject({ billsTotal: 120000, expectedPay: 200000, setAside: 0 });
+      expect(r.safeToSpendPeriod).toBe(100000);
+    });
+
+    it('43. a next-period bill already paid early is not counted', () => {
+      const r = run({
+        incomes: [income('pay', sched('biweekly', '2026-10-09'), { amount: 100000 })],
+        bills: [bill('rent', 120000, sched('monthly', '2026-01-15'))],
+        transactions: [tx('2026-10-05', -120000, { source: 'bill', billId: 'rent', billDueDate: '2026-10-15' })],
+      });
+      expect(r.lookAhead!.setAside).toBe(0);
+    });
+
+    it('44. with "bills before pay on payday", the payday bill stays in this period and the following payday’s bill moves into next', () => {
+      const payBills = [
+        bill('phone', 4000, sched('monthly', '2026-01-09')), // on the next payday → this period
+        bill('gym', 3000, sched('monthly', '2026-01-23')), // on the following payday → next period
+        bill('rent', 120000, sched('monthly', '2026-01-15')),
+      ];
+      const incomes = [income('pay', sched('biweekly', '2026-10-09'), { amount: 100000 })];
+      const on = run({ incomes, bills: payBills, settings: { buffer: 0, setAsideGoals: false, billsBeforePayOnPayday: true } });
+      expect(on.billLines.map((l) => l.name)).toEqual(['phone']);
+      expect(on.lookAhead!.billLines.map((l) => l.name)).toEqual(['rent', 'gym']);
+      expect(on.lookAhead!.setAside).toBe(23000);
+      const off = run({ incomes, bills: payBills });
+      expect(off.lookAhead!.billLines.map((l) => l.name)).toEqual(['phone', 'rent']);
+      expect(off.lookAhead!.setAside).toBe(24000);
+    });
+
+    it('45. two paychecks on the same next payday both count as expected pay', () => {
+      const r = run({
+        incomes: [
+          income('pay', sched('biweekly', '2026-10-09'), { amount: 60000 }),
+          income('partner', sched('biweekly', '2026-10-09'), { amount: 60000 }),
+        ],
+        bills: [bill('rent', 150000, sched('monthly', '2026-01-15'))],
+      });
+      expect(r.lookAhead).toMatchObject({ expectedPay: 120000, setAside: 30000 });
+    });
+
+    it('46. no income → no look-ahead', () => {
+      const r = run({ incomes: [], bills: [bill('rent', 999999, sched('monthly', '2026-01-01'))] });
+      expect(r.lookAhead).toBeNull();
+      expect(r.lookAheadSetAside).toBe(0);
+    });
+
+    it('47. a card balance reserved this period is not reserved again next period', () => {
+      const accounts = [account('chk', { openingBalance: 100000 }), account('card', { type: 'credit', includeInSafeToSpend: false })];
+      const r = run({
+        accounts,
+        incomes: [income('pay', sched('biweekly', '2026-10-09'), { amount: 10000 })],
+        bills: [bill('card bill', 0, sched('weekly', '2026-10-07'), { payToAccountId: 'card' })],
+        transactions: [tx('2026-10-02', -20000, { accountId: 'card' })],
+      });
+      expect(r.upcomingBills).toBe(20000);
+      expect(r.lookAhead!.billsTotal).toBe(0);
+    });
+  });
 });

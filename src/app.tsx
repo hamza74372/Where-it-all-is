@@ -10,7 +10,7 @@ import { Today } from './screens/Today';
 import { NavContext, type Tab } from './state/nav';
 import { Store, StoreContext, useData } from './state/store';
 import { Icon, type IconName } from './ui/icons';
-import { ToastHost } from './ui/Toast';
+import { dismissToast, ToastHost } from './ui/Toast';
 
 const TABS: Array<{ id: Tab; label: string; icon: IconName }> = [
   { id: 'today', label: 'Today', icon: 'today' },
@@ -71,7 +71,8 @@ function Shell() {
   const go = (t: Tab) => {
     setTab(t);
     setPref('tab', t);
-    window.scrollTo(0, 0);
+    dismissToast();
+    document.getElementById('main')?.scrollTo(0, 0);
   };
 
   return (
@@ -93,6 +94,7 @@ function Shell() {
               {tab === 'plan' && <Plan />}
               {tab === 'more' && <More />}
             </main>
+            <ToastHost />
             <nav class="bottom-nav" aria-label="Main">
               <ul>
                 {TABS.map((t) => (
@@ -107,7 +109,7 @@ function Shell() {
             </nav>
           </>
         )}
-        <ToastHost />
+        {!settings.onboarded && <ToastHost />}
       </div>
     </NavContext.Provider>
   );

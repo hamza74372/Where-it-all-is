@@ -15,7 +15,7 @@ import { checkMoney, MoneyInput, moneyText, ScheduleFields, Segmented, Select, T
 import { useFmt, useToday } from '../ui/hooks';
 import { Icon } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
-import { toast } from '../ui/Toast';
+import { dismissToast, toast } from '../ui/Toast';
 import { Notes } from './Notes';
 import { CategoryForm } from './plan/Envelopes';
 
@@ -32,7 +32,12 @@ const PAGES: Array<{ id: Exclude<Page, 'menu'>; label: string; sub: string }> = 
 ];
 
 export function More() {
-  const [page, setPage] = useState<Page>('menu');
+  const [page, setPageState] = useState<Page>('menu');
+  const setPage = (p: Page) => {
+    setPageState(p);
+    dismissToast();
+    document.getElementById('main')?.scrollTo(0, 0);
+  };
   if (page === 'menu') {
     return (
       <>

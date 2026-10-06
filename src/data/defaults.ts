@@ -11,7 +11,8 @@ type CategorySeed = Pick<Category, 'name' | 'emoji' | 'color'> & { keywords: str
 /** Default envelopes. Keywords help quick log ("12 coffee" → Eating out). */
 export const DEFAULT_CATEGORIES: CategorySeed[] = [
   { name: 'Groceries', emoji: '🛒', color: '#7cbf9a', keywords: ['grocery', 'groceries', 'food shop', 'supermarket', 'tesco', 'walmart', 'aldi', 'lidl', 'sainsbury', 'asda', 'kroger', 'costco', 'woolworths', 'coles', 'milk', 'bread'] },
-  { name: 'Eating out', emoji: '🍔', color: '#e8b54a', keywords: ['coffee', 'cafe', 'lunch', 'dinner', 'breakfast', 'takeaway', 'takeout', 'restaurant', 'pizza', 'burger', 'snack', 'starbucks', 'mcdonalds', 'deliveroo', 'doordash', 'ubereats', 'drinks', 'pub', 'bar'] },
+  { name: 'Eating out', emoji: '🍔', color: '#e8b54a', keywords: ['lunch', 'dinner', 'breakfast', 'takeaway', 'takeout', 'restaurant', 'pizza', 'burger', 'snack', 'mcdonalds', 'deliveroo', 'doordash', 'ubereats', 'drinks', 'pub', 'bar'] },
+  { name: 'Coffee', emoji: '☕', color: '#c9a27e', keywords: ['coffee', 'cafe', 'café', 'latte', 'cappuccino', 'flat white', 'espresso', 'starbucks', 'costa', 'dunkin', 'tim hortons', 'pret'] },
   { name: 'Transport', emoji: '🚌', color: '#8aa9d6', keywords: ['bus', 'train', 'tube', 'metro', 'taxi', 'uber', 'lyft', 'parking', 'gas', 'petrol', 'fuel', 'diesel', 'toll', 'fare', 'car'] },
   { name: 'Shopping', emoji: '🛍️', color: '#c7a0d9', keywords: ['amazon', 'clothes', 'shoes', 'shop', 'shopping', 'target', 'ebay', 'etsy'] },
   { name: 'Fun', emoji: '🎉', color: '#f0a07a', keywords: ['cinema', 'movie', 'movies', 'game', 'games', 'concert', 'tickets', 'hobby', 'books', 'book', 'fun', 'night out'] },
@@ -54,7 +55,7 @@ export const COMMON_BILLS: Array<{ name: string; emoji: string; categoryName: st
 export function defaultPresets(currency: Currency): QuickPreset[] {
   const coffee = currency === 'GBP' || currency === 'EUR' ? 350 : 500;
   return [
-    { id: 'p-coffee', emoji: '☕', label: 'Coffee', amount: coffee, categoryName: 'Eating out' },
+    { id: 'p-coffee', emoji: '☕', label: 'Coffee', amount: coffee, categoryName: 'Coffee' },
     { id: 'p-lunch', emoji: '🥪', label: 'Lunch', amount: 1200, categoryName: 'Eating out' },
     { id: 'p-groceries', emoji: '🛒', label: 'Groceries', amount: 5000, categoryName: 'Groceries' },
     { id: 'p-transport', emoji: '🚌', label: 'Travel', amount: 300, categoryName: 'Transport' },
@@ -109,7 +110,7 @@ export function buildExampleData(today: ISODate, categories: Category[]) {
   });
   const transactions: Transaction[] = [
     spend(1, 3420, 'Big shop', 'Groceries'),
-    spend(1, 450, 'Coffee', 'Eating out'),
+    spend(1, 450, 'Coffee', 'Coffee'),
     spend(2, 1800, 'Bus pass top-up', 'Transport'),
     spend(3, 2250, 'Takeaway', 'Eating out', card.id),
     spend(4, 1299, 'Book', 'Fun'),

@@ -5,115 +5,9 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { auditPage, type Finding } from './checks';
 
 const APP = pathToFileURL(path.resolve('dist/app.html')).href;
-
-interface Finding {
-  smallText: Array<{ text: string; px: number; where: string }>;
-  smallTargets: Array<{ label: string; w: number; h: number }>;
-  clipped: Array<{ text: string; why: string }>;
-  overlaps: Array<{ a: string; b: string }>;
-  horizontalScroll: boolean;
-  theme: string;
-  bg: string;
-}
-
-/** Runs inside the page. Audits the open dialog if there is one, otherwise the page. */
-function auditPage(): Finding {
-  const vw = window.innerWidth;
-  const dialog = document.querySelector('dialog[open]');
-  const root: Element = dialog ?? document.body;
-  const isVisible = (el: Element) => {
-    const r = el.getBoundingClientRect();
-    const cs = getComputedStyle(el);
-    return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0';
-  };
-  const name = (el: Element) =>
-    (el.getAttribute('aria-label') || (el as HTMLElement).innerText || el.getAttribute('placeholder') || el.tagName)
-      .trim()
-      .replace(/\s+/g, ' ')
-      .slice(0, 48);
-  const where = (el: Element) => {
-    const c = el.closest('[class]');
-    return `${el.tagName.toLowerCase()}${c ? '.' + String(c.className).split(' ')[0] : ''}`;
-  };
-  const inFixed = (el: Element) => !!el.closest('.bottom-nav, .toast-region');
-
-  const out: Finding = {
-    smallText: [], smallTargets: [], clipped: [], overlaps: [],
-    horizontalScroll: document.documentElement.scrollWidth > vw + 1,
-    theme: document.documentElement.dataset.theme ?? '',
-    bg: getComputedStyle(document.body).backgroundColor,
-  };
-
-  // Text under 14px (elements that directly contain visible text).
-  const seenText = new Set<string>();
-  for (const el of Array.from(root.querySelectorAll('*'))) {
-    const own = Array.from(el.childNodes).some((n) => n.nodeType === 3 && n.textContent!.trim());
-    if (!own || !isVisible(el)) continue;
-    const px = parseFloat(getComputedStyle(el).fontSize);
-    if (px < 14) {
-      const text = (el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 40);
-      const key = `${where(el)}|${px}`;
-      if (!seenText.has(key)) {
-        seenText.add(key);
-        out.smallText.push({ text, px, where: where(el) });
-      }
-    }
-  }
-  if (!dialog) {
-    for (const el of Array.from(document.querySelectorAll('.bottom-nav span'))) {
-      const px = parseFloat(getComputedStyle(el).fontSize);
-      if (px < 14 && !seenText.has(`nav|${px}`)) {
-        seenText.add(`nav|${px}`);
-        out.smallText.push({ text: (el.textContent ?? '').trim(), px, where: 'bottom-nav label' });
-      }
-    }
-  }
-
-  // Tap targets under 44×44.
-  const targets = Array.from(
-    (dialog ?? document).querySelectorAll('button, a[href], input:not([type=hidden]), select, textarea, [role=switch], [role=radio]'),
-  ).filter(isVisible);
-  for (const el of targets) {
-    const r = el.getBoundingClientRect();
-    if (r.width < 44 - 0.5 || r.height < 44 - 0.5) {
-      out.smallTargets.push({ label: name(el), w: Math.round(r.width), h: Math.round(r.height) });
-    }
-  }
-
-  // Clipped text / content off the side of the screen.
-  for (const el of Array.from(root.querySelectorAll('*')).filter(isVisible)) {
-    const r = el.getBoundingClientRect();
-    const cs = getComputedStyle(el);
-    const hasText = Array.from(el.childNodes).some((n) => n.nodeType === 3 && n.textContent!.trim());
-    // Screen-reader-only text is deliberately 1px and clipped.
-    if (r.width <= 1 || r.height <= 1 || (cs.clip && cs.clip !== 'auto')) continue;
-    if (hasText && el.scrollWidth > el.clientWidth + 1 && cs.overflowX !== 'visible' && el.clientWidth > 0) {
-      out.clipped.push({ text: name(el), why: `content ${el.scrollWidth}px in a ${el.clientWidth}px box` });
-    }
-    if (hasText && (r.right > vw + 1 || r.left < -1)) {
-      out.clipped.push({ text: name(el), why: `runs off screen (${Math.round(r.left)}–${Math.round(r.right)} of ${vw}px)` });
-    }
-  }
-
-  // Overlaps between separate pieces of content (not nested, not the fixed nav/toast).
-  const boxes = Array.from(
-    root.querySelectorAll('button, input, select, h1, h2, h3, p, label, .mono, .row-sub, .badge, .chip, .big-number'),
-  )
-    .filter((el) => isVisible(el) && !inFixed(el))
-    .map((el) => ({ el, r: el.getBoundingClientRect() }));
-  for (let i = 0; i < boxes.length; i++) {
-    for (let j = i + 1; j < boxes.length; j++) {
-      const a = boxes[i], b = boxes[j];
-      if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
-      const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
-      const h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
-      if (w > 2 && h > 2) out.overlaps.push({ a: name(a.el), b: name(b.el) });
-    }
-  }
-  return out;
-}
 
 test('phase 2 walkthrough + audit', async ({ page }, info) => {
   const project = info.project.name;
@@ -152,26 +46,15 @@ test('phase 2 walkthrough + audit', async ({ page }, info) => {
   const snap = async (step: string) => {
     await page.waitForTimeout(250); // let toasts/animations settle
     const file = `${String(++n).padStart(2, '0')}-${step}`;
-    await page.evaluate(() => window.scrollTo(0, 0));
+    const scroller = () => document.querySelector('dialog[open] .sheet-panel') ?? document.getElementById('main') ?? document.documentElement;
+    await page.evaluate(`(${scroller.toString()})().scrollTop = 0`);
     await page.screenshot({ path: path.join(dir, `${file}.png`) });
-    const tall = await page.evaluate(() => {
-      const d = document.querySelector('dialog[open] .sheet-panel');
-      if (d) return d.scrollHeight > d.clientHeight + 4;
-      return document.documentElement.scrollHeight > window.innerHeight + 4;
-    });
+    const tall = await page.evaluate(`(() => { const s = (${scroller.toString()})(); return s.scrollHeight > s.clientHeight + 4; })()`);
     if (tall) {
-      await page.evaluate(() => {
-        const d = document.querySelector('dialog[open] .sheet-panel');
-        if (d) d.scrollTop = d.scrollHeight;
-        else window.scrollTo(0, document.documentElement.scrollHeight);
-      });
+      await page.evaluate(`(() => { const s = (${scroller.toString()})(); s.scrollTop = s.scrollHeight; })()`);
       await page.waitForTimeout(100);
       await page.screenshot({ path: path.join(dir, `${file}-scrolled.png`) });
-      await page.evaluate(() => {
-        window.scrollTo(0, 0);
-        const d = document.querySelector('dialog[open] .sheet-panel');
-        if (d) d.scrollTop = 0;
-      });
+      await page.evaluate(`(${scroller.toString()})().scrollTop = 0`);
     }
     steps.push({ step: file, findings: await page.evaluate(auditPage) });
   };
@@ -259,7 +142,28 @@ test('phase 2 walkthrough + audit', async ({ page }, info) => {
   await snap('log-edit-sheet');
   await tap(page.getByRole('button', { name: 'Close' }));
   await tap(nav('Plan'));
-  await snap('plan');
+  await tap(page.getByRole('radio', { name: 'Envelopes' }));
+  await snap('plan-envelopes-empty');
+  await tap(page.getByRole('button', { name: /Groceries/ }).last());
+  await type(page.getByRole('dialog').getByLabel('Monthly amount (optional)'), '400');
+  await tap(page.getByRole('dialog').getByRole('button', { name: 'Save' }));
+  await snap('plan-envelopes');
+  await tap(page.getByRole('radio', { name: 'Goals' }));
+  await snap('plan-goals');
+  await tap(page.getByRole('radio', { name: 'Debt' }));
+  await tap(page.getByRole('button', { name: 'Add a debt' }));
+  await type(page.getByRole('dialog').getByLabel('Name'), 'Visa card');
+  await type(page.getByRole('dialog').getByLabel('Balance owed now'), '2400');
+  await type(page.getByRole('dialog').getByLabel('Interest rate (APR %)'), '22.9');
+  await type(page.getByRole('dialog').getByLabel('Minimum payment each month'), '60');
+  await snap('plan-debt-add-sheet');
+  await tap(page.getByRole('dialog').getByRole('button', { name: 'Save' }));
+  await page.locator('#extra-slider').fill('5000');
+  await snap('plan-debt');
+  await tap(page.getByRole('radio', { name: 'Insights' }));
+  await snap('plan-insights');
+  await tap(nav('Today'));
+  await snap('today-final');
   await tap(nav('More'));
   await snap('more');
   for (const [label, file] of [

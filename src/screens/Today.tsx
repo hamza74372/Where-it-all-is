@@ -246,7 +246,12 @@ function SafeNumber({ result, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
   const nav = useNav();
   const until =
     result.nextPaydaySource === 'income' ? `until payday ${fmt.day(result.nextPayday)}` : 'until the end of the month';
+  // The big number is whole units: safe-to-spend rounds down, a shortfall rounds up — both
+  // err on the careful side. Everything else keeps its cents.
   const whole = { wholeIfRound: true };
+  const UNIT = 100;
+  const downToWhole = (n: number) => Math.floor(n / UNIT) * UNIT;
+  const upToWhole = (n: number) => Math.ceil(n / UNIT) * UNIT;
 
   return (
     <section class="card hero" aria-labelledby="safe-label">
@@ -256,14 +261,14 @@ function SafeNumber({ result, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
             Safe to spend today
           </h2>
           <button type="button" class="hero-number" onClick={() => setOpen(true)} aria-describedby="safe-sub">
-            <span class="big-number">{fmt.money(Math.max(0, result.safeToSpendToday), whole)}</span>
+            <span class="big-number">{fmt.money(downToWhole(Math.max(0, result.safeToSpendToday)), whole)}</span>
             <span class="sr-only">. How is this worked out?</span>
           </button>
           <p id="safe-sub" class="muted">
             {result.safeToSpendToday < 0
               ? `You've gone ${fmt.money(-result.safeToSpendToday)} past today's share — that's fine, the days ahead adjust. `
               : ''}
-            {capital(until)}: {fmt.money(result.safeToSpendPeriod, whole)}
+            {capital(until)}: {fmt.money(result.safeToSpendPeriod)}
           </p>
         </>
       ) : (
@@ -272,7 +277,7 @@ function SafeNumber({ result, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
             Tight until payday
           </h2>
           <button type="button" class="hero-number" onClick={() => setOpen(true)}>
-            <span class="big-number big-number-tight">{fmt.money(result.shortfall, whole)}</span>
+            <span class="big-number big-number-tight">{fmt.money(upToWhole(result.shortfall), whole)}</span>
             <span class="sr-only">. How is this worked out?</span>
           </button>
           <p class="muted">short of covering everything {until}.</p>
@@ -326,14 +331,28 @@ function Explain({ result: r, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
         {r.billLines.map((b) =>
           line(b.name, b.amount, '−', `Due ${fmt.day(b.date)}${b.amountSource === 'cardBalance' ? ' · what you owe on the card' : ''}`),
         )}
+        {r.lookAhead && r.lookAhead.setAside > 0 &&
+          line(
+            'Set aside for next period’s bills',
+            r.lookAhead.setAside,
+            '−',
+            `Bills ${fmt.day(r.lookAhead.periodStart)} – ${fmt.day(r.lookAhead.periodEnd)}: ${fmt.money(r.lookAhead.billsTotal)} · next pay: ${fmt.money(r.lookAhead.expectedPay)}`,
+          )}
         {r.goalLines.map((g) => line(`Goal: ${g.name}`, g.amount, '−', 'Set aside this payday'))}
         {r.buffer > 0 && line('Cushion you keep back', r.buffer, '−')}
         {line('Left for the period', r.startOfDay, '=')}
         {line(`Shared over ${r.daysLeft} ${r.daysLeft === 1 ? 'day' : 'days'}`, r.dailyAllowance, '=', 'Rounded down')}
         {r.spentToday > 0 && line('Already spent today', r.spentToday, '−')}
-        {line('Safe to spend today', r.safeToSpendToday, '=')}
+        {line('Safe to spend today', r.safeToSpendToday, '=', 'Shown on Today rounded down to a whole amount')}
       </ul>
       {r.billLines.length === 0 && <p class="muted">No bills are due before your next pay.</p>}
+      {r.lookAhead && (
+        <p class="muted">
+          {r.lookAhead.setAside > 0
+            ? `Looking ahead: bills from ${fmt.day(r.lookAhead.periodStart)} to ${fmt.day(r.lookAhead.periodEnd)} come to ${fmt.money(r.lookAhead.billsTotal)}, but your next pay is about ${fmt.money(r.lookAhead.expectedPay)}. The ${fmt.money(r.lookAhead.setAside)} gap is kept back now so those bills are covered.`
+            : `Looking ahead: your next pay (about ${fmt.money(r.lookAhead.expectedPay)}) covers the ${fmt.money(r.lookAhead.billsTotal)} of bills due ${fmt.day(r.lookAhead.periodStart)} – ${fmt.day(r.lookAhead.periodEnd)}.`}
+        </p>
+      )}
       {r.cardsToPay.length > 0 && (
         <p class="muted">
           Card spending isn't taken off straight away. You owe{' '}
@@ -476,8 +495,11 @@ function RightNow({ today, skipOverdue, onLogFocus }: { today: string; skipOverd
     });
   }
   const yesterday = addDays(today, -1);
-  const loggedRecently = data.transactions.some((t) => t.date >= yesterday && (t.source === 'manual' || t.source === 'import'));
-  if (!loggedRecently && data.accounts.length) {
+  const spends = data.transactions.filter((t) => t.source === 'manual' || t.source === 'import');
+  const loggedRecently = spends.some((t) => t.date >= yesterday);
+  if (data.accounts.length && spends.length === 0) {
+    items.push({ key: 'first-log', text: 'Log your first spend — even a coffee counts. Type it in the box above.', action: 'Log a spend', run: onLogFocus });
+  } else if (!loggedRecently && data.accounts.length) {
     items.push({ key: `log-${today}`, text: 'Anything to log from yesterday? Even one thing helps.', action: 'Log something', run: onLogFocus });
   }
 

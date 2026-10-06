@@ -3,6 +3,7 @@
 import { useState } from 'preact/hooks';
 import { getPref, setPref } from '../lib/prefs';
 import { Segmented } from '../ui/fields';
+import { dismissToast } from '../ui/Toast';
 import { DebtPlan } from './plan/Debt';
 import { Envelopes } from './plan/Envelopes';
 import { Goals } from './plan/Goals';
@@ -15,6 +16,7 @@ export function Plan() {
   const go = (t: PlanTab) => {
     setTab(t);
     setPref('planTab', t);
+    dismissToast();
   };
   return (
     <>

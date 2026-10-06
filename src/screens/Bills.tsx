@@ -153,7 +153,7 @@ function Calendar({ onEdit }: { onEdit: (b: Bill) => void }) {
   const selPay = paydays.filter((p) => p.date === selected);
 
   return (
-    <section class="card" aria-label="Bills calendar">
+    <section class="card cal-card" aria-label="Bills calendar">
       <div class="cal-head">
         <button type="button" class="icon-btn" onClick={() => shift(-1)} aria-label="Previous month">
           ‹

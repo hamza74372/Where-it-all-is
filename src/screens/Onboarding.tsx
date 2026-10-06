@@ -13,6 +13,9 @@ import { useToday } from '../ui/hooks';
 type Step = 'welcome' | 1 | 2 | 3 | 4;
 
 interface BillRow {
+  id: string;
+  /** Added with "Add another bill": the name is typed by the user. */
+  custom?: boolean;
   name: string;
   emoji: string;
   amount: string;
@@ -35,7 +38,7 @@ export function Onboarding() {
   const [noPay, setNoPay] = useState(false);
   const nextFriday = addDays(today, (5 - weekday(today) + 7) % 7 || 7);
   const [paySchedule, setPaySchedule] = useState<Schedule>({ kind: 'biweekly', anchorDate: nextFriday, weekendShift: 'before' });
-  const [bills, setBills] = useState<BillRow[]>(COMMON_BILLS.map((b) => ({ name: b.name, emoji: b.emoji, amount: '', day: '' })));
+  const [bills, setBills] = useState<BillRow[]>(COMMON_BILLS.map((b) => ({ id: b.name, name: b.name, emoji: b.emoji, amount: '', day: '' })));
   const [showErrors, setShowErrors] = useState(false);
 
   // The decimal choice applies while typing in onboarding, before settings are saved.
@@ -51,7 +54,7 @@ export function Onboarding() {
   const stepValid = (s: Step): boolean => {
     if (s === 2) return balanceCheck.state === 'ok' || balanceCheck.state === 'empty';
     if (s === 3) return noPay || payCheck.state === 'ok' || payCheck.state === 'empty';
-    if (s === 4) return billChecks.every((c) => c.state === 'ok' || c.state === 'empty');
+    if (s === 4) return billChecks.every((c, i) => (c.state === 'ok' && (!bills[i].custom || bills[i].name.trim())) || c.state === 'empty');
     return true;
   };
 
@@ -73,7 +76,7 @@ export function Onboarding() {
           if (c.state !== 'ok' || c.value <= 0) return [];
           const day = Math.min(31, Math.max(1, Number(b.day) || 1));
           const anchorDate = nextDayOfMonth(today, day);
-          return [{ name: b.name, amount: c.value, schedule: { kind: 'monthly', anchorDate, dayOfMonth: day, weekendShift: 'none' } as Schedule }];
+          return [{ name: b.name.trim() || 'Bill', amount: c.value, schedule: { kind: 'monthly', anchorDate, dayOfMonth: day, weekendShift: 'none' } as Schedule }];
         }),
       });
     } finally {
@@ -211,22 +214,35 @@ export function Onboarding() {
 
       {step === 4 && (
         <section>
-          <h1 class="screen-title">Your main bills</h1>
-          <p class="muted">Fill in the ones you have. Leave the rest blank. Add more any time.</p>
+          <h1 class="screen-title">Your main monthly bills</h1>
+          <p class="muted">Fill in the ones you have. Leave the rest blank. You can add more, or other schedules, any time.</p>
           <ul class="bill-quick-list">
-            {bills.map((b, i) => (
-              <li key={b.name} class="bill-quick-row">
-                <span class="bill-quick-name">
-                  <span aria-hidden="true">{b.emoji}</span> {b.name}
-                </span>
-                <BillRowInputs
-                  row={b}
-                  showErrors={showErrors}
-                  onChange={(patch) => setBills(bills.map((x, j) => (j === i ? { ...x, ...patch } : x)))}
-                />
-              </li>
-            ))}
+            {bills.map((b, i) => {
+              const update = (patch: Partial<BillRow>) => setBills(bills.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+              return (
+                <li key={b.id} class="bill-quick-row">
+                  {b.custom ? (
+                    <>
+                      <TextInput label="Bill name" value={b.name} onInput={(name) => update({ name })} placeholder="e.g. Netflix" autoFocus />
+                      {showErrors && !b.name.trim() && billChecks[i].state === 'ok' && <p class="field-error">Give this bill a name.</p>}
+                    </>
+                  ) : (
+                    <span class="bill-quick-name">
+                      <span aria-hidden="true">{b.emoji}</span> {b.name}
+                    </span>
+                  )}
+                  <BillRowInputs row={b} showErrors={showErrors} onChange={update} />
+                </li>
+              );
+            })}
           </ul>
+          <button
+            type="button"
+            class="btn"
+            onClick={() => setBills([...bills, { id: `custom-${bills.length}`, custom: true, name: '', emoji: '🧾', amount: '', day: '' }])}
+          >
+            + Add another bill
+          </button>
         </section>
       )}
 
@@ -245,13 +261,20 @@ export function Onboarding() {
 }
 
 function BillRowInputs(props: { row: BillRow; showErrors: boolean; onChange: (p: Partial<BillRow>) => void }) {
+  const name = props.row.name.trim() || 'New bill';
   return (
     <div class="bill-quick-inputs">
       <div class="grow">
-        <MoneyInput label={`${props.row.name} amount`} value={props.row.amount} onInput={(amount) => props.onChange({ amount })} showErrors={props.showErrors} />
+        <MoneyInput
+          label="Amount"
+          ariaLabel={`${name} amount`}
+          value={props.row.amount}
+          onInput={(amount) => props.onChange({ amount })}
+          showErrors={props.showErrors}
+        />
       </div>
       <label class="day-field">
-        <span class="field-label">Day due</span>
+        <span class="field-label">Day of month</span>
         <input
           class="input input-narrow"
           type="number"
@@ -259,7 +282,7 @@ function BillRowInputs(props: { row: BillRow; showErrors: boolean; onChange: (p:
           min={1}
           max={31}
           placeholder="Day"
-          aria-label={`${props.row.name} day of month`}
+          aria-label={`${name} day of month`}
           value={props.row.day}
           onInput={(e) => props.onChange({ day: e.currentTarget.value })}
         />
