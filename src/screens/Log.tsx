@@ -4,7 +4,7 @@ import { useMemo, useState } from 'preact/hooks';
 import { uid } from '../db/db';
 import type { Transaction } from '../db/types';
 import { addMonthsYM, parts, ymd } from '../lib/dates';
-import { deleteTransactions, defaultAccount } from '../state/actions';
+import { deleteTransactions, defaultAccount, saveWithUndo } from '../state/actions';
 import { useData, useStore } from '../state/store';
 import { checkMoney, DateInput, MoneyInput, moneyText, Segmented, Select, TextInput } from '../ui/fields';
 import { useFmt, useToday } from '../ui/hooks';
@@ -132,17 +132,15 @@ function TxForm({ tx, onDone }: { tx: Transaction | null; onDone: () => void }) 
     const c = checkMoney(amount, dec);
     if (c.state !== 'ok' || !accountId) return setShowErrors(true);
     const value = Math.abs(c.value);
-    await store.upsert('transactions', [
-      {
+    const undo = await saveWithUndo(store, 'transactions', {
         ...(tx ?? { id: uid(), source: 'manual' as const, cleared: false }),
         date,
         note: note.trim(),
         amount: direction === 'out' ? -value : value,
         categoryId: categoryId || undefined,
         accountId,
-      },
-    ]);
-    toast(tx ? 'Saved' : 'Added');
+    });
+    toast(tx ? 'Saved' : 'Added', undo);
     onDone();
   };
 

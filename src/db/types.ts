@@ -187,6 +187,14 @@ export interface Note extends BaseRecord {
   text: string;
 }
 
+/** "Move money" between envelopes for one month (schema v2). */
+export interface EnvelopeMove extends BaseRecord {
+  month: string; // 'YYYY-MM'
+  fromCategoryId: Id;
+  toCategoryId: Id;
+  amount: number; // minor units, positive
+}
+
 export interface AppEvent extends BaseRecord {
   ts: number;
   type: string;
@@ -207,6 +215,7 @@ export interface StoreMap {
   csvMappings: CsvMapping;
   notes: Note;
   events: AppEvent;
+  envelopeMoves: EnvelopeMove;
 }
 
 export type StoreName = keyof StoreMap;

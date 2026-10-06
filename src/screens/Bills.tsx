@@ -6,7 +6,7 @@ import type { Bill, ISODate, Schedule } from '../db/types';
 import { billsBetween, monthlySetAside, nextUnpaid, paydaysBetween } from '../lib/bills';
 import { addMonthsYM, daysInMonth, parts, weekday, ymd } from '../lib/dates';
 import { describeSchedule } from '../lib/schedule';
-import { billPaymentAmount, markBillPaid } from '../state/actions';
+import { billPaymentAmount, markBillPaid, saveWithUndo } from '../state/actions';
 import { useData, useStore } from '../state/store';
 import { checkMoney, MoneyInput, moneyText, ScheduleFields, Segmented, Select, TextInput, Toggle } from '../ui/fields';
 import { useFmt, useToday } from '../ui/hooks';
@@ -277,8 +277,8 @@ function BillForm({ bill, onDone }: { bill: Bill | null; onDone: () => void }) {
       amountSource: payTo ? (followCard ? 'cardBalance' : 'fixed') : undefined,
       active: true,
     };
-    await store.upsert('bills', [row]);
-    toast(bill ? 'Bill saved' : `${row.name} added`);
+    const undo = await saveWithUndo(store, 'bills', row);
+    toast(bill ? 'Bill saved' : `${row.name} added`, undo);
     onDone();
   };
 

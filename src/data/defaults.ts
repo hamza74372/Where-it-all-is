@@ -1,7 +1,7 @@
 // Starter content: categories, quick-log keywords, onboarding bill list, preset chips, example data.
 
 import { uid } from '../db/db';
-import type { Account, Bill, Category, Income, ISODate, QuickPreset, Schedule, Transaction } from '../db/types';
+import type { Account, Bill, Category, Debt, Goal, Income, ISODate, QuickPreset, Schedule, Transaction } from '../db/types';
 import { addDays, parts, weekday } from '../lib/dates';
 import type { Currency } from '../lib/money';
 import { nextOccurrence } from '../lib/schedule';
@@ -116,5 +116,24 @@ export function buildExampleData(today: ISODate, categories: Category[]) {
     spend(5, 2875, 'Groceries', 'Groceries'),
   ];
 
-  return { accounts: [checking, card, savings], incomes: [pay], bills, transactions, defaultAccountId: checking.id };
+  const limits: Record<string, number> = { Groceries: 40000, 'Eating out': 15000, Transport: 12000, Fun: 10000 };
+  const limitedCategories = categories.filter((c) => c.name in limits).map((c) => ({ ...c, monthlyLimit: limits[c.name] }));
+  const inMonths = (n: number) => {
+    const p = parts(today);
+    const t = new Date(Date.UTC(p.y, p.m - 1 + n, 1));
+    return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-01`;
+  };
+  const goals: Goal[] = [
+    { id: uid(), name: 'Holiday', emoji: '✈️', target: 120000, saved: 35000, targetDate: inMonths(8), updatedAt: now },
+    { id: uid(), name: 'Emergency cushion', emoji: '🛟', target: 100000, saved: 85000, updatedAt: now },
+  ];
+  const debts: Debt[] = [
+    { id: uid(), name: 'Store card', balance: 85000, apr: 29.9, minPayment: 2500, createdAt: now, updatedAt: now },
+    { id: uid(), name: 'Car loan', balance: 620000, apr: 7.9, minPayment: 21000, createdAt: now, updatedAt: now },
+  ];
+
+  return {
+    accounts: [checking, card, savings], incomes: [pay], bills, transactions, goals, debts, categories: limitedCategories,
+    defaultAccountId: checking.id,
+  };
 }

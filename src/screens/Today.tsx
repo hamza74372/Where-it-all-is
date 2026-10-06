@@ -1,13 +1,15 @@
 // Spec §7.2 — one big number, a 3-second log box, and one gentle next action.
 
 import { useMemo, useRef, useState } from 'preact/hooks';
-import type { Income } from '../db/types';
+import type { Bill, Income } from '../db/types';
+import { catchUp, type CatchUp } from '../lib/away';
+import { getPref, setPref } from '../lib/prefs';
 import { addDays } from '../lib/dates';
 import { nextBills, overdueOccurrences } from '../lib/bills';
 import { parseQuickLog } from '../lib/quickLog';
 import { computeSafeToSpend, type SafeToSpendResult } from '../lib/safeToSpend';
 import {
-  billPaymentAmount, categoryByName, clearExampleData, confirmPay, logTransaction, markBillPaid,
+  billPaymentAmount, categoryByName, clearExampleData, confirmPay, logTransaction, markBillPaid, type Undo,
 } from '../state/actions';
 import { useNav } from '../state/nav';
 import { useData, useStore, type AppData } from '../state/store';
@@ -37,22 +39,118 @@ export function Today() {
   const today = useToday();
   const fmt = useFmt();
   const result = useSafeToSpend(data, today);
+  const store = useStore();
   const logRef = useRef<HTMLInputElement>(null);
   const greeting = data.settings.name ? `Hi ${data.settings.name}` : 'Today';
+  const [focus, setFocus] = useState(() => getPref('focus', false));
+  const [awayDismissed, setAwayDismissed] = useState(false);
+  const away = awayDismissed ? null : catchUp(store.previousOpenedAt, today, data.bills, data.incomes, data.transactions);
+  const showAway = !!away && away.bills.length + away.paydays.length > 0;
+  const toggleFocus = () => {
+    setFocus(!focus);
+    setPref('focus', !focus);
+  };
 
   return (
     <>
-      {data.settings.exampleData && <ExampleBanner />}
-      <h1 class="screen-title">{greeting}</h1>
+      {data.settings.exampleData && !focus && <ExampleBanner />}
+      <div class="title-row">
+        <h1 class="screen-title">{greeting}</h1>
+        <button type="button" class="btn btn-small focus-btn" aria-pressed={focus} onClick={toggleFocus}>
+          {focus ? 'Show everything' : 'Focus'}
+        </button>
+      </div>
+      {/* The payday card stays in focus mode: without it the number would look wrong on payday. */}
       {result.unconfirmedPaydaysToday.map((p) => {
         const income = data.incomes.find((i) => i.id === p.incomeId);
         return income ? <PaydayCard key={income.id} income={income} today={today} /> : null;
       })}
+      {!focus && showAway && <AwayCard away={away!} today={today} onDismiss={() => setAwayDismissed(true)} />}
       <SafeNumber result={result} fmt={fmt} />
       <QuickLog inputRef={logRef} />
-      <RightNow today={today} onLogFocus={() => logRef.current?.focus()} />
-      <NextBillsCard today={today} />
+      {!focus && (
+        <>
+          <RightNow today={today} skipOverdue={showAway} onLogFocus={() => logRef.current?.focus()} />
+          <NextBillsCard today={today} />
+        </>
+      )}
     </>
+  );
+}
+
+function AwayCard({ away, today, onDismiss }: { away: CatchUp; today: string; onDismiss: () => void }) {
+  const store = useStore();
+  const fmt = useFmt();
+  const confirmable = away.paydays.filter((p) => !p.income.variable);
+  const variable = away.paydays.filter((p) => p.income.variable);
+
+  const payBill = (bill: Bill, date: string) => markBillPaid(store, bill, date, date, billPaymentAmount(store, bill, today));
+  const confirmAll = async () => {
+    const undos: Undo[] = [];
+    for (const b of away.bills) undos.push(await payBill(b.bill, b.date));
+    for (const p of confirmable) undos.push(await confirmPay(store, p.income, p.date, p.income.amount));
+    toast(`Caught up: ${undos.length} ${undos.length === 1 ? 'item' : 'items'} confirmed`, async () => {
+      for (const u of undos.reverse()) await u();
+    });
+  };
+
+  return (
+    <section class="card card-accent" aria-labelledby="away-title">
+      <h2 id="away-title" class="card-title">
+        While you were away
+      </h2>
+      <p class="muted">Welcome back. Since {fmt.day(away.since)}, these were due. Confirm what happened and your number catches up.</p>
+      <ul class="rows">
+        {away.paydays.map((p) => (
+          <li key={`p-${p.income.id}-${p.date}`} class="row">
+            <span class="row-main">
+              <span>💰 {p.income.name}</span>
+              <span class="row-sub">
+                {fmt.day(p.date)} · {p.income.variable ? 'amount varies' : fmt.money(p.income.amount)}
+              </span>
+            </span>
+            {p.income.variable ? (
+              <span class="row-sub">Confirm on its own below</span>
+            ) : (
+              <button
+                type="button"
+                class="btn btn-small"
+                onClick={async () => toast(`${p.income.name} confirmed`, await confirmPay(store, p.income, p.date, p.income.amount))}
+              >
+                It arrived
+              </button>
+            )}
+          </li>
+        ))}
+        {away.bills.map((b) => (
+          <li key={`b-${b.bill.id}-${b.date}`} class="row">
+            <span class="row-main">
+              <span>{b.bill.name}</span>
+              <span class="row-sub">
+                {fmt.day(b.date)} · {fmt.money(billPaymentAmount(store, b.bill, today))}
+                {b.bill.autopay ? ' · autopay' : ''}
+              </span>
+            </span>
+            <button type="button" class="btn btn-small" onClick={async () => toast(`${b.bill.name} marked paid`, await payBill(b.bill, b.date))}>
+              Paid
+            </button>
+          </li>
+        ))}
+      </ul>
+      {variable.map((p) => (
+        <PaydayCard key={`v-${p.income.id}-${p.date}`} income={p.income} today={p.date} />
+      ))}
+      <div class="row-gap">
+        {away.bills.length + confirmable.length > 1 && (
+          <button type="button" class="btn btn-primary" onClick={confirmAll}>
+            They all happened
+          </button>
+        )}
+        <button type="button" class="btn btn-quiet" onClick={onDismiss}>
+          Later
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -344,7 +442,7 @@ function QuickLog({ inputRef }: { inputRef: { current: HTMLInputElement | null }
   );
 }
 
-function RightNow({ today, onLogFocus }: { today: string; onLogFocus: () => void }) {
+function RightNow({ today, skipOverdue, onLogFocus }: { today: string; skipOverdue: boolean; onLogFocus: () => void }) {
   const store = useStore();
   const data = useData();
   const fmt = useFmt();
@@ -353,7 +451,7 @@ function RightNow({ today, onLogFocus }: { today: string; onLogFocus: () => void
   type Item = { key: string; text: string; action: string; run: () => void | Promise<void> };
   const items: Item[] = [];
 
-  for (const bill of data.bills) {
+  for (const bill of skipOverdue ? [] : data.bills) {
     for (const due of overdueOccurrences(bill, today, data.transactions)) {
       items.push({
         key: `overdue-${bill.id}-${due}`,

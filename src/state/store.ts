@@ -6,7 +6,7 @@ import { useContext, useEffect, useState } from 'preact/hooks';
 import { buildDefaultCategories } from '../data/defaults';
 import type { DB } from '../db/db';
 import { loadSettings } from '../db/settings';
-import type { Account, Bill, Category, Goal, Income, Settings, Transaction } from '../db/types';
+import type { Account, Bill, Category, Debt, EnvelopeMove, Goal, Income, Note, Settings, Transaction } from '../db/types';
 
 export interface AppData {
   settings: Settings;
@@ -16,12 +16,24 @@ export interface AppData {
   categories: Category[];
   transactions: Transaction[];
   goals: Goal[];
+  debts: Debt[];
+  notes: Note[];
+  envelopeMoves: EnvelopeMove[];
 }
 
-export type ListStore = 'accounts' | 'incomes' | 'bills' | 'categories' | 'transactions' | 'goals';
+export type ListStore =
+  | 'accounts'
+  | 'incomes'
+  | 'bills'
+  | 'categories'
+  | 'transactions'
+  | 'goals'
+  | 'debts'
+  | 'notes'
+  | 'envelopeMoves';
 type Row<S extends ListStore> = AppData[S][number];
 
-export const LIST_STORES: ListStore[] = ['accounts', 'incomes', 'bills', 'categories', 'transactions', 'goals'];
+export const LIST_STORES: ListStore[] = ['accounts', 'incomes', 'bills', 'categories', 'transactions', 'goals', 'debts', 'notes', 'envelopeMoves'];
 
 export class Store {
   private listeners = new Set<() => void>();
@@ -41,16 +53,23 @@ export class Store {
       }
       settings = await db.put('settings', { ...settings, seeded: true });
     }
-    const [accounts, incomes, bills, categories, transactions, goals] = await Promise.all([
+    const [accounts, incomes, bills, categories, transactions, goals, debts, notes, envelopeMoves] = await Promise.all([
       db.all('accounts'),
       db.all('incomes'),
       db.all('bills'),
       db.all('categories'),
       db.all('transactions'),
       db.all('goals'),
+      db.all('debts'),
+      db.all('notes'),
+      db.all('envelopeMoves'),
     ]);
     categories.sort((a, b) => a.order - b.order);
-    return new Store(db, { settings, accounts, incomes, bills, categories, transactions, goals }, previousOpenedAt);
+    return new Store(
+      db,
+      { settings, accounts, incomes, bills, categories, transactions, goals, debts, notes, envelopeMoves },
+      previousOpenedAt,
+    );
   }
 
   subscribe(fn: () => void): () => void {

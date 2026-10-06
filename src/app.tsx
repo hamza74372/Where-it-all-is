@@ -5,6 +5,7 @@ import { Bills } from './screens/Bills';
 import { Log } from './screens/Log';
 import { More } from './screens/More';
 import { Onboarding } from './screens/Onboarding';
+import { Plan } from './screens/Plan';
 import { Today } from './screens/Today';
 import { NavContext, type Tab } from './state/nav';
 import { Store, StoreContext, useData } from './state/store';
@@ -89,7 +90,7 @@ function Shell() {
               {tab === 'today' && <Today />}
               {tab === 'log' && <Log />}
               {tab === 'bills' && <Bills />}
-              {tab === 'plan' && <PlanSoon />}
+              {tab === 'plan' && <Plan />}
               {tab === 'more' && <More />}
             </main>
             <nav class="bottom-nav" aria-label="Main">
@@ -109,16 +110,5 @@ function Shell() {
         <ToastHost />
       </div>
     </NavContext.Provider>
-  );
-}
-
-function PlanSoon() {
-  return (
-    <>
-      <h1 class="screen-title">Plan</h1>
-      <div class="card">
-        <p>Envelopes, goals and a debt-free date are coming in the next update.</p>
-      </div>
-    </>
   );
 }

@@ -71,6 +71,34 @@ describe('IndexedDB wrapper', () => {
   });
 });
 
+describe('migrations', () => {
+  it('upgrades a v1 database with data to the current version without losing anything', async () => {
+    const factory = new IDBFactory();
+    // Build a genuine v1 database by running only the first migration.
+    const { MIGRATIONS } = await import('../src/db/schema');
+    await new Promise<void>((resolve, reject) => {
+      const open = factory.open('upgrade', 1);
+      open.onupgradeneeded = () => MIGRATIONS[0](open.result, open.transaction!);
+      open.onsuccess = () => {
+        const db = open.result;
+        const tx = db.transaction('accounts', 'readwrite');
+        tx.objectStore('accounts').put({ id: 'a1', name: 'Old account', type: 'checking', openingBalance: 4200, includeInSafeToSpend: true, archived: false, updatedAt: 1 });
+        tx.oncomplete = () => (db.close(), resolve());
+        tx.onerror = () => reject(tx.error);
+      };
+      open.onerror = () => reject(open.error);
+    });
+
+    const db = await DB.open('upgrade', factory);
+    expect(db.idb.version).toBe(SCHEMA_VERSION);
+    expect([...db.idb.objectStoreNames]).toContain('envelopeMoves');
+    expect((await db.get('accounts', 'a1'))?.openingBalance).toBe(4200);
+    await db.put('envelopeMoves', { id: 'm1', month: '2026-10', fromCategoryId: 'fun', toCategoryId: 'groc', amount: 1200 });
+    expect(await db.byIndex('envelopeMoves', 'month', '2026-10')).toHaveLength(1);
+    db.close();
+  });
+});
+
 describe('settings defaults', () => {
   it('guesses currency from browser language', () => {
     expect(guessCurrency('en-GB')).toBe('GBP');

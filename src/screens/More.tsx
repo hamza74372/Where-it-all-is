@@ -1,27 +1,31 @@
-// Spec §7.6 (Phase 2 parts): accounts, paychecks, quick-log chips, settings, about & privacy.
+// Spec §7.6: accounts, paychecks, categories, notes, quick-log chips, settings, about & privacy.
 import type { ComponentChildren } from 'preact';
 
 import { useState } from 'preact/hooks';
 import { DISCLAIMER } from '../copy';
 import { uid } from '../db/db';
-import type { Account, Income, QuickPreset, Schedule, Settings } from '../db/types';
+import type { Account, Category, Income, QuickPreset, Schedule, Settings } from '../db/types';
 import { addDays, weekday } from '../lib/dates';
 import { amountExample, CURRENCIES, CURRENCY_INFO } from '../lib/money';
 import { accountBalance } from '../lib/safeToSpend';
 import { describeSchedule } from '../lib/schedule';
-import { clearExampleData, openingBalanceFor } from '../state/actions';
+import { clearExampleData, openingBalanceFor, saveWithUndo } from '../state/actions';
 import { useData, useStore } from '../state/store';
 import { checkMoney, MoneyInput, moneyText, ScheduleFields, Segmented, Select, TextInput, Toggle } from '../ui/fields';
 import { useFmt, useToday } from '../ui/hooks';
 import { Icon } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
+import { Notes } from './Notes';
+import { CategoryForm } from './plan/Envelopes';
 
-type Page = 'menu' | 'accounts' | 'paychecks' | 'chips' | 'settings' | 'about';
+type Page = 'menu' | 'accounts' | 'paychecks' | 'categories' | 'notes' | 'chips' | 'settings' | 'about';
 
 const PAGES: Array<{ id: Exclude<Page, 'menu'>; label: string; sub: string }> = [
   { id: 'accounts', label: 'Accounts', sub: 'Bank accounts, cash, savings, cards' },
   { id: 'paychecks', label: 'Paychecks', sub: 'When money comes in' },
+  { id: 'categories', label: 'Categories', sub: 'Kinds of spending and their monthly amounts' },
+  { id: 'notes', label: 'Notes', sub: 'A brain dump for each month' },
   { id: 'chips', label: 'Quick-log chips', sub: 'One-tap spends on Today' },
   { id: 'settings', label: 'Settings', sub: 'Theme, currency, cushion, how you type amounts' },
   { id: 'about', label: 'About & privacy', sub: 'Where your data lives' },
@@ -46,7 +50,7 @@ export function More() {
             </li>
           ))}
         </ul>
-        <p class="muted">Categories, rules, notes, sharing, backups and help arrive in later updates.</p>
+        <p class="muted">Rules, sharing, backups and help arrive in later updates.</p>
         <p class="footer-note">{DISCLAIMER}</p>
       </>
     );
@@ -60,10 +64,77 @@ export function More() {
       <h1 class="screen-title">{title}</h1>
       {page === 'accounts' && <Accounts />}
       {page === 'paychecks' && <Paychecks />}
+      {page === 'categories' && <Categories />}
+      {page === 'notes' && <Notes />}
       {page === 'chips' && <Chips />}
       {page === 'settings' && <SettingsPage />}
       {page === 'about' && <About />}
     </>
+  );
+}
+
+/* ---------------- Categories ---------------- */
+
+function Categories() {
+  const data = useData();
+  const fmt = useFmt();
+  const [editing, setEditing] = useState<Category | 'new' | null>(null);
+  const live = data.categories.filter((c) => !c.archived);
+  const hidden = data.categories.filter((c) => c.archived);
+  return (
+    <>
+      <ul class="card rows">
+        {live.map((c) => (
+          <li key={c.id} class="row">
+            <button type="button" class="row-main row-button" onClick={() => setEditing(c)}>
+              <span>
+                <span aria-hidden="true">{c.emoji}</span> {c.name}
+              </span>
+              <span class="row-sub">{c.monthlyLimit != null ? `${fmt.money(c.monthlyLimit)} a month` : 'No monthly amount'}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <button type="button" class="btn" onClick={() => setEditing('new')}>
+        <Icon name="plus" /> Add category
+      </button>
+      {hidden.length > 0 && (
+        <>
+          <h2 class="log-day-title">Hidden</h2>
+          <ul class="card rows">
+            {hidden.map((c) => (
+              <li key={c.id} class="row">
+                <span class="row-main">
+                  <span>
+                    <span aria-hidden="true">{c.emoji}</span> {c.name}
+                  </span>
+                </span>
+                <UnhideButton category={c} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <Sheet open={editing != null} onClose={() => setEditing(null)} title={editing === 'new' ? 'Add category' : 'Edit category'}>
+        {editing != null && <CategoryForm key={editing === 'new' ? 'new' : editing.id} category={editing === 'new' ? null : editing} onDone={() => setEditing(null)} />}
+      </Sheet>
+    </>
+  );
+}
+
+function UnhideButton({ category }: { category: Category }) {
+  const store = useStore();
+  return (
+    <button
+      type="button"
+      class="btn btn-small"
+      onClick={async () => {
+        const undo = await saveWithUndo(store, 'categories', { ...category, archived: false });
+        toast(`${category.name} is back`, undo);
+      }}
+    >
+      Show again
+    </button>
   );
 }
 
@@ -142,18 +213,16 @@ function AccountForm({ account, onDone }: { account: Account | null; onDone: () 
     const entered = c.state === 'ok' ? c.value : 0;
     const signed = isCredit ? -Math.abs(entered) : entered; // card: what you owe, stored negative
     const id = account?.id ?? uid();
-    await store.upsert('accounts', [
-      {
+    const undo = await saveWithUndo(store, 'accounts', {
         id,
         name: name.trim(),
         type,
         openingBalance: openingBalanceFor({ id }, signed, store, today),
         includeInSafeToSpend: include,
         archived: false,
-      },
-    ]);
+    });
     if (makeDefault && !isCredit) await store.saveSettings({ defaultAccountId: id });
-    toast(account ? 'Account saved' : `${name.trim()} added`);
+    toast(account ? 'Account saved' : `${name.trim()} added`, undo);
     onDone();
   };
 
@@ -267,10 +336,10 @@ function IncomeForm({ income, onDone }: { income: Income | null; onDone: () => v
     e.preventDefault();
     const c = checkMoney(amount, dec);
     if (!name.trim() || c.state !== 'ok') return setShowErrors(true);
-    await store.upsert('incomes', [
-      { id: income?.id ?? uid(), name: name.trim(), amount: Math.abs(c.value), accountId, schedule, variable, active },
-    ]);
-    toast('Paycheck saved');
+    const undo = await saveWithUndo(store, 'incomes', {
+      id: income?.id ?? uid(), name: name.trim(), amount: Math.abs(c.value), accountId, schedule, variable, active,
+    });
+    toast('Paycheck saved', undo);
     onDone();
   };
 

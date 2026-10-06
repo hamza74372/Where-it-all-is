@@ -5,9 +5,29 @@ import { uid } from '../db/db';
 import type { Account, Bill, Category, Id, Income, ISODate, Schedule, Transaction } from '../db/types';
 import { accountBalance } from '../lib/safeToSpend';
 import type { Minor } from '../lib/money';
-import { LIST_STORES, type Store } from './store';
+import { LIST_STORES, type AppData, type ListStore, type Store } from './store';
 
 export type Undo = () => Promise<void>;
+
+/** Save one row; undo restores the previous version (or removes it if it was new). */
+export async function saveWithUndo<S extends ListStore>(
+  store: Store,
+  name: S,
+  row: Omit<AppData[S][number], 'updatedAt'> & { updatedAt?: number },
+): Promise<Undo> {
+  const before = (store.data[name] as Array<AppData[S][number]>).find((r) => r.id === row.id);
+  await store.upsert(name, [row]);
+  return async () => {
+    if (before) await store.upsert(name, [before]);
+    else await store.remove(name, [row.id]);
+  };
+}
+
+/** Remove one row; undo puts it back exactly as it was. */
+export async function removeWithUndo<S extends ListStore>(store: Store, name: S, row: AppData[S][number]): Promise<Undo> {
+  await store.remove(name, [row.id]);
+  return async () => void (await store.upsert(name, [row]));
+}
 
 /** The account quick log spends from: the saved default, else the first everyday account. */
 export function defaultAccount(store: Store): Account | undefined {
@@ -152,6 +172,9 @@ export async function loadExampleData(store: Store, today: ISODate): Promise<voi
   await store.upsert('incomes', ex.incomes);
   await store.upsert('bills', ex.bills);
   await store.upsert('transactions', ex.transactions);
+  await store.upsert('goals', ex.goals);
+  await store.upsert('debts', ex.debts);
+  await store.upsert('categories', ex.categories);
   await store.saveSettings({ onboarded: true, exampleData: true, defaultAccountId: ex.defaultAccountId });
 }
 

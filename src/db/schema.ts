@@ -40,18 +40,24 @@ const V1_STORES: StoreSpec[] = [
   { name: 'events', indexes: [['ts', 'ts']] },
 ];
 
+function createStores(db: IDBDatabase, specs: StoreSpec[]) {
+  for (const spec of specs) {
+    const store = db.createObjectStore(spec.name, { keyPath: 'id' });
+    for (const [name, keyPath, unique] of spec.indexes ?? []) {
+      store.createIndex(name, keyPath, { unique: !!unique });
+    }
+  }
+}
+
+const V2_STORES: StoreSpec[] = [{ name: 'envelopeMoves', indexes: [['month', 'month']] }];
+
 export const MIGRATIONS: Migration[] = [
   // v1 — initial schema
-  (db) => {
-    for (const spec of V1_STORES) {
-      const store = db.createObjectStore(spec.name, { keyPath: 'id' });
-      for (const [name, keyPath, unique] of spec.indexes ?? []) {
-        store.createIndex(name, keyPath, { unique: !!unique });
-      }
-    }
-  },
+  (db) => createStores(db, V1_STORES),
+  // v2 — "move money" between envelopes (Phase 3)
+  (db) => createStores(db, V2_STORES),
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
 
-export const ALL_STORES: StoreName[] = V1_STORES.map((s) => s.name);
+export const ALL_STORES: StoreName[] = [...V1_STORES, ...V2_STORES].map((s) => s.name);

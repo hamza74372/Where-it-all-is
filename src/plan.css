@@ -1,0 +1,200 @@
+/* Phase 3: envelopes, goals, debt, insights, notes, focus mode. */
+
+/* Progress bars: soft green → amber → coral; goals use the accent. */
+.progress-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin: 8px 0 4px;
+}
+.progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+.level-ok span {
+  background: var(--green-fill);
+}
+.level-near span {
+  background: var(--amber-fill);
+}
+.level-over span {
+  background: var(--coral-fill);
+}
+.level-goal span {
+  background: var(--accent);
+}
+
+.row-envelope .row-main {
+  width: 100%;
+}
+.env-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+}
+.env-status {
+  font-size: 15px;
+}
+.env-near {
+  color: var(--amber);
+}
+.env-over {
+  color: var(--coral);
+}
+.goal-add {
+  align-self: flex-start;
+  margin-top: 8px;
+}
+.goal-toggle .toggle-row {
+  margin: 0;
+}
+
+/* Emoji picker */
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 6px;
+}
+.emoji-choice {
+  aspect-ratio: 1;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 22px;
+  cursor: pointer;
+}
+.emoji-choice[aria-checked='true'] {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Debt */
+.input-narrow-wide {
+  max-width: 180px;
+}
+.slider {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--accent);
+}
+.compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* stacks on phones */
+  gap: 10px;
+  margin: 8px 0 12px;
+}
+.plan-card {
+  background: var(--surface-2);
+  border-radius: 14px;
+  padding: 14px;
+}
+.plan-card h3 {
+  margin: 0 0 2px;
+  font-size: 17px;
+}
+.plan-card p {
+  margin: 6px 0 0;
+}
+.plan-date {
+  font-size: 22px;
+  font-weight: 750;
+}
+.assumptions {
+  margin-top: 8px;
+}
+.assumptions summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--accent);
+  font-weight: 600;
+}
+.assumptions ul {
+  margin: 4px 0 0;
+  padding-left: 1.1em;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+/* Insights bars */
+.bar-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.swatch-now,
+.bar-now {
+  background: var(--accent);
+}
+.swatch-before,
+.bar-before {
+  background: var(--border);
+}
+.bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'name values' 'track values';
+  gap: 4px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.bar-row:last-child {
+  border-bottom: 0;
+}
+.bar-name {
+  grid-area: name;
+}
+.bar-track {
+  grid-area: track;
+  display: grid;
+  gap: 3px;
+}
+.bar {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  min-width: 2px;
+}
+.bar-values {
+  grid-area: values;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* Notes */
+.note-area {
+  min-height: 220px;
+  resize: vertical;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+/* Focus mode */
+.focus-btn[aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}

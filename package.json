@@ -9,7 +9,10 @@
     "build:all": "npm run build && npm run build:demo",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "e2e": "playwright test",
+    "audit": "playwright test -c playwright.audit.config.ts",
+    "sheets": "esbuild scripts/make-debt-sheets.ts --bundle --platform=node --format=esm --log-level=warning --outfile=node_modules/.cache/make-debt-sheets.mjs && node node_modules/.cache/make-debt-sheets.mjs"
   },
   "author": "Hamza",
   "license": "UNLICENSED",
