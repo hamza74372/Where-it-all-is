@@ -694,3 +694,16 @@ select.input {
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
 }
+
+/* Very narrow phones (≤ 360px, e.g. 320px iPhone SE): seven 44px days need 308px, so the
+   calendar card runs nearly edge to edge and drops the gaps between days. */
+@media (max-width: 360px) {
+  .card.cal-card {
+    margin-inline: -14px;
+    padding-inline: 0;
+    border-radius: 12px;
+  }
+  .cal-card .cal-grid {
+    gap: 0;
+  }
+}

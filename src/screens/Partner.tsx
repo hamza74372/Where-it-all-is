@@ -3,8 +3,9 @@
 
 import qrcode from 'qrcode-generator';
 import { useState } from 'preact/hooks';
-import { isEncryptedFile, NotOurFileError, type EncryptedFile } from '../lib/backup/crypto';
+import { isEncryptedFile, MIN_PASSPHRASE, NotOurFileError, type EncryptedFile } from '../lib/backup/crypto';
 import { fromShareCode, type PartnerSummary } from '../lib/backup/partner';
+import { todayISO } from '../lib/dates';
 import { formatMoney } from '../lib/money';
 import { saveFile } from '../lib/saveFile';
 import { makePartnerShare, openPartnerShare, removePartnerShare, type PartnerShareFile } from '../state/backupActions';
@@ -61,7 +62,7 @@ function CreateShare() {
   const [busy, setBusy] = useState(false);
   const [made, setMade] = useState<PartnerShareFile | null>(null);
   const [showQr, setShowQr] = useState(false);
-  const ok = pass.length >= 6 && pass === pass2;
+  const ok = pass.length >= MIN_PASSPHRASE && pass === pass2;
 
   return (
     <section class="card" aria-labelledby="share-make">
@@ -77,7 +78,8 @@ function CreateShare() {
       />
       <PassInput id="share-pass" label="Passphrase for this share" value={pass} onInput={setPass} autoComplete="new-password" />
       <PassInput id="share-pass2" label="Type it again" value={pass2} onInput={setPass2} autoComplete="new-password" />
-      <p class="field-hint">Tell your partner the passphrase separately — in person, or in a different message from the file.</p>
+      <p class="field-hint">Tell your partner the passphrase separately, not in the same message as the file.</p>
+      {pass.length > 0 && pass.length < MIN_PASSPHRASE && <p class="field-error">Use at least {MIN_PASSPHRASE} characters (a few words is best).</p>}
       {pass2.length > 0 && pass !== pass2 && <p class="field-error">The two passphrases don’t match.</p>}
       <button
         type="button"
@@ -270,6 +272,9 @@ export function PartnerTab() {
   const created = new Date(s.createdAt);
   const asOf = `${fmt.day(created.toISOString().slice(0, 10))}, ${created.toLocaleTimeString(s.locale, { hour: 'numeric', minute: '2-digit' })}`;
   const ageDays = Math.floor((Date.now() - s.createdAt) / 86_400_000);
+  // The number was "today" for the sender when they made it; say which day once that's not today.
+  const snapshotDay = todayISO(created);
+  const today = todayISO();
   const who = s.fromName ? `${s.fromName}’s` : 'Your partner’s';
   const money = (n: number, whole = false) => formatMoney(n, s.currency, s.locale, { decimal: s.decimal, wholeIfRound: whole });
 
@@ -286,7 +291,9 @@ export function PartnerTab() {
       )}
 
       <section class="card hero">
-        <h2 class="hero-label">{s.safe.status === 'tight' ? 'Tight until payday' : 'Safe to spend today'}</h2>
+        <h2 class="hero-label">
+          {s.safe.status === 'tight' ? 'Tight until payday' : snapshotDay === today ? 'Safe to spend today' : `Safe to spend on ${fmt.day(snapshotDay)}`}
+        </h2>
         <p class="big-number">{money(Math.floor((s.safe.status === 'tight' ? s.safe.shortfall : Math.max(0, s.safe.today)) / 100) * 100, true)}</p>
         <p class="muted">
           {s.safe.untilPayday ? `Until payday ${fmt.day(s.safe.nextPayday)}` : 'Until the end of the month'}: {money(s.safe.period)}

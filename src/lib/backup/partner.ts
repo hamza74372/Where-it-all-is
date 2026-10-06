@@ -73,7 +73,7 @@ export function isPartnerSummary(x: unknown): x is PartnerSummary {
 
 export const QR_MAX_CHARS = 2000; // ≈ 2 KB — beyond this a QR code gets too dense to scan reliably
 
-// Compact form: "WIAI1." + salt . iv . check . data, each base64url. Iterations and kind are
+// Compact form: "WIAI2." (compressed) or "WIAI1." + salt . iv . check . data, each base64url. Iterations and kind are
 // implied (600,000 and "partner"), so nothing is encoded twice.
 const b64url = (b64: string) => b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const unb64url = (s: string) => {
@@ -82,12 +82,13 @@ const unb64url = (s: string) => {
 };
 
 export function toShareCode(file: EncryptedFile): string {
-  return ['WIAI1', file.kdf.salt, file.cipher.iv, file.check, file.data].map((p, i) => (i === 0 ? p : b64url(p))).join('.');
+  const prefix = file.zip ? 'WIAI2' : 'WIAI1';
+  return [prefix, file.kdf.salt, file.cipher.iv, file.check, file.data].map((p, i) => (i === 0 ? p : b64url(p))).join('.');
 }
 
 export function fromShareCode(code: string): EncryptedFile {
   const parts = code.replace(/\s+/g, '').split('.');
-  if (parts[0] !== 'WIAI1') throw new NotOurFileError('That isn’t a share code from this app.');
+  if (parts[0] !== 'WIAI1' && parts[0] !== 'WIAI2') throw new NotOurFileError('That isn’t a share code from this app.');
   if (parts.length !== 5 || parts.slice(1).some((p) => !/^[A-Za-z0-9_-]+$/.test(p))) {
     throw new NotOurFileError('That share code is incomplete — copy all of it and try again.');
   }
@@ -104,6 +105,7 @@ export function fromShareCode(code: string): EncryptedFile {
     kind: 'partner',
     kdf: { name: 'PBKDF2', hash: 'SHA-256', iterations: PBKDF2_ITERATIONS, salt },
     cipher: { name: 'AES-GCM', iv },
+    ...(parts[0] === 'WIAI2' ? { zip: 'deflate-raw' as const } : {}),
     check,
     data,
   };

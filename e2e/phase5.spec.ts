@@ -249,3 +249,69 @@ test('partner share: opens as a separate read-only tab, never mixes with your da
   await expect(nav(page, 'Partner')).toBeVisible();
   expect(problems).toEqual([]);
 });
+
+test('restoring a backup in another currency warns and offers to switch', async ({ page }) => {
+  await noShareSheet(page);
+  await start(page);
+  await quickSetup(page); // this device: USD
+  const setCurrency = async (code: string) => {
+    await nav(page, 'Today').click(); // More reopens on its menu
+    await nav(page, 'More').click();
+    await page.getByRole('button', { name: /^Settings/ }).click();
+    await page.getByLabel('Currency').selectOption(code);
+    await nav(page, 'Today').click();
+  };
+  // A backup from a GBP device: switch to GBP, back up, switch back.
+  await setCurrency('GBP');
+  const file = await backUp(page);
+  await setCurrency('USD');
+  await openBackupPage(page);
+
+  await page.locator('input[type=file][accept^=".json"]').setInputFiles(file);
+  await page.getByRole('button', { name: /Merge with my data/ }).click();
+  const guard = page.getByRole('group', { name: /This backup is in £/ });
+  await expect(guard).toContainText('This device is set to $');
+  await guard.getByRole('button', { name: 'Cancel' }).click();
+  await expect(guard).toHaveCount(0);
+  await page.getByRole('button', { name: /Merge with my data/ }).click();
+  await page.getByRole('button', { name: 'Switch to £' }).click();
+  await expect(page.getByRole('status')).toContainText('Merged');
+  await nav(page, 'Today').click();
+  await expect(page.locator('.big-number')).toContainText('£');
+  // Undo puts the currency back too.
+  await nav(page, 'More').click();
+  await nav(page, 'Today').click();
+});
+
+test('partner view says which day the number is for once the snapshot isn’t from today', async ({ page, browser }) => {
+  const shareFile = await makePartnerShareFile(browser); // made Tue 6 Oct
+  await noShareSheet(page);
+  await start(page, new Date(2026, 9, 6, 18, 0));
+  await page.getByRole('button', { name: 'Try with example numbers' }).click();
+  await nav(page, 'More').click();
+  await page.getByRole('button', { name: /^Share with partner/ }).click();
+  await expect(page.getByText('Tell your partner the passphrase separately, not in the same message as the file.')).toBeVisible();
+  await page.locator('input[type=file][accept^=".wiai"]').setInputFiles(shareFile);
+  await page.getByLabel('Passphrase your partner gave you').fill('our house 12');
+  await page.getByRole('button', { name: 'Open' }).click();
+  await expect(page.locator('.partner-view .hero-label')).toHaveText('Safe to spend today');
+  await page.clock.setSystemTime(new Date(2026, 9, 7, 9, 0)); // next morning
+  await page.reload();
+  await nav(page, 'Partner').click();
+  await expect(page.locator('.partner-view .hero-label')).toHaveText('Safe to spend on Tue, Oct 6');
+});
+
+test('passphrases need at least 8 characters', async ({ page }) => {
+  await noShareSheet(page);
+  await start(page);
+  await quickSetup(page);
+  await openBackupPage(page);
+  await page.getByRole('switch', { name: 'Lock it with a passphrase' }).click();
+  await page.getByLabel('Passphrase', { exact: true }).fill('seven77');
+  await page.getByLabel('Type it again').fill('seven77');
+  await expect(page.getByText('Use at least 8 characters')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Back up now' })).toBeDisabled();
+  await page.getByLabel('Passphrase', { exact: true }).fill('eight888');
+  await page.getByLabel('Type it again').fill('eight888');
+  await expect(page.getByRole('button', { name: 'Back up now' })).toBeEnabled();
+});

@@ -1,8 +1,9 @@
 // Spec §7.10 — backup & restore. Everything stays on the device unless you save or send the file.
 
 import { useState } from 'preact/hooks';
-import { WrongPassphraseError } from '../lib/backup/crypto';
+import { MIN_PASSPHRASE, WrongPassphraseError } from '../lib/backup/crypto';
 import { readBackupText, summariseBackup, type BackupFile, type BackupSummary } from '../lib/backup/format';
+import { CURRENCY_INFO, type Currency } from '../lib/money';
 import { saveFile } from '../lib/saveFile';
 import { applyBackup, makeBackup, makeTransactionsCsv, markBackedUp } from '../state/backupActions';
 import { useData, useStore } from '../state/store';
@@ -85,7 +86,7 @@ function BackupNow() {
   const [pass2, setPass2] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const passOk = !lock || (pass.length >= 6 && pass === pass2);
+  const passOk = !lock || (pass.length >= MIN_PASSPHRASE && pass === pass2);
 
   return (
     <section class="card" aria-labelledby="bk-now">
@@ -105,7 +106,7 @@ function BackupNow() {
           <p class="warn-box" role="note">
             <strong>If you forget this passphrase, this backup can’t be opened.</strong> Nobody can recover it — the app never stores it.
           </p>
-          {pass.length > 0 && pass.length < 6 && <p class="field-error">Use at least 6 characters (a few words is best).</p>}
+          {pass.length > 0 && pass.length < MIN_PASSPHRASE && <p class="field-error">Use at least {MIN_PASSPHRASE} characters (a few words is best).</p>}
           {pass2.length > 0 && pass !== pass2 && <p class="field-error">The two passphrases don’t match.</p>}
         </>
       )}
@@ -208,11 +209,24 @@ export function RestorePanel({ onRestored }: { onRestored?: () => void }) {
     }
   };
 
-  const apply = async (mode: 'replace' | 'merge') => {
+  // Currency guard: amounts are plain numbers, so restoring £ data into a $ device would mislabel them.
+  const data = useData();
+  const [pendingMode, setPendingMode] = useState<'replace' | 'merge' | null>(null);
+  const backupCurrency = (file?.stores.settings?.[0] as { currency?: Currency } | undefined)?.currency;
+  const deviceCurrency = data.settings.currency;
+  const currencyDiffers = !!data.settings.onboarded && !!backupCurrency && backupCurrency !== deviceCurrency;
+
+  const apply = async (mode: 'replace' | 'merge', switchCurrency = false) => {
     if (!file) return;
+    if (currencyDiffers && !switchCurrency) return setPendingMode(mode);
+    setPendingMode(null);
     setBusy(true);
     try {
       const { stats, undo } = await applyBackup(store, file, mode);
+      // A merge keeps this device's settings, so switch the currency explicitly (undo reverts it too).
+      if (switchCurrency && backupCurrency && store.data.settings.currency !== backupCurrency) {
+        await store.saveSettings({ currency: backupCurrency });
+      }
       const msg =
         mode === 'replace'
           ? 'Backup restored'
@@ -306,6 +320,25 @@ export function RestorePanel({ onRestored }: { onRestored?: () => void }) {
             {exported.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
             {encrypted ? ' · was locked with a passphrase' : ''} · app version {summary.appVersion}
           </p>
+          {pendingMode && backupCurrency && (
+            <div class="card card-accent currency-guard" role="group" aria-labelledby="currency-q">
+              <p id="currency-q">
+                <strong>
+                  This backup is in {symbolOf(backupCurrency, data.settings.locale)} ({CURRENCY_INFO[backupCurrency].label.replace(/ \(.*\)$/, '')}). This
+                  device is set to {symbolOf(deviceCurrency, data.settings.locale)} ({CURRENCY_INFO[deviceCurrency].label.replace(/ \(.*\)$/, '')}).
+                </strong>{' '}
+                Amounts are saved as plain numbers, so they’d show in the wrong currency unless you switch.
+              </p>
+              <div class="row-gap">
+                <button type="button" class="btn btn-primary" disabled={busy} onClick={() => apply(pendingMode, true)}>
+                  Switch to {symbolOf(backupCurrency, data.settings.locale)}
+                </button>
+                <button type="button" class="btn" onClick={() => setPendingMode(null)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
           <div class="choice-grid" role="group" aria-label="What should happen with this backup?">
             <button type="button" class="choice" disabled={busy} onClick={() => apply('replace')}>
               <span class="choice-title">Replace my data</span>
@@ -326,4 +359,9 @@ export function RestorePanel({ onRestored }: { onRestored?: () => void }) {
       )}
     </section>
   );
+}
+
+/** "£", "$", "€" for a currency, as this locale writes it. */
+export function symbolOf(currency: Currency, locale: string): string {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).formatToParts(1).find((p) => p.type === 'currency')?.value ?? currency;
 }

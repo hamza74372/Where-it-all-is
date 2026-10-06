@@ -1,6 +1,6 @@
 // Backup, restore (replace or merge, both undoable), CSV export and partner sharing.
 
-import { encryptJson, decryptJson, NotOurFileError, type EncryptedFile } from '../lib/backup/crypto';
+import { checkPassphrase, encryptJson, decryptJson, NotOurFileError, type EncryptedFile } from '../lib/backup/crypto';
 import { backupFileName, buildBackup, type BackupFile } from '../lib/backup/format';
 import { mergeSnapshots, type MergeStats } from '../lib/backup/merge';
 import { buildPartnerSummary, isPartnerSummary, partnerFileName, QR_MAX_CHARS, toShareCode, type PartnerSummary } from '../lib/backup/partner';
@@ -16,6 +16,7 @@ export interface MadeFile {
 
 /** Build a backup file (optionally locked with a passphrase). Doesn't mark it saved — see markBackedUp. */
 export async function makeBackup(store: Store, appVersion: string, passphrase?: string, now = new Date()): Promise<MadeFile> {
+  if (passphrase !== undefined) checkPassphrase(passphrase);
   const file = await buildBackup(await store.exportSnapshot(), appVersion, now);
   const body = passphrase ? await encryptJson(file, passphrase, 'backup') : file;
   return { name: backupFileName(now, !!passphrase), text: JSON.stringify(body), type: 'application/json' };
@@ -59,6 +60,7 @@ export interface PartnerShareFile extends MadeFile {
 }
 
 export async function makePartnerShare(store: Store, today: string, includeTransactions: boolean, passphrase: string, now = new Date()): Promise<PartnerShareFile> {
+  checkPassphrase(passphrase);
   const summary = buildPartnerSummary(store.data, today, includeTransactions, now.getTime());
   const envelope = await encryptJson(summary, passphrase, 'partner');
   const code = toShareCode(envelope);

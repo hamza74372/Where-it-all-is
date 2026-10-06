@@ -43,6 +43,30 @@ describe('encryption (PBKDF2-SHA256 600k + AES-GCM)', () => {
     expect(await decryptJson(a, 'correct horse')).toEqual({ hello: 'world', n: 42 });
   });
 
+  it('compresses before encrypting, and still opens older uncompressed files', async () => {
+    const big = { rows: Array.from({ length: 200 }, (_, i) => ({ note: 'Groceries at the corner shop', amount: -1000 - i })) };
+    const zipped = await encryptJson(big, 'pass', 'backup');
+    expect(zipped.zip).toBe('deflate-raw');
+    expect(zipped.data.length).toBeLessThan(JSON.stringify(big).length / 3);
+    expect(await decryptJson(zipped, 'pass')).toEqual(big);
+    // A file from before compression existed (or a browser without CompressionStream).
+    const saved = globalThis.CompressionStream;
+    (globalThis as { CompressionStream?: unknown }).CompressionStream = undefined;
+    const plain = await encryptJson(big, 'pass', 'backup');
+    (globalThis as { CompressionStream?: unknown }).CompressionStream = saved;
+    expect(plain.zip).toBeUndefined();
+    expect(await decryptJson(plain, 'pass')).toEqual(big);
+    // Claiming compression on an uncompressed file breaks the tag check.
+    await expect(decryptJson({ ...plain, zip: 'deflate-raw' }, 'pass')).rejects.toBeInstanceOf(TamperedFileError);
+  });
+
+  it('backups and shares need a passphrase of at least 8 characters', async () => {
+    const store = await seeded();
+    await expect(makeBackup(store, '1', 'seven77')).rejects.toThrow(/at least 8 characters/);
+    await expect(makePartnerShare(store, '2026-10-06', false, 'short')).rejects.toThrow(/at least 8 characters/);
+    await expect(makeBackup(store, '1', 'eight888')).resolves.toBeDefined();
+  });
+
   it('a wrong passphrase fails cleanly', async () => {
     const f = await encryptJson({ x: 1 }, 'right one', 'backup');
     await expect(decryptJson(f, 'wrong one')).rejects.toBeInstanceOf(WrongPassphraseError);
@@ -229,17 +253,18 @@ describe('partner share', () => {
 
   it('a small share gets a QR/copy code; a big one does not', async () => {
     const mine = await seeded();
-    const small = await makePartnerShare(mine, '2026-10-06', false, 'p');
+    const small = await makePartnerShare(mine, '2026-10-06', false, 'partner pass');
     expect(small.code).toBeDefined();
     expect(small.code!.length).toBeLessThanOrEqual(QR_MAX_CHARS);
     expect(fromShareCode(small.code!)).toEqual(JSON.parse(small.text));
-    await mine.upsert('transactions', Array.from({ length: 80 }, (_, i) => ({
-      id: `b${i}`, date: '2026-10-05', amount: -100 - i, accountId: 'chk', note: `Long description for a purchase number ${i}`, source: 'manual' as const, cleared: false,
+    // Varied notes (they don't compress away): 150 recent transactions is too much for a QR code.
+    await mine.upsert('transactions', Array.from({ length: 150 }, (_, i) => ({
+      id: `b${i}`, date: '2026-10-05', amount: -100 - i * 7, accountId: 'chk', note: `${uid()} ${uid()}`, source: 'manual' as const, cleared: false,
     })));
-    const big = await makePartnerShare(mine, '2026-10-06', true, 'p');
+    const big = await makePartnerShare(mine, '2026-10-06', true, 'partner pass');
     expect(big.code).toBeUndefined();
     expect(() => fromShareCode('hello')).toThrow(NotOurFileError);
-    expect(toShareCode(JSON.parse(small.text)).startsWith('WIAI1.')).toBe(true);
+    expect(toShareCode(JSON.parse(small.text)).startsWith('WIAI2.')).toBe(true); // compressed
     expect(() => fromShareCode(small.code!.slice(0, -10).split('.').slice(0, 4).join('.'))).toThrow(/incomplete/);
   });
 });
