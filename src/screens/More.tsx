@@ -21,10 +21,12 @@ import { Notes } from './Notes';
 import { Rules } from './Rules';
 import { BackupScreen, lastBackupText } from './Backup';
 import { HelpScreen } from './Help';
+import { YourData } from './YourData';
+import { ClearExamplesConfirm } from './Today';
 import { ShareWithPartner } from './Partner';
 import { CategoryForm } from './plan/Envelopes';
 
-type Page = 'menu' | 'accounts' | 'paychecks' | 'categories' | 'rules' | 'notes' | 'backup' | 'share' | 'chips' | 'settings' | 'help' | 'about';
+type Page = 'menu' | 'accounts' | 'paychecks' | 'categories' | 'rules' | 'notes' | 'backup' | 'share' | 'data' | 'chips' | 'settings' | 'help' | 'about';
 
 const PAGES: Array<{ id: Exclude<Page, 'menu'>; label: string; sub: string }> = [
   { id: 'accounts', label: 'Accounts', sub: 'Bank accounts, cash, savings, cards' },
@@ -34,6 +36,7 @@ const PAGES: Array<{ id: Exclude<Page, 'menu'>; label: string; sub: string }> = 
   { id: 'notes', label: 'Notes', sub: 'A brain dump for each month' },
   { id: 'backup', label: 'Backup & restore', sub: 'Keep a copy safe, move to a new phone, export CSV' },
   { id: 'share', label: 'Share with partner', sub: 'A read-only, locked snapshot for your partner' },
+  { id: 'data', label: 'Your data', sub: 'Import history, erase everything' },
   { id: 'chips', label: 'Quick-log chips', sub: 'One-tap spends on Today' },
   { id: 'settings', label: 'Settings', sub: 'Theme, currency, cushion, how you type amounts' },
   { id: 'help', label: 'Help', sub: 'Short guides: setup, safe to spend, importing, backups…' },
@@ -87,6 +90,7 @@ export function More() {
       {page === 'rules' && <Rules />}
       {page === 'backup' && (__DEMO__ ? <DemoOff what="Backups, restore and CSV export" /> : <BackupScreen />)}
       {page === 'share' && (__DEMO__ ? <DemoOff what="Sharing with a partner" /> : <ShareWithPartner />)}
+      {page === 'data' && <YourData onBackup={() => setPage('backup')} />}
       {page === 'chips' && <Chips />}
       {page === 'settings' && <SettingsPage />}
       {page === 'help' && <HelpScreen />}
@@ -162,6 +166,23 @@ function UnhideButton({ category }: { category: Category }) {
 
 /* ---------------- Accounts ---------------- */
 
+function ShowAccountButton({ account }: { account: Account }) {
+  const store = useStore();
+  return (
+    <button
+      type="button"
+      class="btn btn-small"
+      aria-label={`Show ${account.name}`}
+      onClick={async () => {
+        const undo = await saveWithUndo(store, 'accounts', { ...account, archived: false });
+        toast(`${account.name} is back`, undo);
+      }}
+    >
+      Show
+    </button>
+  );
+}
+
 const TYPE_LABEL: Record<Account['type'], string> = {
   checking: 'Everyday account',
   savings: 'Savings',
@@ -175,6 +196,7 @@ function Accounts() {
   const today = useToday();
   const [editing, setEditing] = useState<Account | 'new' | null>(null);
   const live = data.accounts.filter((a) => !a.archived);
+  const hidden = data.accounts.filter((a) => a.archived);
   return (
     <>
       <ul class="card rows">
@@ -200,6 +222,22 @@ function Accounts() {
       <button type="button" class="btn" onClick={() => setEditing('new')}>
         <Icon name="plus" /> Add account
       </button>
+      {hidden.length > 0 && (
+        <>
+          <h2 class="log-day-title">Hidden accounts</h2>
+          <ul class="card rows" aria-label="Hidden accounts">
+            {hidden.map((a) => (
+              <li key={a.id} class="row">
+                <span class="row-main">
+                  <span>{a.name}</span>
+                  <span class="row-sub">{TYPE_LABEL[a.type]} · not counted in safe to spend while hidden</span>
+                </span>
+                <ShowAccountButton account={a} />
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       <Sheet open={editing != null} onClose={() => setEditing(null)} title={editing === 'new' ? 'Add account' : 'Edit account'}>
         {editing != null && (
           <AccountForm key={editing === 'new' ? 'new' : editing.id} account={editing === 'new' ? null : editing} onDone={() => setEditing(null)} />
@@ -293,7 +331,7 @@ function AccountForm({ account, onDone }: { account: Account | null; onDone: () 
         </button>
       </div>
       {account && (
-        <button type="button" class="link-btn" onClick={archive}>
+        <button type="button" class="link-btn delete-btn" onClick={archive}>
           Hide this account
         </button>
       )}
@@ -393,7 +431,7 @@ function IncomeForm({ income, onDone }: { income: Income | null; onDone: () => v
         </button>
       </div>
       {income && (
-        <button type="button" class="link-btn" onClick={remove}>
+        <button type="button" class="link-btn delete-btn" onClick={remove}>
           Delete this paycheck
         </button>
       )}
@@ -487,7 +525,7 @@ function ChipForm(props: { preset: QuickPreset | null; onSave: (p: QuickPreset) 
         </button>
       </div>
       {p && (
-        <button type="button" class="link-btn" onClick={() => props.onDelete(p)}>
+        <button type="button" class="link-btn delete-btn" onClick={() => props.onDelete(p)}>
           Remove this chip
         </button>
       )}
@@ -585,6 +623,7 @@ function Field2(props: { label: string; children: ComponentChildren }) {
 function About() {
   const store = useStore();
   const { settings } = useData();
+  const [confirming, setConfirming] = useState(false);
   return (
     <div class="card prose">
       <h2 class="card-title">Your data stays here</h2>
@@ -607,9 +646,12 @@ function About() {
       <p>Licensed for personal and household use. Please don't resell or redistribute it.</p>
       <p class="muted">Version {__APP_VERSION__}</p>
       {settings.exampleData && (
-        <button type="button" class="btn" onClick={() => clearExampleData(store)}>
-          Clear example numbers and set up mine
-        </button>
+        <>
+          <button type="button" class="btn" onClick={() => setConfirming(true)}>
+            Clear example numbers and set up mine
+          </button>
+          <ClearExamplesConfirm open={confirming} onCancel={() => setConfirming(false)} onConfirm={() => clearExampleData(store)} />
+        </>
       )}
     </div>
   );

@@ -16,6 +16,7 @@ import { useNav } from '../state/nav';
 import { useData, useStore, type AppData } from '../state/store';
 import { checkMoney, MoneyInput, moneyText } from '../ui/fields';
 import { useFmt, useToday, type Fmt } from '../ui/hooks';
+import { Confirm } from '../ui/Confirm';
 import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
 
@@ -163,21 +164,20 @@ function ExampleBanner() {
   return (
     <div class="card card-note" role="note">
       <p>You're looking at example numbers. Nothing here is real.</p>
-      {confirming ? (
-        <div class="row-gap">
-          <button type="button" class="btn btn-small btn-primary" onClick={() => clearExampleData(store)}>
-            Yes, clear and set up mine
-          </button>
-          <button type="button" class="btn btn-small" onClick={() => setConfirming(false)}>
-            Keep exploring
-          </button>
-        </div>
-      ) : (
-        <button type="button" class="btn btn-small" onClick={() => setConfirming(true)}>
-          Clear examples
-        </button>
-      )}
+      <button type="button" class="btn btn-small" onClick={() => setConfirming(true)}>
+        Clear examples
+      </button>
+      <ClearExamplesConfirm open={confirming} onCancel={() => setConfirming(false)} onConfirm={() => clearExampleData(store)} />
     </div>
+  );
+}
+
+/** "Clear examples" removes everything (a bulk action), so it asks first. */
+export function ClearExamplesConfirm(props: { open: boolean; onCancel: () => void; onConfirm: () => void | Promise<void> }) {
+  return (
+    <Confirm open={props.open} title="Clear the example numbers?" confirmLabel="Clear and set up mine" onCancel={props.onCancel} onConfirm={props.onConfirm}>
+      <p>Everything here is made up, so nothing real is lost. You'll go back to setup to add your own numbers.</p>
+    </Confirm>
   );
 }
 
@@ -267,6 +267,9 @@ function SafeNumber({ result, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
             <span class="big-number">{fmt.money(downToWhole(Math.max(0, result.safeToSpendToday)), whole)}</span>
             <span class="sr-only">. How is this worked out?</span>
           </button>
+          <p class="hero-what">
+            What you can spend today and still cover your bills {result.nextPaydaySource === 'income' ? 'until payday' : 'until the end of the month'}.
+          </p>
           <p id="safe-sub" class="muted">
             {result.safeToSpendToday < 0
               ? `You've gone ${fmt.money(-result.safeToSpendToday)} past today's share — that's fine, the days ahead adjust. `

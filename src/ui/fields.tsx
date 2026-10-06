@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { ISODate, Schedule, ScheduleKind } from '../db/types';
 import { daysInMonth, parts } from '../lib/dates';
 import { parseAmount, toInputString, type DecimalMark, type Minor } from '../lib/money';
@@ -11,6 +11,18 @@ export const capitalise = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : 
 
 let fieldSeq = 0;
 const useId = (prefix: string) => useState(() => `${prefix}-${++fieldSeq}`)[0];
+
+/**
+ * Focus a field when it appears. The autofocus attribute only works on page load and when a dialog
+ * opens; a new onboarding step or a form shown in place needs an explicit focus().
+ */
+function useAutoFocus(on?: boolean) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (on) ref.current?.focus({ preventScroll: true });
+  }, []);
+  return ref;
+}
 
 export function Field(props: { label: string; hint?: string; htmlFor?: string; children: ComponentChildren }) {
   return (
@@ -33,6 +45,7 @@ export function TextInput(props: {
   autoFocus?: boolean;
 }) {
   const id = useId('txt');
+  const ref = useAutoFocus(props.autoFocus);
   return (
     <Field label={props.label} hint={props.hint} htmlFor={id}>
       <input
@@ -41,6 +54,7 @@ export function TextInput(props: {
         type="text"
         value={props.value}
         placeholder={props.placeholder}
+        ref={ref}
         autoFocus={props.autoFocus}
         onInput={(e) => props.onInput(e.currentTarget.value)}
       />
@@ -78,6 +92,7 @@ export function MoneyInput(props: {
   ariaLabel?: string;
 }) {
   const id = useId('money');
+  const ref = useAutoFocus(props.autoFocus);
   const { settings } = useData();
   const fmt = useFmt();
   const dec = settings.decimalSeparator;
@@ -95,6 +110,7 @@ export function MoneyInput(props: {
         autoComplete="off"
         placeholder={dec === ',' ? '0,00' : '0.00'}
         value={props.value}
+        ref={ref}
         autoFocus={props.autoFocus}
         onInput={(e) => props.onInput(e.currentTarget.value)}
         onBlur={() => setTouched(true)}

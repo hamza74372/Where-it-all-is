@@ -1,4 +1,5 @@
-// Spec §7.3 (basic version for Phase 2): month view grouped by day, search, add / edit / delete with undo.
+// Spec §7.3: month view grouped by day, search across all months (grouped by month), filters by
+// account and category, add / edit / delete with undo.
 
 import { useMemo, useState } from 'preact/hooks';
 import { uid } from '../db/db';
@@ -6,6 +7,7 @@ import type { Transaction } from '../db/types';
 import { addMonthsYM, parts, ymd } from '../lib/dates';
 import { isBeforeStart } from '../lib/safeToSpend';
 import { addTransfer, deleteTransactions, defaultAccount, saveWithUndo } from '../state/actions';
+import { filterLog, groupBy, LOG_PAGE } from '../lib/logFilter';
 import { isTransfer } from '../lib/transfers';
 import { useData, useStore } from '../state/store';
 import { checkMoney, DateInput, MoneyInput, moneyText, Segmented, Select, TextInput } from '../ui/fields';
@@ -31,24 +33,29 @@ export function Log() {
   const t = parts(today);
   const [ym, setYm] = useState({ y: t.y, m: t.m });
   const [query, setQuery] = useState('');
+  const [accountId, setAccountId] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [shown, setShown] = useState(LOG_PAGE);
   const [editing, setEditing] = useState<Transaction | 'new' | null>(null);
   const [importing, setImporting] = useState(false);
   const prefix = ymd(ym.y, ym.m, 1).slice(0, 7);
+  const searching = query.trim() !== '';
   const catById = useMemo(() => new Map(data.categories.map((c) => [c.id, c])), [data.categories]);
   const accById = useMemo(() => new Map(data.accounts.map((a) => [a.id, a])), [data.accounts]);
+  const liveAccounts = data.accounts.filter((a) => !a.archived);
 
-  const groups = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const rows = data.transactions
-      .filter((tx) => tx.date.startsWith(prefix))
-      .filter((tx) => !q || tx.note.toLowerCase().includes(q) || catById.get(tx.categoryId ?? '')?.name.toLowerCase().includes(q))
-      .sort((a, b) => (a.date === b.date ? b.updatedAt - a.updatedAt : a.date < b.date ? 1 : -1));
-    const out = new Map<string, Transaction[]>();
-    for (const r of rows) out.set(r.date, [...(out.get(r.date) ?? []), r]);
-    return [...out.entries()];
-  }, [data.transactions, prefix, query, catById]);
-
-  const monthOut = groups.flatMap(([, rows]) => rows).filter((r) => r.amount < 0 && !isTransfer(r) && r.source !== 'adjustment').reduce((s, r) => s - r.amount, 0);
+  const rows = useMemo(
+    () => filterLog(data.transactions, { month: prefix, query, accountId, categoryId }, data.categories),
+    [data.transactions, data.categories, prefix, query, accountId, categoryId],
+  );
+  const groups = useMemo(() => groupBy(rows.slice(0, shown), searching ? 'month' : 'day'), [rows, shown, searching]);
+  const moneyOut = rows.filter((r) => r.amount < 0 && !isTransfer(r) && r.source !== 'adjustment').reduce((s, r) => s - r.amount, 0);
+  const filtered = !!accountId || !!categoryId;
+  // A new search or filter starts from the top of the list again.
+  const reset = <T,>(set: (v: T) => void) => (v: T) => {
+    set(v);
+    setShown(LOG_PAGE);
+  };
 
   if (importing) return <Import onClose={() => setImporting(false)} />;
 
@@ -65,56 +72,99 @@ export function Log() {
           </button>
         </div>
       </div>
-      <div class="cal-head">
-        <button type="button" class="icon-btn" onClick={() => setYm(addMonthsYM(ym.y, ym.m, -1))} aria-label="Previous month">
-          ‹
-        </button>
-        <h2 class="card-title" aria-live="polite">
-          {fmt.month(`${prefix}-01`)}
-        </h2>
-        <button type="button" class="icon-btn" onClick={() => setYm(addMonthsYM(ym.y, ym.m, 1))} aria-label="Next month">
-          ›
-        </button>
-      </div>
+      {!searching && (
+        <div class="cal-head">
+          <button type="button" class="icon-btn" onClick={() => setYm(addMonthsYM(ym.y, ym.m, -1))} aria-label="Previous month">
+            ‹
+          </button>
+          <h2 class="card-title" aria-live="polite">
+            {fmt.month(`${prefix}-01`)}
+          </h2>
+          <button type="button" class="icon-btn" onClick={() => setYm(addMonthsYM(ym.y, ym.m, 1))} aria-label="Next month">
+            ›
+          </button>
+        </div>
+      )}
       <input
         class="input search"
         type="search"
-        placeholder="Search notes or categories"
+        placeholder="Search all months"
         aria-label="Search transactions"
         value={query}
-        onInput={(e) => setQuery(e.currentTarget.value)}
+        onInput={(e) => reset(setQuery)(e.currentTarget.value)}
       />
-      <p class="muted">Money out this month: {fmt.money(monthOut)}</p>
+      <div class="log-filters">
+        {liveAccounts.length > 1 && (
+          <Select
+            label="Show account"
+            value={accountId}
+            onChange={reset(setAccountId)}
+            options={[{ value: '', label: 'All accounts' }, ...liveAccounts.map((a) => ({ value: a.id, label: a.name }))]}
+          />
+        )}
+        <Select
+          label="Show category"
+          value={categoryId}
+          onChange={reset(setCategoryId)}
+          options={[
+            { value: '', label: 'All categories' },
+            { value: 'none', label: 'No category' },
+            ...data.categories.filter((c) => !c.archived).map((c) => ({ value: c.id, label: `${c.emoji} ${c.name}` })),
+          ]}
+        />
+      </div>
+      <p class="muted" aria-live="polite">
+        {searching
+          ? `${rows.length} ${rows.length === 1 ? 'result' : 'results'} across all months · money out ${fmt.money(moneyOut)}`
+          : `Money out this month${filtered ? ' (filtered)' : ''}: ${fmt.money(moneyOut)}`}
+      </p>
       {groups.length === 0 ? (
         <div class="card">
-          <p>{query ? 'Nothing matches that search.' : 'Nothing logged this month yet. Use the box on Today — "12.50 coffee" is enough.'}</p>
+          <p>
+            {searching
+              ? 'Nothing matches that search in any month.'
+              : filtered
+                ? 'Nothing this month matches these filters.'
+                : 'Nothing logged this month yet. Use the box on Today — "12.50 coffee" is enough.'}
+          </p>
         </div>
       ) : (
-        groups.map(([date, rows]) => (
-          <section key={date} class="log-day" aria-label={fmt.dayLong(date)}>
-            <h3 class="log-day-title">{fmt.dayLong(date)}</h3>
-            <ul class="card rows">
-              {rows.map((tx) => {
-                const cat = catById.get(tx.categoryId ?? '');
-                const tag = tx.transferId && tx.source !== 'transfer' ? 'Transfer' : SOURCE_LABEL[tx.source];
-                return (
-                  <li key={tx.id} class="row">
-                    <button type="button" class="row-main row-button" onClick={() => setEditing(tx)}>
-                      <span>
-                        <span aria-hidden="true">{cat?.emoji ?? '•'} </span>
-                        {tx.note || cat?.name || 'Spend'}
-                      </span>
-                      <span class="row-sub">
-                        {[cat?.name, accById.get(tx.accountId)?.name, tag, isBeforeStart(accById.get(tx.accountId), tx) ? 'Before you started' : ''].filter(Boolean).join(' · ')}
-                      </span>
-                    </button>
-                    <span class={`mono ${tx.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(tx.amount, { signed: true })}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))
+        groups.map(([key, list]) => {
+          const title = searching ? fmt.month(`${key}-01`) : fmt.dayLong(key);
+          return (
+            <section key={key} class="log-day" aria-label={title}>
+              <h3 class="log-day-title">{title}</h3>
+              <ul class="card rows">
+                {list.map((tx) => {
+                  const cat = catById.get(tx.categoryId ?? '');
+                  const acc = accById.get(tx.accountId);
+                  const tag = tx.transferId && tx.source !== 'transfer' ? 'Transfer' : SOURCE_LABEL[tx.source];
+                  return (
+                    <li key={tx.id} class="row">
+                      <button type="button" class="row-main row-button" onClick={() => setEditing(tx)}>
+                        <span>
+                          <span aria-hidden="true">{cat?.emoji ?? '•'} </span>
+                          {tx.note || cat?.name || 'Spend'}
+                        </span>
+                        <span class="row-sub">
+                          {[searching ? fmt.day(tx.date) : '', cat?.name, acc?.name, tag, isBeforeStart(acc, tx) ? 'Before you started' : '']
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </span>
+                      </button>
+                      <span class={`mono ${tx.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(tx.amount, { signed: true })}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        })
+      )}
+      {rows.length > shown && (
+        <button type="button" class="btn btn-block" onClick={() => setShown(shown + LOG_PAGE)}>
+          Show more ({rows.length - shown} left)
+        </button>
       )}
       <Sheet open={editing != null} onClose={() => setEditing(null)} title={editing === 'new' ? 'Add to log' : 'Edit'}>
         {editing != null && (
@@ -231,8 +281,8 @@ function TxForm({ tx, onDone }: { tx: Transaction | null; onDone: () => void }) 
         </>
       )}
       {tx && (
-        <button type="button" class="link-btn" onClick={remove}>
-          Delete
+        <button type="button" class="link-btn delete-btn" onClick={remove}>
+          Delete this entry
         </button>
       )}
     </form>

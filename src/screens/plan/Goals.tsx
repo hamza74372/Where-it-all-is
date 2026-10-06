@@ -175,7 +175,7 @@ function GoalForm({ goal, onDone }: { goal: Goal | null; onDone: () => void }) {
       {goal && (
         <button
           type="button"
-          class="link-btn"
+          class="link-btn delete-btn"
           onClick={async () => {
             const undo = await removeWithUndo(store, 'goals', goal);
             toast(`${goal.name} deleted`, undo);

@@ -137,7 +137,7 @@ function RuleForm({ rule, onDone }: { rule: Rule | null; onDone: () => void }) {
       {rule && (
         <button
           type="button"
-          class="link-btn"
+          class="link-btn delete-btn"
           onClick={async () => {
             const undo = await removeWithUndo(store, 'rules', rule);
             toast('Rule deleted', undo);

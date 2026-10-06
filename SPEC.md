@@ -49,7 +49,7 @@ Sold on Etsy as a digital download (PDF with links + backup HTML file). Free dem
 ## 5. Data model (IndexedDB stores)
 
 ```
-settings: { id:'main', name, currency, locale, theme, mode:'simple'|'full', weekStart, createdAt, schemaVersion, lastOpenedAt, backupRemindDays }
+settings: { id:'main', name, currency, locale, theme, weekStart, createdAt, schemaVersion, lastOpenedAt, backupRemindDays }
 accounts: { id, name, type:'checking'|'savings'|'cash'|'credit', openingBalance, includeInSafeToSpend:boolean, archived }
 incomes:  { id, name, amount, accountId, schedule:Schedule, variable:boolean, active }
 bills:    { id, name, amount, accountId, categoryId, schedule:Schedule, autopay:boolean, isDebtMinimum:boolean, debtId?, active }
@@ -122,7 +122,7 @@ safeToSpendToday = floor(safeToSpendPeriod / daysLeft) − spentToday(discretion
 - **Debt:** list, total, **snowball vs avalanche comparison** (months to debt-free, total interest), extra payment slider, debt-free date. Show assumptions; label "estimate".
 
 ### 7.6 More
-- Accounts, Categories, Rules, Notes (brain dump per month), Household sharing, Backup & Restore, Settings (theme, currency, simple/full mode, buffer, week start), Help (in-app guide), About & privacy, Disclaimer.
+- Accounts, Categories, Rules, Notes (brain dump per month), Household sharing, Backup & Restore, Settings (theme, currency, buffer, week start), Help (in-app guide), About & privacy, Disclaimer.
 
 ### 7.7 Insights (inside More or Plan)
 - This month vs last month by category (simple bar list, no complex charts).
@@ -193,7 +193,7 @@ Licensing: personal/household use; no resale (in PDF + About screen).
 
 ## 12. Explicitly out of scope (v1)
 
-Live bank connections · accounts/login · cloud server · AI features · multiple languages · push notifications · native app stores · investment tracking (later product).
+Live bank connections · accounts/login · cloud server · AI features · multiple languages · push notifications · native app stores · investment tracking (later product) · simple/full mode (dropped from v1 on 7 Oct 2026: it adds settings without adding much value).
 
 ## 13. Later product family (same buyer)
 

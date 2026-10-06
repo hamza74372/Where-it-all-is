@@ -66,7 +66,7 @@ const closeSheet = (page: Page) => page.keyboard.press('Escape');
 async function morePages(page: Page, h: ReturnType<typeof harness>) {
   const pages: Array<[string, string]> = [
     ['Accounts', 'more-accounts'], ['Paychecks', 'more-paychecks'], ['Categories', 'more-categories'], ['Rules', 'more-rules'],
-    ['Notes', 'more-notes'], ['Backup & restore', 'more-backup'], ['Share with partner', 'more-share'], ['Quick-log chips', 'more-chips'],
+    ['Notes', 'more-notes'], ['Backup & restore', 'more-backup'], ['Share with partner', 'more-share'], ['Your data', 'more-data'], ['Quick-log chips', 'more-chips'],
     ['Settings', 'more-settings'], ['Help', 'more-help'], ['About & privacy', 'more-about'],
   ];
   await nav(page, 'More').click();
@@ -75,6 +75,11 @@ async function morePages(page: Page, h: ReturnType<typeof harness>) {
     await h.step(file, async () => {
       await page.getByRole('button', { name: new RegExp(`^${label.replace(/[&]/g, '\\&')}`) }).click();
       await h.shot(file);
+      if (label === 'Your data') {
+        await page.getByRole('button', { name: 'Erase everything…' }).click();
+        await h.shot('more-data-erase-confirm');
+        await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
+      }
       if (label === 'Help') {
         await page.getByRole('button', { name: /^Safe to spend, explained/ }).click();
         await h.shot('more-help-article');
@@ -383,10 +388,15 @@ test('filled data', async ({ page }, info) => {
   await h.step('tight', async () => {
     await nav(page, 'More').click();
     await page.getByRole('button', { name: /^Settings/ }).click();
-    await page.getByLabel('Cushion').fill('3000');
+    // A cushion bigger than everything left for the period → "Tight until payday".
+    await page.getByLabel('Cushion').fill('9000');
     await page.getByRole('button', { name: '‹ More' }).click();
     await nav(page, 'Today').click();
+    await expect(page.getByRole('heading', { name: 'Tight until payday' })).toBeVisible();
     await h.shot('today-tight');
+    await page.getByRole('button', { name: 'How is this worked out?' }).last().click();
+    await h.shot('today-tight-explain');
+    await closeSheet(page);
     await nav(page, 'More').click();
     await page.getByRole('button', { name: /^Settings/ }).click();
     await page.getByLabel('Cushion').fill('');

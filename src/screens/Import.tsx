@@ -18,7 +18,12 @@ import {
 import { useData, useStore } from '../state/store';
 import { checkMoney, MoneyInput, Segmented, Select, TextInput, Toggle } from '../ui/fields';
 import { useFmt, useToday } from '../ui/hooks';
+import { Confirm } from '../ui/Confirm';
 import { dismissToast, toast } from '../ui/Toast';
+import { ImportHistory } from './YourData';
+
+/** Rows shown in the column preview (spec: the first 10). */
+const PREVIEW_ROWS = 10;
 
 type Step = 'pick' | 'map' | 'review' | 'choose' | 'sort' | 'balance' | 'done';
 
@@ -29,6 +34,8 @@ interface ImportResult {
   matched: number;
   transfers: number;
   leftOut: number;
+  /** Rows in the file that couldn't be read as transactions (blank, balance lines, not completed…). */
+  unreadable: number;
   toSort: Id[];
   /** Transactions added by this import (for the balance check's "check the rows" list). */
   importedIds: Id[];
@@ -85,7 +92,7 @@ export function Import({ onClose }: { onClose: () => void }) {
     const counts = countsOf(p);
     setResult({
       batchId: batch.id, imported: transactions.length, duplicates: counts.duplicateCount, matched: matched.length, transfers,
-      leftOut: counts.leftOutCount + counts.undecidedCount, toSort, importedIds: [...transactions, ...matched].map((t) => t.id),
+      leftOut: counts.leftOutCount + counts.undecidedCount, unreadable: p.skipped.length, toSort, importedIds: [...transactions, ...matched].map((t) => t.id),
     });
     setStep(toSort.length ? 'sort' : 'balance');
   };
@@ -171,11 +178,8 @@ function ImportFrame(props: { title: string; onClose: () => void; children: Comp
 }
 
 function PickStep({ onFile, error }: { onFile: (f: File) => void; error: string }) {
-  const store = useStore();
   const data = useData();
-  const fmt = useFmt();
   const [over, setOver] = useState(false);
-  const recent = [...data.importBatches].sort((a, b) => b.importedAt - a.importedAt).slice(0, 5);
   return (
     <>
       <div
@@ -221,33 +225,13 @@ function PickStep({ onFile, error }: { onFile: (f: File) => void; error: string 
           <li>Pick a date range that overlaps your last import — anything already here is skipped automatically.</li>
         </ul>
       </details>
-      {recent.length > 0 && (
+      {data.importBatches.length > 0 && (
         <section class="card" aria-labelledby="recent-imports">
           <h2 id="recent-imports" class="card-title">
             Recent imports
           </h2>
-          <ul class="rows">
-            {recent.map((b) => (
-              <li key={b.id} class="row">
-                <span class="row-main">
-                  <span>{b.fileName}</span>
-                  <span class="row-sub">
-                    {b.rowCount} transactions · {fmt.day(new Date(b.importedAt).toISOString().slice(0, 10))}
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  class="btn btn-small"
-                  onClick={async () => {
-                    const redo = await undoImport(store, b.id);
-                    toast(`Removed ${b.rowCount} imported transactions`, redo);
-                  }}
-                >
-                  Undo import
-                </button>
-              </li>
-            ))}
-          </ul>
+          <ImportHistory limit={5} />
+          {data.importBatches.length > 5 && <p class="muted">The full list is in More → Your data.</p>}
         </section>
       )}
     </>
@@ -336,7 +320,7 @@ function MapStep(props: {
         ) : (
           <ul class="rows">
             {/* First rows of the file, plus any future-dated ones so they can't hide further down. */}
-            {[...preview.items.slice(0, 8), ...futureRows.filter((f) => preview.items.indexOf(f) >= 8).slice(0, 3)].map((it) => (
+            {[...preview.items.slice(0, PREVIEW_ROWS), ...futureRows.filter((f) => preview.items.indexOf(f) >= PREVIEW_ROWS).slice(0, 3)].map((it) => (
               <li key={`${it.draft.rowIndex}-${it.draft.feeOf ?? ''}`} class="row">
                 <span class="row-main">
                   <span>{it.note || '(no description)'}</span>
@@ -351,7 +335,7 @@ function MapStep(props: {
             ))}
           </ul>
         )}
-        {preview.items.length > 8 && <p class="muted">…and {preview.items.length - 8} more.</p>}
+        {preview.items.length > PREVIEW_ROWS && <p class="muted">…and {preview.items.length - PREVIEW_ROWS} more.</p>}
         {preview.skipped.length > 0 && <p class="muted">{preview.skipped.length} rows will be left out (you'll see why on the next step).</p>}
       </section>
 
@@ -998,8 +982,12 @@ function SortStep({ ids, onDone }: { ids: Id[]; onDone: () => void }) {
   );
 }
 
-function DoneStep(props: { result: ImportResult; onUndo: () => void; onClose: () => void }) {
-  const { imported, duplicates, matched, transfers, leftOut } = props.result;
+function DoneStep(props: { result: ImportResult; onUndo: () => Promise<void>; onClose: () => void }) {
+  const data = useData();
+  const [confirming, setConfirming] = useState(false);
+  const { imported, duplicates, matched, transfers, leftOut, unreadable, toSort } = props.result;
+  const stillToSort = toSort.filter((id) => data.transactions.some((t) => t.id === id && !t.categoryId)).length;
+  const skipped = duplicates + unreadable;
   return (
     <section class="card" aria-labelledby="done-title">
       <h2 id="done-title" class="card-title">
@@ -1008,7 +996,24 @@ function DoneStep(props: { result: ImportResult; onUndo: () => void; onClose: ()
       <ul class="review-list">
         {imported > 0 && matched > 0 && <li>{matched} already in the app, so linked instead of added twice</li>}
         {transfers > 0 && <li>{transfers} marked as moves between your accounts (not spending or income)</li>}
-        {duplicates > 0 && <li>{duplicates} imported before, so skipped</li>}
+        {skipped > 0 && (
+          <li>
+            <strong>{skipped}</strong> skipped
+            {duplicates > 0 && unreadable > 0
+              ? ` (${duplicates} imported before, ${unreadable} not transactions)`
+              : duplicates > 0
+                ? ' — imported before'
+                : unreadable === 1
+                  ? ' — a row that isn’t a transaction'
+                  : ' — rows that aren’t transactions'}
+          </li>
+        )}
+        {toSort.length > 0 && (
+          <li>
+            <strong>{toSort.length}</strong> needed sorting —{' '}
+            {stillToSort === 0 ? 'all sorted' : `${toSort.length - stillToSort} sorted, ${stillToSort} still without a category (find them in the Log)`}
+          </li>
+        )}
         {leftOut > 0 && <li>{leftOut} left out, as you chose</li>}
       </ul>
       <p>Your safe-to-spend number now includes them.</p>
@@ -1016,10 +1021,23 @@ function DoneStep(props: { result: ImportResult; onUndo: () => void; onClose: ()
         <button type="button" class="btn btn-primary" onClick={props.onClose}>
           Done
         </button>
-        <button type="button" class="btn" onClick={props.onUndo}>
+        <button type="button" class="btn" onClick={() => setConfirming(true)}>
           Undo this import
         </button>
       </div>
+      <Confirm
+        open={confirming}
+        title="Undo this import?"
+        confirmLabel={`Remove ${imported} ${imported === 1 ? 'row' : 'rows'}`}
+        onCancel={() => setConfirming(false)}
+        onConfirm={async () => {
+          setConfirming(false);
+          await props.onUndo();
+        }}
+      >
+        <p>This removes the {imported} {imported === 1 ? 'row' : 'rows'} this import added.</p>
+        {matched > 0 && <p class="muted">The {matched} things that were already in the app stay.</p>}
+      </Confirm>
     </section>
   );
 }

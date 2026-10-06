@@ -237,7 +237,7 @@ export function CategoryForm({ category, onDone }: { category: Category | null; 
         </button>
       </div>
       {category && (
-        <button type="button" class="link-btn" onClick={archive}>
+        <button type="button" class="link-btn delete-btn" onClick={archive}>
           Hide this category
         </button>
       )}

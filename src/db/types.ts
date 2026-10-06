@@ -50,7 +50,6 @@ export interface Settings extends BaseRecord {
   /** How the user types amounts. Defaulted from the browser locale, then the user's choice. */
   decimalSeparator: '.' | ',';
   theme: Theme;
-  mode: 'simple' | 'full';
   weekStart: 0 | 1 | 6;
   createdAt: number;
   schemaVersion: number;

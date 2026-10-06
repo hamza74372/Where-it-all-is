@@ -60,6 +60,20 @@
 .btn-block {
   width: 100%;
 }
+/* Destructive bulk actions (erase, undo an import) — only inside a confirm dialog. */
+.btn-danger {
+  background: var(--coral);
+  border-color: var(--coral);
+  color: var(--surface);
+}
+/* Delete for a single item: plain text, never green like a link. */
+.delete-btn {
+  color: var(--coral);
+  text-decoration: none;
+}
+.confirm-body p {
+  margin: 0 0 8px;
+}
 .btn-quiet {
   background: transparent;
   border-color: transparent;
@@ -126,6 +140,12 @@
 .hero {
   text-align: center;
   padding-block: 24px 14px;
+}
+/* One plain line under the big number: what it means. */
+.hero-what {
+  margin: 4px 0 6px;
+  font-size: 15px;
+  color: var(--text);
 }
 .hero-label {
   margin: 0;
@@ -706,4 +726,11 @@ select.input {
   .cal-card .cal-grid {
     gap: 0;
   }
+}
+
+/* Log filters: side by side when there's room. */
+.log-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 12px;
 }

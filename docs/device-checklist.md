@@ -89,6 +89,7 @@ wide), one Android phone (Chrome), one Windows PC (Chrome or Edge), one Mac (Saf
 - [ ] iPhone: pick a CSV from Files / iCloud Drive / a Mail attachment saved to Files.
 - [ ] Android: pick from Downloads and Google Drive.
 - [ ] Non-ASCII descriptions (é, ü, £, emoji) show correctly.
+- [ ] **Big history on a real iPhone:** restore a backup with ~5,000 transactions (or import a year of statements). Note how long the restore takes, then check Today and the Log each open in under a second. (Automated tests confirm this in desktop WebKit, but Playwright's Windows WebKit writes the database far slower than real Safari, so write speed can only be judged on a device.)
 
 ## 8. Demo
 

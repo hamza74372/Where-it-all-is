@@ -20,3 +20,13 @@ export function setPref<T>(key: string, value: T): void {
     /* non-essential */
   }
 }
+
+/** Forget every UI preference (used by "Erase all my data"). */
+export function clearPrefs(): void {
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith(PREFIX)) localStorage.removeItem(k);
+    sessionStorage.clear();
+  } catch {
+    /* non-essential */
+  }
+}

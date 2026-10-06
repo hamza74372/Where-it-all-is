@@ -26,7 +26,6 @@ export function defaultSettings(lang = navigator.language || 'en-US', now = Date
     locale,
     decimalSeparator: decimalMarkFor(locale),
     theme: 'auto',
-    mode: 'simple',
     weekStart: locale.endsWith('US') || locale.endsWith('CA') ? 0 : 1,
     createdAt: now,
     schemaVersion: SCHEMA_VERSION,

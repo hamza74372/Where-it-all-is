@@ -3,6 +3,8 @@
 import { buildDefaultCategories, buildExampleData, COMMON_BILLS } from '../data/defaults';
 import { uid } from '../db/db';
 import type { Account, Bill, Category, Id, Income, ISODate, Schedule, Transaction } from '../db/types';
+import { defaultSettings } from '../db/settings';
+import { clearPrefs } from '../lib/prefs';
 import { buildStarterRules } from '../lib/rules';
 import { accountBalance } from '../lib/safeToSpend';
 import type { Minor } from '../lib/money';
@@ -203,6 +205,29 @@ export async function loadExampleData(store: Store, today: ISODate): Promise<voi
   await store.upsert('debts', ex.debts);
   await store.upsert('categories', ex.categories);
   await store.saveSettings({ onboarded: true, exampleData: true, defaultAccountId: ex.defaultAccountId });
+}
+
+/**
+ * "Erase all my data": every account, transaction, bill, plan, note, import and partner view goes,
+ * settings go back to their defaults and the app returns to the welcome screen. Not undoable —
+ * the screen offers a backup first and asks the user to type ERASE.
+ */
+export async function eraseEverything(store: Store): Promise<void> {
+  await store.clearData(LIST_STORES);
+  await store.setPartner(null);
+  clearPrefs();
+  const categories = await store.upsert('categories', buildDefaultCategories());
+  await store.upsert('rules', buildStarterRules(categories, uid));
+  await store.saveSettings({
+    ...defaultSettings(),
+    seeded: true,
+    rulesSeeded: true,
+    lastBackupAt: undefined,
+    storagePersisted: undefined,
+    storageNoteSeen: undefined,
+    exampleData: undefined,
+    defaultAccountId: undefined,
+  });
 }
 
 /** "Clear examples": remove everything and go back to setup. Categories are reset to defaults. */

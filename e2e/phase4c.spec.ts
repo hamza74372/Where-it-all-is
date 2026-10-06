@@ -23,6 +23,7 @@ async function startedOct6ImportOct16(page: Page) {
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('1200');
   await page.getByRole('button', { name: 'Skip setup' }).click();
+  await expect(page.locator('.big-number')).toBeVisible(); // saved before the reload below
   await page.clock.setSystemTime(new Date(2026, 9, 16, 9, 0));
   await page.reload();
   await nav(page, 'Log').click();

@@ -88,9 +88,10 @@ test('import a Chase-style CSV: rules sort most rows, sort the rest, re-import s
   await page.getByRole('button', { name: 'Back' }).click();
   await page.getByRole('button', { name: 'Back' }).click();
 
-  // Undo the whole import from "Recent imports".
-  await page.getByRole('button', { name: 'Undo import' }).click();
-  await expect(page.getByRole('status')).toContainText('Removed 10 imported transactions');
+  // Undo the whole import from "Recent imports" (a bulk action: it asks first).
+  await page.getByRole('button', { name: /^Undo import/ }).click();
+  await page.getByRole('button', { name: 'Remove 10 rows' }).click();
+  await expect(page.getByRole('status')).toContainText('Import undone — 10 rows removed');
   await page.getByRole('button', { name: '‹ Log' }).click();
   await expect(page.getByText('Netflix.com Netflix.com Ca')).toHaveCount(0);
 
@@ -139,6 +140,7 @@ test('all 11 sample bank exports import through the UI with the expected counts'
     // Each file stands alone: these are different banks' statements for the same dates, so in one
     // account their same-amount rows would (rightly) be linked to each other.
     await page.getByRole('button', { name: 'Undo this import' }).click();
+    await page.getByRole('button', { name: /^Remove \d+ rows?$/ }).click();
   }
   expect(problems).toEqual([]);
 });
@@ -198,7 +200,8 @@ test('manual logs are matched, unlinking works, the balance check fixes the numb
   // Undo the import: the 9 rows go; the manual coffee stays.
   await nav(page, 'Log').click();
   await page.getByRole('button', { name: 'Import statement' }).click();
-  await page.getByRole('button', { name: 'Undo import' }).click();
+  await page.getByRole('button', { name: /^Undo import/ }).click();
+  await page.getByRole('button', { name: 'Remove 9 rows' }).click();
   await page.getByRole('button', { name: '‹ Log' }).click();
   await expect(page.locator('.row').filter({ hasText: 'Coffee' })).toHaveCount(1);
   await expect(page.getByText('Whole Foods Market', { exact: false })).toHaveCount(0);

@@ -4,14 +4,23 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { Icon } from './icons';
 
-export function Sheet(props: { open: boolean; onClose: () => void; title: string; children: ComponentChildren }) {
+export function Sheet(props: { open: boolean; onClose: () => void; title: string; children: ComponentChildren; role?: 'dialog' | 'alertdialog' }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // Where focus was when the sheet opened: it goes back there on close (keyboard users keep their place).
+  const opener = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (props.open && !d.open) d.showModal();
+    if (props.open && !d.open) {
+      opener.current = document.activeElement as HTMLElement | null;
+      d.showModal();
+    }
     if (!props.open && d.open) d.close();
+    if (!props.open && opener.current) {
+      if (opener.current.isConnected) opener.current.focus();
+      opener.current = null;
+    }
   }, [props.open]);
 
   // Close the native dialog in the same event as the user's tap. Waiting for the next
@@ -25,6 +34,7 @@ export function Sheet(props: { open: boolean; onClose: () => void; title: string
     <dialog
       ref={ref}
       class="sheet"
+      role={props.role}
       aria-labelledby="sheet-title"
       onCancel={(e) => {
         e.preventDefault();

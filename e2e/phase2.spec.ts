@@ -104,7 +104,7 @@ test('onboarding → log → undo → mark bill paid → calendar', async ({ pag
 
   // Log tab shows the entries
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Log' }).click();
-  await expect(page.getByText('Coffee').first()).toBeVisible();
+  await expect(page.locator('.log-day').getByText('Coffee').first()).toBeVisible();
   await shot(page, '11-log');
 
   // Data survives a reload (IndexedDB over file://)
@@ -156,7 +156,7 @@ test('example numbers, then clear examples', async ({ page }) => {
   await shot(page, '15-example-bills');
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Today' }).click();
   await page.getByRole('button', { name: 'Clear examples' }).click();
-  await page.getByRole('button', { name: 'Yes, clear and set up mine' }).click();
+  await page.getByRole('button', { name: 'Clear and set up mine' }).click();
   await expect(page.getByRole('button', { name: /Set up mine/ })).toBeVisible();
   expect(problems).toEqual([]);
 });

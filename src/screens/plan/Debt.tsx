@@ -227,7 +227,7 @@ function DebtForm({ debt, onDone }: { debt: Debt | null; onDone: () => void }) {
       {debt && (
         <button
           type="button"
-          class="link-btn"
+          class="link-btn delete-btn"
           onClick={async () => {
             const undo = await removeWithUndo(store, 'debts', debt);
             toast(`${debt.name} deleted${linkedBill ? ' (its bill stays — delete it in Bills if you like)' : ''}`, undo);

@@ -253,7 +253,6 @@ function BillForm({ bill, onDone }: { bill: Bill | null; onDone: () => void }) {
   const [categoryId, setCategoryId] = useState(bill?.categoryId ?? '');
   const [autopay, setAutopay] = useState(bill?.autopay ?? false);
   const [showErrors, setShowErrors] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const isCardBill = !!payTo;
   const amountCheck = checkMoney(amount, dec);
@@ -285,7 +284,7 @@ function BillForm({ bill, onDone }: { bill: Bill | null; onDone: () => void }) {
   const remove = async () => {
     if (!bill) return;
     await store.remove('bills', [bill.id]);
-    toast(`${bill.name} deleted`, async () => void (await store.upsert('bills', [bill])));
+    toast(`${bill.name} deleted — past payments stay in your log`, async () => void (await store.upsert('bills', [bill])));
     onDone();
   };
 
@@ -334,22 +333,11 @@ function BillForm({ bill, onDone }: { bill: Bill | null; onDone: () => void }) {
           Save
         </button>
       </div>
-      {bill &&
-        (confirmDelete ? (
-          <div class="row-gap">
-            <span>Delete {bill.name}? Past payments stay in your log.</span>
-            <button type="button" class="btn btn-small" onClick={remove}>
-              Delete
-            </button>
-            <button type="button" class="btn btn-small btn-quiet" onClick={() => setConfirmDelete(false)}>
-              Keep
-            </button>
-          </div>
-        ) : (
-          <button type="button" class="link-btn" onClick={() => setConfirmDelete(true)}>
-            Delete this bill
-          </button>
-        ))}
+      {bill && (
+        <button type="button" class="link-btn delete-btn" onClick={remove}>
+          Delete this bill
+        </button>
+      )}
     </form>
   );
 }

@@ -234,7 +234,7 @@ test('partner share: opens as a separate read-only tab, never mixes with your da
   await nav(page, 'Today').click();
   await expect(page.locator('.big-number')).toHaveText(ownNumber!);
   await nav(page, 'Log').click();
-  await expect(page.getByText('Groceries')).toHaveCount(0);
+  await expect(page.locator('.log-day').getByText('Groceries')).toHaveCount(0);
 
   // A few days later it says how old it is.
   await page.clock.setSystemTime(new Date(2026, 9, 11, 9, 0));
