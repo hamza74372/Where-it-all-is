@@ -39,7 +39,7 @@ export function compareMonths(transactions: Transaction[], categories: Category[
 export function topPlaces(transactions: Transaction[], month: string, count = 5): Array<{ label: string; total: Minor; times: number }> {
   const groups = new Map<string, { label: string; total: Minor; times: number; latest: string }>();
   for (const t of transactions) {
-    if (!t.date.startsWith(month) || t.amount >= 0 || t.source === 'transfer' || !t.note.trim()) continue;
+    if (!t.date.startsWith(month) || t.amount >= 0 || t.source === 'transfer' || t.source === 'adjustment' || !t.note.trim()) continue;
     const key = t.note.toLowerCase().replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim();
     if (!key) continue;
     const g = groups.get(key) ?? { label: t.note.trim(), total: 0, times: 0, latest: '' };
@@ -69,7 +69,7 @@ export function milestones(transactions: Transaction[], debts: Debt[], goals: Go
   // First finished month where money in beat money out (transfers ignored).
   const byMonth = new Map<string, { inn: Minor; out: Minor }>();
   for (const t of transactions) {
-    if (t.source === 'transfer') continue;
+    if (t.source === 'transfer' || t.source === 'adjustment') continue;
     const m = t.date.slice(0, 7);
     if (m >= current) continue;
     const b = byMonth.get(m) ?? { inn: 0, out: 0 };

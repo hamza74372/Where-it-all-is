@@ -350,7 +350,8 @@ function Explain({ result: r, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
         <p class="muted">
           {r.lookAhead.setAside > 0
             ? `Looking ahead: bills from ${fmt.day(r.lookAhead.periodStart)} to ${fmt.day(r.lookAhead.periodEnd)} come to ${fmt.money(r.lookAhead.billsTotal)}, but your next pay is about ${fmt.money(r.lookAhead.expectedPay)}. The ${fmt.money(r.lookAhead.setAside)} gap is kept back now so those bills are covered.`
-            : `Looking ahead: your next pay (about ${fmt.money(r.lookAhead.expectedPay)}) covers the ${fmt.money(r.lookAhead.billsTotal)} of bills due ${fmt.day(r.lookAhead.periodStart)} – ${fmt.day(r.lookAhead.periodEnd)}.`}
+            : `Looking ahead: your next pay (about ${fmt.money(r.lookAhead.expectedPay)}) covers the ${fmt.money(r.lookAhead.billsTotal)} of bills due ${fmt.day(r.lookAhead.periodStart)} – ${fmt.day(r.lookAhead.periodEnd)}.`}{' '}
+          This looks one pay period ahead only — big bills further out (like a yearly renewal) aren't set aside yet.
         </p>
       )}
       {r.cardsToPay.length > 0 && (

@@ -9,13 +9,23 @@ import { DATE_FORMAT_LABELS, type DateFormat } from '../lib/csv/dates';
 import { detectMapping, type Detection, type MappingDraft } from '../lib/csv/detect';
 import { parseCsv } from '../lib/csv/parse';
 import { saveWithUndo } from '../state/actions';
-import { addRule, commitImport, prepareImport, saveMapping, undoImport, type Prepared } from '../state/importActions';
+import {
+  addBalanceAdjustment, addRule, bankStyleBalance, commitImport, countsOf, prepareImport, saveMapping, undoImport, type Prepared,
+} from '../state/importActions';
 import { useData, useStore } from '../state/store';
-import { Segmented, Select, TextInput, Toggle } from '../ui/fields';
-import { useFmt } from '../ui/hooks';
+import { checkMoney, MoneyInput, Segmented, Select, TextInput, Toggle } from '../ui/fields';
+import { useFmt, useToday } from '../ui/hooks';
 import { dismissToast, toast } from '../ui/Toast';
 
-type Step = 'pick' | 'map' | 'review' | 'sort' | 'done';
+type Step = 'pick' | 'map' | 'review' | 'sort' | 'balance' | 'done';
+
+interface ImportResult {
+  batchId: Id;
+  imported: number;
+  duplicates: number;
+  matched: number;
+  toSort: Id[];
+}
 
 interface Loaded {
   fileName: string;
@@ -35,7 +45,7 @@ export function Import({ onClose }: { onClose: () => void }) {
   const accounts = data.accounts.filter((a) => !a.archived);
   const [accountId, setAccountId] = useState(data.settings.defaultAccountId ?? accounts[0]?.id ?? '');
   const [prepared, setPrepared] = useState<Prepared | null>(null);
-  const [result, setResult] = useState<{ batchId: Id; imported: number; duplicates: number; toSort: Id[] } | null>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState('');
   const setStep = (s: Step) => {
     setStepState(s);
@@ -89,17 +99,20 @@ export function Import({ onClose }: { onClose: () => void }) {
       {step === 'review' && loaded && mapping && prepared && (
         <ReviewStep
           prepared={prepared}
+          onUnlink={(index) => setPrepared({ ...prepared, items: prepared.items.map((it, i) => (i === index ? { ...it, matchId: undefined } : it)) })}
           onBack={() => setStep('map')}
           onImport={async () => {
             const saved = await saveMapping(store, mappingName, mapping, loaded.savedId);
-            const { batch, transactions } = await commitImport(store, { fileName: loaded.fileName, accountId, mappingId: saved.id, items: prepared.items });
+            const { batch, transactions, matched } = await commitImport(store, { fileName: loaded.fileName, accountId, mappingId: saved.id, items: prepared.items });
             const toSort = transactions.filter((t) => !t.categoryId && t.amount < 0).map((t) => t.id);
-            setResult({ batchId: batch.id, imported: transactions.length, duplicates: prepared.duplicateCount, toSort });
-            setStep(toSort.length ? 'sort' : 'done');
+            const counts = countsOf(prepared);
+            setResult({ batchId: batch.id, imported: transactions.length, duplicates: counts.duplicateCount, matched: matched.length, toSort });
+            setStep(toSort.length ? 'sort' : 'balance');
           }}
         />
       )}
-      {step === 'sort' && result && <SortStep ids={result.toSort} onDone={() => setStep('done')} />}
+      {step === 'sort' && result && <SortStep ids={result.toSort} onDone={() => setStep('balance')} />}
+      {step === 'balance' && result && <BalanceStep accountId={accountId} onDone={() => setStep('done')} />}
       {step === 'done' && result && (
         <DoneStep
           result={result}
@@ -284,7 +297,7 @@ function MapStep(props: {
                   <span>{it.note || '(no description)'}</span>
                   <span class="row-sub">
                     {fmt.day(it.draft.date)}
-                    {it.duplicate ? ' · already in your log' : ''}
+                    {it.duplicate ? ' · already in your log' : it.matchId ? ' · matches something you logged' : ''}
                   </span>
                 </span>
                 <span class={`mono ${it.draft.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(it.draft.amount, { signed: true })}</span>
@@ -373,8 +386,13 @@ function MapStep(props: {
   );
 }
 
-function ReviewStep({ prepared, onBack, onImport }: { prepared: Prepared; onBack: () => void; onImport: () => Promise<void> }) {
+function ReviewStep(props: { prepared: Prepared; onUnlink: (index: number) => void; onBack: () => void; onImport: () => Promise<void> }) {
+  const { prepared, onBack, onImport } = props;
+  const data = useData();
+  const fmt = useFmt();
   const [busy, setBusy] = useState(false);
+  const c = countsOf(prepared);
+  const matchedItems = prepared.items.map((it, index) => ({ it, index })).filter(({ it }) => !it.duplicate && it.matchId);
   return (
     <>
       <section class="card" aria-labelledby="review-title">
@@ -383,16 +401,22 @@ function ReviewStep({ prepared, onBack, onImport }: { prepared: Prepared; onBack
         </h2>
         <ul class="review-list">
           <li>
-            <strong>{prepared.newCount}</strong> new {prepared.newCount === 1 ? 'transaction' : 'transactions'}
+            <strong>{c.newCount}</strong> new {c.newCount === 1 ? 'transaction' : 'transactions'}
+            {c.feeCount > 0 && ` (including ${c.feeCount} bank ${c.feeCount === 1 ? 'fee' : 'fees'})`}
           </li>
-          {prepared.duplicateCount > 0 && (
+          {c.matchedCount > 0 && (
             <li>
-              <strong>{prepared.duplicateCount}</strong> already in your log — these are skipped
+              <strong>{c.matchedCount}</strong> matched to things you already logged — linked, not added twice
             </li>
           )}
-          {prepared.needSorting > 0 && (
+          {c.duplicateCount > 0 && (
             <li>
-              <strong>{prepared.needSorting}</strong> will need a category (quick, one at a time)
+              <strong>{c.duplicateCount}</strong> already in your log — these are skipped
+            </li>
+          )}
+          {c.needSorting > 0 && (
+            <li>
+              <strong>{c.needSorting}</strong> will need a category (quick, one at a time)
             </li>
           )}
           {prepared.skipped.length > 0 && (
@@ -409,6 +433,34 @@ function ReviewStep({ prepared, onBack, onImport }: { prepared: Prepared; onBack
           )}
         </ul>
       </section>
+      {matchedItems.length > 0 && (
+        <section class="card" aria-labelledby="matched-title">
+          <h2 id="matched-title" class="card-title">
+            Matched to what you logged
+          </h2>
+          <p class="muted">Same amount, within 3 days. If one isn't the same thing, unlink it and it'll be added as new.</p>
+          <ul class="rows">
+            {matchedItems.map(({ it, index }) => {
+              const manual = data.transactions.find((t) => t.id === it.matchId);
+              return (
+                <li key={index} class="row">
+                  <span class="row-main">
+                    <span>
+                      {it.note} <span class="muted">↔</span> {manual?.note || 'your entry'}
+                    </span>
+                    <span class="row-sub">
+                      {fmt.money(it.draft.amount)} · bank {fmt.day(it.draft.date)} · you logged {manual ? fmt.day(manual.date) : ''}
+                    </span>
+                  </span>
+                  <button type="button" class="btn btn-small" onClick={() => props.onUnlink(index)} aria-label={`Unlink ${it.note}`}>
+                    Unlink
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
       <div class="form-actions">
         <button type="button" class="btn" onClick={onBack}>
           Back
@@ -416,16 +468,94 @@ function ReviewStep({ prepared, onBack, onImport }: { prepared: Prepared; onBack
         <button
           type="button"
           class="btn btn-primary btn-grow"
-          disabled={busy || prepared.newCount === 0}
+          disabled={busy || c.newCount + c.matchedCount === 0}
           onClick={async () => {
             setBusy(true);
             await onImport();
           }}
         >
-          {prepared.newCount === 0 ? 'Nothing new to import' : `Import ${prepared.newCount}`}
+          {c.newCount + c.matchedCount === 0 ? 'Nothing new to import' : c.newCount === 0 ? `Link ${c.matchedCount}` : `Import ${c.newCount}`}
         </button>
       </div>
     </>
+  );
+}
+
+function BalanceStep({ accountId, onDone }: { accountId: Id; onDone: () => void }) {
+  const store = useStore();
+  const data = useData();
+  const fmt = useFmt();
+  const today = useToday();
+  const account = data.accounts.find((a) => a.id === accountId);
+  const isCard = account?.type === 'credit';
+  const [text, setText] = useState('');
+  const [showErrors, setShowErrors] = useState(false);
+  const [entered, setEntered] = useState<number | null>(null);
+  const appBalance = bankStyleBalance(store, accountId, today);
+  const diff = entered === null ? 0 : entered - appBalance;
+
+  return (
+    <section class="card" aria-labelledby="balance-title">
+      <h2 id="balance-title" class="card-title">
+        {isCard ? 'What does your card statement say you owe?' : 'Your bank says your balance is…?'}
+      </h2>
+      <p class="muted">
+        Optional. Checking now keeps your safe-to-spend honest. The app says {fmt.money(appBalance)}
+        {isCard ? ' owed' : ''} for {account?.name}.
+      </p>
+      {entered === null ? (
+        <form
+          class="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const c = checkMoney(text, data.settings.decimalSeparator);
+            if (c.state !== 'ok') return setShowErrors(true);
+            if (c.value === appBalance) {
+              onDone();
+              toast('Balances match — all good');
+            } else setEntered(c.value);
+          }}
+        >
+          <MoneyInput label={isCard ? 'Amount owed' : 'Balance in your bank app'} value={text} onInput={setText} showErrors={showErrors} />
+          <div class="form-actions">
+            <button type="button" class="btn" onClick={onDone}>
+              Skip
+            </button>
+            <button type="submit" class="btn btn-primary btn-grow">
+              Check
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <p>
+            Your bank says <strong>{fmt.money(entered)}</strong>; the app says <strong>{fmt.money(appBalance)}</strong>. That's{' '}
+            <strong>{fmt.money(Math.abs(diff))}</strong> {diff > 0 ? 'more' : 'less'} at the bank.
+          </p>
+          <p class="muted">Often it's a payment from before you started, or one that's still pending. An adjustment lines things up; you can undo it.</p>
+          <div class="row-gap">
+            <button
+              type="button"
+              class="btn btn-primary"
+              onClick={async () => {
+                const { difference, undo } = await addBalanceAdjustment(store, accountId, entered, today);
+                // Move on first: changing step clears toasts, and this one carries the Undo.
+                onDone();
+                toast(`Balance adjustment of ${fmt.money(difference, { signed: true })} added`, undo);
+              }}
+            >
+              Add a balance adjustment
+            </button>
+            <button type="button" class="btn" onClick={() => setEntered(null)}>
+              Re-enter
+            </button>
+            <button type="button" class="btn btn-quiet" onClick={onDone}>
+              Leave it
+            </button>
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
@@ -505,13 +635,14 @@ function SortStep({ ids, onDone }: { ids: Id[]; onDone: () => void }) {
   );
 }
 
-function DoneStep(props: { result: { imported: number; duplicates: number; toSort: Id[] }; onUndo: () => void; onClose: () => void }) {
-  const { imported, duplicates } = props.result;
+function DoneStep(props: { result: ImportResult; onUndo: () => void; onClose: () => void }) {
+  const { imported, duplicates, matched } = props.result;
   return (
     <section class="card" aria-labelledby="done-title">
       <h2 id="done-title" class="card-title">
         Imported {imported} {imported === 1 ? 'transaction' : 'transactions'}
       </h2>
+      {matched > 0 && <p class="muted">{matched} matched to things you'd already logged, so they weren't added twice.</p>}
       {duplicates > 0 && <p class="muted">{duplicates} were already in your log, so they were skipped.</p>}
       <p>Your safe-to-spend number now includes them.</p>
       <div class="row-gap">

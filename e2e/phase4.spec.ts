@@ -26,6 +26,16 @@ async function setup(page: Page) {
   await nav(page, 'Log').click();
 }
 
+/** After "Import N": finish any sorting later, skip the balance check, land on the summary. */
+async function finishImport(page: Page) {
+  const finish = page.getByRole('button', { name: 'Finish later' });
+  const balance = page.getByRole('heading', { name: /balance is…\?|say you owe\?/ });
+  await expect(finish.or(balance)).toBeVisible();
+  if (await finish.isVisible()) await finish.click();
+  await expect(balance).toBeVisible();
+  await page.getByRole('button', { name: 'Skip' }).click();
+}
+
 async function pickFile(page: Page, file: string) {
   await page.getByRole('button', { name: 'Import statement' }).click();
   await page.locator('input[type=file]').setInputFiles(FIX(file));
@@ -55,6 +65,8 @@ test('import a Chase-style CSV: rules sort most rows, sort the rest, re-import s
   await page.getByRole('switch', { name: /Always put "CHECK" in this category/ }).click();
   await shot(page, 'sort');
   await page.getByRole('button', { name: /Home/ }).click();
+  await expect(page.getByRole('heading', { name: 'Your bank says your balance is…?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Skip' }).click();
   await expect(page.getByRole('heading', { name: 'Imported 10 transactions' })).toBeVisible();
   await shot(page, 'done');
   await page.getByRole('button', { name: 'Done' }).click();
@@ -95,9 +107,7 @@ test('ambiguous dates: HSBC-style file is worked out without asking', async ({ p
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByText('7 new transactions')).toBeVisible();
   await page.getByRole('button', { name: 'Import 7' }).click();
-  // Rules cover most; finish sorting later.
-  const finish = page.getByRole('button', { name: 'Finish later' });
-  if (await finish.isVisible().catch(() => false)) await finish.click();
+  await finishImport(page);
   await expect(page.getByRole('heading', { name: 'Imported 7 transactions' })).toBeVisible();
   expect(problems).toEqual([]);
 });
@@ -114,7 +124,7 @@ test('all 11 sample bank exports import through the UI with the expected counts'
   await setup(page);
   const expected: Array<[string, number]> = [
     ['chase-checking.csv', 10], ['bofa-checking.csv', 7], ['wells-fargo-checking.csv', 7], ['capital-one-credit.csv', 7],
-    ['capital-one-360.csv', 6], ['barclays.csv', 7], ['hsbc-uk.csv', 7], ['monzo.csv', 6], ['revolut.csv', 5],
+    ['capital-one-360.csv', 6], ['barclays.csv', 7], ['hsbc-uk.csv', 7], ['monzo.csv', 6], ['revolut.csv', 6],
     ['generic-parentheses.csv', 6], ['generic-eu-semicolon.csv', 6],
   ];
   for (const [file, n] of expected) {
@@ -124,10 +134,7 @@ test('all 11 sample bank exports import through the UI with the expected counts'
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByText(`${n} new transaction`), file).toBeVisible();
     await page.getByRole('button', { name: `Import ${n}` }).click();
-    const finish = page.getByRole('button', { name: 'Finish later' });
-    const done = page.getByRole('heading', { name: /^Imported / });
-    await expect(finish.or(done)).toBeVisible(); // sort screen or done screen, whichever comes
-    if (await finish.isVisible()) await finish.click();
+    await finishImport(page);
     await expect(page.getByRole('heading', { name: `Imported ${n} transaction` }), file).toBeVisible();
     await page.getByRole('button', { name: 'Done' }).click();
   }
@@ -147,4 +154,51 @@ test('a file that genuinely can’t tell day from month asks — neutrally — a
   await shot(page, 'date-question');
   await q.getByRole('button', { name: 'Friday, June 5' }).click();
   await expect(page.locator('.row').filter({ hasText: 'Coffee' })).toContainText('Fri, Jun 5');
+});
+
+test('manual logs are matched, unlinking works, the balance check fixes the number, undo leaves your entry', async ({ page }) => {
+  const problems = guard(page);
+  await setup(page); // 16 Oct 2026, balance 2,000
+  await nav(page, 'Today').click();
+  await page.getByRole('textbox', { name: 'Log a spend' }).fill('5.75 coffee'); // bank row: STARBUCKS 10/15, -5.75
+  await page.getByRole('textbox', { name: 'Log a spend' }).press('Enter');
+  await nav(page, 'Log').click();
+  await pickFile(page, 'chase-checking.csv');
+  await page.getByRole('button', { name: 'Continue' }).click();
+
+  await expect(page.getByText('9 new transactions')).toBeVisible();
+  await expect(page.getByText('1 matched to things you already logged')).toBeVisible();
+  // Unlink → it becomes new; going back and forward re-matches.
+  await page.getByRole('button', { name: /^Unlink/ }).click();
+  await expect(page.getByText('10 new transactions')).toBeVisible();
+  await expect(page.getByText('matched to things you already logged')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByText('1 matched to things you already logged')).toBeVisible();
+  await page.getByRole('button', { name: 'Import 9' }).click();
+  await page.getByRole('button', { name: 'Finish later' }).click();
+
+  // App: 2,000 + 574.10 (the file) = 2,574.10. The bank says 2,524.10.
+  await expect(page.getByText('The app says $2,574.10')).toBeVisible();
+  await page.getByLabel('Balance in your bank app').fill('2524.10');
+  await page.getByRole('button', { name: 'Check' }).click();
+  await expect(page.getByText(/That's \$50\.00 less at the bank/)).toBeVisible();
+  await page.getByRole('button', { name: 'Add a balance adjustment' }).click();
+  await expect(page.getByRole('status')).toContainText('Balance adjustment of -$50.00 added');
+  await expect(page.getByRole('heading', { name: 'Imported 9 transactions' })).toContainText('9');
+  await expect(page.getByText('1 matched to things')).toBeVisible();
+  await page.getByRole('button', { name: 'Done' }).click();
+
+  // Corrected balance 2,524.10; the coffee was spent today, so: (2,524.10 + 5.75) ÷ 16 days = 158.11, minus 5.75 = 152.36 → $152.
+  await nav(page, 'Today').click();
+  await expect(page.locator('.big-number')).toHaveText('$152');
+
+  // Undo the import: the 9 rows go; the manual coffee stays.
+  await nav(page, 'Log').click();
+  await page.getByRole('button', { name: 'Import statement' }).click();
+  await page.getByRole('button', { name: 'Undo import' }).click();
+  await page.getByRole('button', { name: '‹ Log' }).click();
+  await expect(page.locator('.row').filter({ hasText: 'Coffee' })).toHaveCount(1);
+  await expect(page.getByText('Whole Foods Market', { exact: false })).toHaveCount(0);
+  expect(problems).toEqual([]);
 });

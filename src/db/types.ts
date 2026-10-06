@@ -127,10 +127,17 @@ export interface Transaction extends BaseRecord {
   accountId: Id;
   categoryId?: Id;
   note: string;
-  source: 'manual' | 'import' | 'bill' | 'income' | 'transfer';
+  /** 'adjustment' = a balance correction after an import; it moves the balance but isn't spending. */
+  source: 'manual' | 'import' | 'bill' | 'income' | 'transfer' | 'adjustment';
   importBatchId?: Id;
   /** The bank's original description (notes can be renamed); used to spot duplicates on re-import. */
   importDescription?: string;
+  /** The bank's date for this row, when it differs from `date` (a manual entry matched to an import). */
+  importDate?: ISODate;
+  /** A manual entry that an import row was matched to (instead of adding the row again). */
+  matchedBatchId?: Id;
+  /** For a bank fee: the transaction it was charged on. */
+  linkedTxId?: Id;
   billId?: Id;
   /** For source 'bill': which due date this payment covers. */
   billDueDate?: ISODate;
@@ -191,6 +198,8 @@ export interface CsvMapping extends BaseRecord {
   typeCol?: number;
   /** Column with a status (e.g. COMPLETED / REVERTED); only completed rows are imported. */
   stateCol?: number;
+  /** Column with a fee charged on the row (e.g. Revolut). Non-zero fees become their own transaction. */
+  feeCol?: number;
   dateFormat: 'YMD' | 'DMY' | 'MDY' | 'D MON Y' | 'MON D Y';
   decimal: '.' | ',';
   signConvention: 'negativeIsOut' | 'positiveIsOut';

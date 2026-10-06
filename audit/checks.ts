@@ -17,6 +17,9 @@ export function auditPage(): Finding {
   const dialog = document.querySelector('dialog[open]');
   const root: Element = dialog ?? document.body;
   const isVisible = (el: Element) => {
+    // Content of a closed <details> isn't shown (WebKit still reports boxes for it).
+    const closed = el.closest('details:not([open])');
+    if (closed && !el.closest('summary')) return false;
     const r = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0';

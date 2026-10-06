@@ -90,6 +90,8 @@
 }
 .back-btn {
   text-decoration: none;
+  min-width: 44px;
+  padding-inline: 2px 12px;
 }
 
 /* ---------- Cards ---------- */

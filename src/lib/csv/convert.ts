@@ -12,6 +12,8 @@ export interface Draft {
   amount: Minor;
   /** As written in the file (trimmed, spaces collapsed). */
   description: string;
+  /** For a fee draft: index (in the drafts array) of the row it was charged on. */
+  feeOf?: number;
 }
 
 export interface Skipped {
@@ -68,6 +70,11 @@ export function convertRows(rows: string[][], m: Pick<CsvMapping, Exclude<keyof 
     }
     const description = (row[m.descCol] ?? '').replace(/\s+/g, ' ').trim();
     drafts.push({ rowIndex: r, date, amount, description });
+    // A fee on the row is money out on its own (the amount excludes it); keep the balance true.
+    if (m.feeCol !== undefined) {
+      const fee = parseAmountStrict(row[m.feeCol] ?? '', m.decimal);
+      if (fee) drafts.push({ rowIndex: r, date, amount: -fee, description: `${description} (fee)`, feeOf: drafts.length - 1 });
+    }
   }
   return { drafts, skipped };
 }
@@ -100,7 +107,7 @@ export function markDuplicates(drafts: Draft[], existing: Transaction[], account
   const have = new Map<string, number>();
   for (const t of existing) {
     if (t.accountId !== accountId) continue;
-    const k = dupKey(t.date, t.amount, t.importDescription ?? t.note);
+    const k = dupKey(t.importDate ?? t.date, t.amount, t.importDescription ?? t.note);
     have.set(k, (have.get(k) ?? 0) + 1);
   }
   return drafts.map((d) => {
@@ -112,6 +119,36 @@ export function markDuplicates(drafts: Draft[], existing: Transaction[], account
     }
     return false;
   });
+}
+
+export const MATCH_WINDOW_DAYS = 3;
+
+/**
+ * Match import rows to things the user already logged by hand: same account, same amount,
+ * within ±3 days. Closest date wins; each manual entry matches at most one row, and each row
+ * at most one entry. Duplicates and fee rows are never matched. Returns the manual id per draft.
+ */
+export function matchManualEntries(drafts: Draft[], duplicate: boolean[], existing: Transaction[], accountId: string): Array<string | undefined> {
+  const manual = existing.filter((t) => t.accountId === accountId && t.source === 'manual' && !t.matchedBatchId);
+  const dayNum = (d: string) => Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10))) / 86_400_000;
+  const pairs: Array<{ di: number; mi: number; gap: number }> = [];
+  drafts.forEach((d, di) => {
+    if (duplicate[di] || d.feeOf !== undefined) return;
+    manual.forEach((t, mi) => {
+      const gap = Math.abs(dayNum(t.date) - dayNum(d.date));
+      if (t.amount === d.amount && gap <= MATCH_WINDOW_DAYS) pairs.push({ di, mi, gap });
+    });
+  });
+  // Closest dates first; ties keep file order, then the order entries were logged.
+  pairs.sort((a, b) => a.gap - b.gap || a.di - b.di || a.mi - b.mi);
+  const out: Array<string | undefined> = drafts.map(() => undefined);
+  const usedManual = new Set<number>();
+  for (const p of pairs) {
+    if (out[p.di] !== undefined || usedManual.has(p.mi)) continue;
+    out[p.di] = manual[p.mi].id;
+    usedManual.add(p.mi);
+  }
+  return out;
 }
 
 const NOISE = new Set([

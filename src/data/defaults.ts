@@ -22,6 +22,7 @@ export const DEFAULT_CATEGORIES: CategorySeed[] = [
   { name: 'Subscriptions', emoji: '📺', color: '#d99aa8', keywords: ['netflix', 'spotify', 'disney', 'hulu', 'prime', 'apple', 'youtube', 'subscription', 'icloud', 'patreon'] },
   { name: 'Gifts', emoji: '🎁', color: '#e3a3c4', keywords: ['gift', 'gifts', 'present', 'birthday', 'christmas'] },
   { name: 'Kids & pets', emoji: '🧸', color: '#a8c7e8', keywords: ['kids', 'school', 'childcare', 'nursery', 'pet', 'vet', 'dog', 'cat'] },
+  { name: 'Bank fees', emoji: '🏦', color: '#b7b2c9', keywords: ['fee', 'fees', 'overdraft', 'commission'] },
   { name: 'Other', emoji: '📦', color: '#c4c4c4', keywords: ['other', 'misc', 'cash'] },
 ];
 

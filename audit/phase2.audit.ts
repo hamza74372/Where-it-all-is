@@ -164,6 +164,49 @@ test('phase 2 walkthrough + audit', async ({ page }, info) => {
   await snap('plan-insights');
   await tap(nav('Today'));
   await snap('today-final');
+
+  // ---------------- CSV import (Phase 4/4b) ----------------
+  // First import part of a statement, then log something by hand that the full statement also
+  // contains, so the review shows duplicates, a match and new rows together.
+  const chase = fs.readFileSync(path.resolve('test/fixtures/csv/chase-checking.csv'), 'utf8');
+  const firstThree = chase.split(/\r?\n/).slice(0, 4).join('\r\n') + '\r\n';
+  await tap(nav('Log'));
+  await tap(page.getByRole('button', { name: 'Import statement' }));
+  await page.locator('input[type=file]').setInputFiles({ name: 'chase-part.csv', mimeType: 'text/csv', buffer: Buffer.from(firstThree) });
+  await tap(page.getByRole('button', { name: 'Continue' }));
+  await tap(page.getByRole('button', { name: 'Import 3' }));
+  await tap(page.getByRole('button', { name: 'Skip' }));
+  await tap(page.getByRole('button', { name: 'Done' }));
+
+  await tap(nav('Today'));
+  const box2 = page.getByRole('textbox', { name: 'Log a spend' });
+  await type(box2, '15.49 netflix'); // the statement has NETFLIX.COM on 8 Oct, 2 days later
+  await key(box2, 'Enter');
+
+  await tap(nav('Log'));
+  await tap(page.getByRole('button', { name: 'Import statement' }));
+  await page.locator('input[type=file]').setInputFiles(path.resolve('test/fixtures/csv/chase-checking.csv'));
+  await expect(page.getByRole('heading', { name: 'Preview' })).toBeVisible();
+  await snap('import-column-preview');
+  await tap(page.getByRole('button', { name: 'Continue' }));
+  await expect(page.getByText('6 new transactions')).toBeVisible();
+  await expect(page.getByText('1 matched to things you already logged')).toBeVisible();
+  await expect(page.getByText('3 already in your log')).toBeVisible();
+  await snap('import-review');
+  await tap(page.getByRole('button', { name: 'Import 6' }));
+  await expect(page.getByRole('heading', { name: 'Check 1043' })).toBeVisible();
+  await snap('import-sort');
+  await tap(page.getByRole('button', { name: /Home/ }));
+  await expect(page.getByRole('heading', { name: 'Your bank says your balance is…?' })).toBeVisible();
+  await snap('import-balance-check');
+  await type(page.getByLabel('Balance in your bank app'), '1000');
+  await tap(page.getByRole('button', { name: 'Check' }));
+  await snap('import-balance-difference');
+  await tap(page.getByRole('button', { name: 'Add a balance adjustment' }));
+  await snap('import-done');
+  await tap(page.getByRole('button', { name: 'Done' }));
+  await tap(nav('Today'));
+  await snap('today-after-import');
   await tap(nav('More'));
   await snap('more');
   for (const [label, file] of [

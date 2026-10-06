@@ -144,6 +144,10 @@ export function detectMapping(rows: string[][], regionOrder: 'DMY' | 'MDY'): Det
   });
   if (s !== undefined) stateCol = s;
 
+  // ---- Fee column (Revolut-style): charged on top of the amount.
+  const fee = byName(['fee', 'fees', 'commission'], (i) => i !== amountCol && numericShare(i) >= 0.8);
+  const feeCol = fee >= 0 ? fee : undefined;
+
   // ---- Sign: card exports sometimes show purchases as positive and payments as negative.
   let signConvention: CsvMapping['signConvention'] = 'negativeIsOut';
   if (amountMode === 'single' && amountCol >= 0 && typeCol === undefined) {
@@ -164,6 +168,7 @@ export function detectMapping(rows: string[][], regionOrder: 'DMY' | 'MDY'): Det
     ...(amountMode === 'single' ? { amountCol } : { debitCol, creditCol }),
     ...(typeCol !== undefined ? { typeCol } : {}),
     ...(stateCol !== undefined ? { stateCol } : {}),
+    ...(feeCol !== undefined ? { feeCol } : {}),
     dateFormat: dd?.format ?? regionOrder,
     decimal,
     signConvention,

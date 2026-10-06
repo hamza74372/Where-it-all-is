@@ -19,6 +19,7 @@ const SOURCE_LABEL: Record<Transaction['source'], string> = {
   bill: 'Bill',
   income: 'Pay',
   transfer: 'Transfer',
+  adjustment: 'Balance adjustment',
 };
 
 export function Log() {

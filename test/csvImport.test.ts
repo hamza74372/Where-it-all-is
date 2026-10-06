@@ -126,12 +126,18 @@ describe('bank exports (made-up rows in each bank’s column layout)', () => {
     ]);
   });
 
-  it('Revolut: started date, ISO with time, reverted row skipped', () => {
+  it('Revolut: started date, ISO with time, reverted row skipped, fee as its own linked row', () => {
     const r = load('revolut.csv', 'DMY');
-    expect(r.m).toMatchObject({ dateCol: 2, descCol: 4, amountCol: 5, stateCol: 8, dateFormat: 'YMD' });
-    expect(r.drafts).toHaveLength(5);
+    expect(r.m).toMatchObject({ dateCol: 2, descCol: 4, amountCol: 5, stateCol: 8, feeCol: 6, dateFormat: 'YMD' });
     expect(r.skipped).toEqual([{ rowIndex: 4, reason: 'Not completed (reverted)' }]);
     expect(summary(r.drafts[0])).toEqual(['2026-10-01', -1843, 'Lidl']);
+    // 5 transactions + the 0.50 fee on the currency exchange (0.00 fees are not rows).
+    expect(r.drafts).toHaveLength(6);
+    const fee = r.drafts.at(-1)!;
+    expect(summary(fee)).toEqual(['2026-10-12', -50, 'Exchanged to EUR (fee)']);
+    expect(r.drafts[fee.feeOf!].description).toBe('Exchanged to EUR');
+    // With fees counted, the rows reconcile to Revolut's own running balance: 500.00 → 508.17.
+    expect(50000 + r.drafts.reduce((s, d) => s + d.amount, 0)).toBe(50817);
   });
 
   it('Generic: BOM, ($54.12) negatives, $1,850.00 positives, Payee', () => {
