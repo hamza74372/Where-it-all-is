@@ -3,7 +3,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { describe, expect, it } from 'vitest';
 import { DB, uid } from '../src/db/db';
 import { ALL_STORES, SCHEMA_VERSION } from '../src/db/schema';
-import { defaultSettings, guessCurrency } from '../src/db/settings';
+import { defaultSettings, guessCurrency, loadSettings } from '../src/db/settings';
 
 const fresh = () => DB.open('test-' + uid(), new IDBFactory());
 
@@ -81,5 +81,34 @@ describe('settings defaults', () => {
   it('US week starts Sunday, UK Monday', () => {
     expect(defaultSettings('en-US').weekStart).toBe(0);
     expect(defaultSettings('en-GB').weekStart).toBe(1);
+  });
+});
+
+describe('decimal separator setting', () => {
+  it('defaults from the browser locale', () => {
+    expect(defaultSettings('en-US').decimalSeparator).toBe('.');
+    expect(defaultSettings('en-GB').decimalSeparator).toBe('.');
+    expect(defaultSettings('de-DE').decimalSeparator).toBe(',');
+    expect(defaultSettings('fr-FR').decimalSeparator).toBe(',');
+  });
+
+  it('is stored, and a saved choice is never overwritten by the locale on load', async () => {
+    const factory = new IDBFactory();
+    const a = await DB.open('sep', factory);
+    await a.put('settings', { ...defaultSettings('de-DE', 1), decimalSeparator: '.' });
+    const { settings } = await loadSettings(a);
+    expect(settings.decimalSeparator).toBe('.');
+    a.close();
+  });
+
+  it('records saved before the setting existed get it filled in once', async () => {
+    const factory = new IDBFactory();
+    const a = await DB.open('sep-old', factory);
+    const { decimalSeparator: _drop, ...old } = defaultSettings('en-US', 1);
+    await a.put('settings', old as never);
+    const { settings } = await loadSettings(a);
+    expect(['.', ',']).toContain(settings.decimalSeparator);
+    expect((await a.get('settings', 'main'))?.decimalSeparator).toBe(settings.decimalSeparator);
+    a.close();
   });
 });

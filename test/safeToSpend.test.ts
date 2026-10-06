@@ -49,7 +49,7 @@ describe('safe to spend', () => {
 
   it('2. reserves a bill due before payday', () => {
     const r = run({ bills: [bill('rent', 50000, sched('monthly', '2026-01-07'))] });
-    expect(r.billLines).toEqual([{ billId: 'rent', name: 'rent', date: '2026-10-07', amount: 50000 }]);
+    expect(r.billLines).toEqual([{ billId: 'rent', name: 'rent', date: '2026-10-07', amount: 50000, amountSource: 'fixed' }]);
     expect(r.safeToSpendPeriod).toBe(50000);
     expect(r.safeToSpendToday).toBe(16666);
   });
@@ -297,5 +297,90 @@ describe('safe to spend', () => {
   it('32. negative daily share rounds down (conservative)', () => {
     const r = run({ bills: [bill('rent', 100001, sched('monthly', '2026-01-07'))] });
     expect(r.dailyAllowance).toBe(-1);
+  });
+
+  describe('payday and bills on the same day', () => {
+    const payToday = income('pay', sched('biweekly', TODAY));
+    const rentToday = bill('rent', 50000, sched('monthly', '2026-01-06'));
+
+    it('33a. payday + rent today, pay not confirmed: rent reserved, pay not counted', () => {
+      const r = run({ incomes: [payToday], bills: [rentToday] });
+      expect(r.nextPayday).toBe('2026-10-20');
+      expect(r.available).toBe(100000);
+      expect(r.upcomingBills).toBe(50000);
+      expect(r.safeToSpendPeriod).toBe(50000);
+      expect(r.unconfirmedPaydaysToday).toEqual([{ incomeId: 'pay', name: 'pay', amount: 200000 }]);
+    });
+
+    it('33b. payday + rent today, pay confirmed: rent still comes out of the new money', () => {
+      const r = run({
+        incomes: [payToday],
+        bills: [rentToday],
+        transactions: [tx(TODAY, 200000, { source: 'income', incomeId: 'pay', incomeDate: TODAY })],
+      });
+      expect(r.available).toBe(300000);
+      expect(r.upcomingBills).toBe(50000);
+      expect(r.safeToSpendPeriod).toBe(250000);
+      expect(r.daysLeft).toBe(14);
+      expect(r.unconfirmedPaydaysToday).toEqual([]);
+    });
+
+    it('34. "bills come out before pay" setting reserves bills due on the next payday', () => {
+      const phone = bill('phone', 4000, sched('monthly', '2026-01-09')); // due on payday, 9 Oct
+      expect(run({ bills: [phone] }).upcomingBills).toBe(0);
+      const on = run({ bills: [phone], settings: { buffer: 0, setAsideGoals: false, billsBeforePayOnPayday: true } });
+      expect(on.upcomingBills).toBe(4000);
+      expect(on.daysLeft).toBe(3);
+    });
+
+    it('35. that setting does nothing without a payday (month-end period)', () => {
+      const r = run({
+        incomes: [],
+        bills: [bill('rent', 50000, sched('monthly', '2026-01-01'))], // due 1 Nov = period end
+        settings: { buffer: 0, setAsideGoals: false, billsBeforePayOnPayday: true },
+      });
+      expect(r.upcomingBills).toBe(0);
+    });
+  });
+
+  describe('card bills follow the card balance', () => {
+    const accounts = [account('chk', { openingBalance: 100000 }), account('card', { type: 'credit', includeInSafeToSpend: false })];
+
+    it('36. spend 200 on the card → card bill before payday sets aside 200', () => {
+      const r = run({
+        accounts,
+        bills: [bill('card bill', 2500, sched('monthly', '2026-01-08'), { payToAccountId: 'card' })],
+        transactions: [tx('2026-10-02', -20000, { accountId: 'card' })],
+      });
+      expect(r.billLines).toEqual([
+        { billId: 'card bill', name: 'card bill', date: '2026-10-08', amount: 20000, amountSource: 'cardBalance' },
+      ]);
+      expect(r.safeToSpendPeriod).toBe(80000);
+    });
+
+    it('37. fixed override uses the bill amount', () => {
+      const r = run({
+        accounts,
+        bills: [bill('card bill', 2500, sched('monthly', '2026-01-08'), { payToAccountId: 'card', amountSource: 'fixed' })],
+        transactions: [tx('2026-10-02', -20000, { accountId: 'card' })],
+      });
+      expect(r.upcomingBills).toBe(2500);
+      expect(r.billLines[0].amountSource).toBe('fixed');
+    });
+
+    it('38. nothing owed → nothing set aside', () => {
+      const r = run({ accounts, bills: [bill('card bill', 2500, sched('monthly', '2026-01-08'), { payToAccountId: 'card' })] });
+      expect(r.upcomingBills).toBe(0);
+    });
+
+    it('39. two card due dates in one period reserve the balance once', () => {
+      const r = run({
+        accounts,
+        incomes: [],
+        bills: [bill('card bill', 0, sched('weekly', '2026-10-07'), { payToAccountId: 'card' })],
+        transactions: [tx('2026-10-02', -20000, { accountId: 'card' })],
+      });
+      expect(r.upcomingBills).toBe(20000);
+    });
   });
 });

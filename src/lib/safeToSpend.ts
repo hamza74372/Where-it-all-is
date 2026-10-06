@@ -11,16 +11,23 @@
 //   safeToSpendToday = dailyAllowance − spentToday
 //   safeToSpendPeriod= startOfDay − spentToday   (what's left for the rest of the period)
 //
-// Decisions where the spec left room (kept conservative):
+// Rules (confirmed with the owner, 6 Oct 2026):
 //  • Payday today: the period runs to the *following* payday. Pay only counts once it's
 //    in a balance (confirmed/imported), so an unconfirmed payday never inflates the number.
-//  • Bills due *today* and not yet paid are reserved (they're still coming out).
-//    Bills due *on* the next payday are not — the new pay covers them.
+//    `unconfirmedPaydaysToday` lists pay due today with no recorded income, for the
+//    "Payday — confirm your pay" card.
+//  • Bills due *today* and not yet paid are always reserved — even when today is payday,
+//    because today's bills come out of the new period's money.
+//  • Bills due *on* the next payday are not reserved — the new pay covers them — unless
+//    the user turns on `billsBeforePayOnPayday` ("Some bills come out before my pay
+//    arrives on payday"). Month-end periods with no income have no payday, so the
+//    setting doesn't apply there.
 //  • spentToday is added back before dividing, so today's spending isn't counted twice
 //    (it is already inside the balance) and the daily allowance stays stable all day.
 //  • Credit cards: a card excluded from safe-to-spend never touches `available`; its
-//    unpaid charges show as "card to pay". Its payment bill is reserved like any bill, and
-//    paying it is a transfer (bank −X, card +X), so nothing is counted twice.
+//    unpaid charges show as "card to pay". Its payment bill reserves the current card-to-pay
+//    balance (or a fixed amount if the user set `amountSource: 'fixed'`), once per period.
+//    Paying it is a transfer (bank −X, card +X), so nothing is counted twice.
 //    A card *included* in safe-to-spend (pay-in-full users) reduces `available` as you spend,
 //    so bills that pay it are not reserved again.
 
@@ -36,7 +43,7 @@ export interface SafeToSpendInput {
   incomes: Income[];
   bills: Bill[];
   goals: Goal[];
-  settings: Pick<Settings, 'buffer' | 'setAsideGoals'>;
+  settings: Pick<Settings, 'buffer' | 'setAsideGoals'> & Partial<Pick<Settings, 'billsBeforePayOnPayday'>>;
 }
 
 export interface BillLine {
@@ -44,6 +51,8 @@ export interface BillLine {
   name: string;
   date: ISODate;
   amount: Minor;
+  /** 'cardBalance' = amount is what's currently owed on the card, not the bill's set amount. */
+  amountSource: 'fixed' | 'cardBalance';
 }
 
 export interface GoalLine {
@@ -74,6 +83,20 @@ export interface SafeToSpendResult {
   shortfall: Minor;
   status: 'ok' | 'tight';
   cardsToPay: Array<{ accountId: Id; name: string; amount: Minor }>;
+  /** Pay due today with no income recorded for it yet — drives the "confirm your pay" card. */
+  unconfirmedPaydaysToday: Array<{ incomeId: Id; name: string; amount: Minor }>;
+}
+
+/** Incomes due on `day` that have no income transaction recorded for that date. */
+export function unconfirmedPaydays(
+  day: ISODate,
+  incomes: Income[],
+  transactions: Transaction[],
+): Array<{ incomeId: Id; name: string; amount: Minor }> {
+  return incomes
+    .filter((inc) => inc.active && occurrences(inc.schedule, day, day).length > 0)
+    .filter((inc) => !transactions.some((t) => t.incomeId === inc.id && t.incomeDate === day))
+    .map((inc) => ({ incomeId: inc.id, name: inc.name, amount: inc.amount }));
 }
 
 /** Balance as of the end of `asOf` (future-dated transactions are ignored). */
@@ -123,15 +146,37 @@ export function computeSafeToSpend(input: SafeToSpendInput): SafeToSpendResult {
   }));
   const available = sum(accountLines.map((l) => l.balance));
 
-  // Bills that pay an included card are already reflected in `available` as you spend.
+  const cardsToPay = accounts
+    .filter((a) => !a.archived && a.type === 'credit' && !a.includeInSafeToSpend)
+    .map((a) => ({ accountId: a.id, name: a.name, amount: Math.max(0, -accountBalance(a, transactions, today)) }))
+    .filter((c) => c.amount > 0);
+  const cardOwed = new Map(cardsToPay.map((c) => [c.accountId, c.amount]));
+  const excludedCards = new Set(
+    accounts.filter((a) => !a.archived && a.type === 'credit' && !a.includeInSafeToSpend).map((a) => a.id),
+  );
+
+  const paydayIsReal = payday !== null;
+  const billWindowEnd = paydayIsReal && settings.billsBeforePayOnPayday ? nextPayday : lastDay;
+
   const billLines: BillLine[] = [];
   for (const bill of bills) {
     if (!bill.active) continue;
+    // Bills that pay an included card are already reflected in `available` as you spend.
     if (bill.payToAccountId && includedIds.has(bill.payToAccountId)) continue;
     if (!includedIds.has(bill.accountId)) continue; // paid from money outside safe-to-spend
-    for (const date of occurrences(bill.schedule, today, lastDay)) {
-      if (!isBillPaid(bill, date, transactions)) {
-        billLines.push({ billId: bill.id, name: bill.name, date, amount: bill.amount });
+    const followsCard =
+      !!bill.payToAccountId && excludedCards.has(bill.payToAccountId) && bill.amountSource !== 'fixed';
+    let cardReserved = false;
+    for (const date of occurrences(bill.schedule, today, billWindowEnd)) {
+      if (isBillPaid(bill, date, transactions)) continue;
+      if (followsCard) {
+        // Reserve what's owed on the card once; a second due date in the period owes nothing new yet.
+        if (cardReserved) continue;
+        cardReserved = true;
+        const owed = cardOwed.get(bill.payToAccountId!) ?? 0;
+        if (owed > 0) billLines.push({ billId: bill.id, name: bill.name, date, amount: owed, amountSource: 'cardBalance' });
+      } else {
+        billLines.push({ billId: bill.id, name: bill.name, date, amount: bill.amount, amountSource: 'fixed' });
       }
     }
   }
@@ -158,12 +203,8 @@ export function computeSafeToSpend(input: SafeToSpendInput): SafeToSpendResult {
   const safeToSpendToday = dailyAllowance - spentToday;
   const safeToSpendPeriod = startOfDay - spentToday;
 
-  const cardsToPay = accounts
-    .filter((a) => !a.archived && a.type === 'credit' && !a.includeInSafeToSpend)
-    .map((a) => ({ accountId: a.id, name: a.name, amount: Math.max(0, -accountBalance(a, transactions, today)) }))
-    .filter((c) => c.amount > 0);
-
   return {
+    unconfirmedPaydaysToday: unconfirmedPaydays(today, incomes, transactions),
     today,
     nextPayday,
     nextPaydaySource: payday ? 'income' : 'monthEnd',

@@ -1,5 +1,6 @@
 import type { Currency } from '../lib/money';
-import { CURRENCY_INFO } from '../lib/money';
+import { CURRENCY_INFO, decimalMarkFor } from '../lib/money';
+import { defaultPresets } from '../data/defaults';
 import type { DB } from './db';
 import { SCHEMA_VERSION } from './schema';
 import type { Settings } from './types';
@@ -23,6 +24,7 @@ export function defaultSettings(lang = navigator.language || 'en-US', now = Date
     name: '',
     currency,
     locale,
+    decimalSeparator: decimalMarkFor(locale),
     theme: 'auto',
     mode: 'simple',
     weekStart: locale.endsWith('US') || locale.endsWith('CA') ? 0 : 1,
@@ -32,6 +34,8 @@ export function defaultSettings(lang = navigator.language || 'en-US', now = Date
     backupRemindDays: 7,
     buffer: 0,
     setAsideGoals: false,
+    billsBeforePayOnPayday: false,
+    presets: defaultPresets(currency),
     onboarded: false,
     updatedAt: now,
   };

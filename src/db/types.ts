@@ -32,11 +32,23 @@ export interface Schedule {
 
 export type Theme = 'auto' | 'soft' | 'midnight';
 
+export interface QuickPreset {
+  id: Id;
+  emoji: string;
+  label: string;
+  /** Minor units, positive = spend. */
+  amount: number;
+  /** Category name to match (names survive example-data clears; ids don't). */
+  categoryName?: string;
+}
+
 export interface Settings extends BaseRecord {
   id: 'main';
   name: string;
   currency: Currency;
   locale: string;
+  /** How the user types amounts. Defaulted from the browser locale, then the user's choice. */
+  decimalSeparator: '.' | ',';
   theme: Theme;
   mode: 'simple' | 'full';
   weekStart: 0 | 1 | 6;
@@ -48,6 +60,14 @@ export interface Settings extends BaseRecord {
   buffer: Minor;
   /** Whether planned goal contributions are subtracted from safe-to-spend. */
   setAsideGoals: boolean;
+  /** "Some bills come out before my pay arrives on payday" — reserve bills due on payday too. */
+  billsBeforePayOnPayday: boolean;
+  /** Account that quick log and presets spend from. */
+  defaultAccountId?: Id;
+  /** One-tap chips on Today (user-editable). */
+  presets: QuickPreset[];
+  /** Default categories have been created once (don't re-create if the user deletes them). */
+  seeded?: boolean;
   lastBackupAt?: number;
   exampleData?: boolean;
   onboarded?: boolean;
@@ -81,6 +101,11 @@ export interface Bill extends BaseRecord {
   debtId?: Id;
   /** Set when this bill pays another account (a credit card): paying it is a transfer. */
   payToAccountId?: Id;
+  /**
+   * For card-payment bills: 'cardBalance' (default) sets aside what's owed on the card;
+   * 'fixed' sets aside `amount`. Ignored for ordinary bills.
+   */
+  amountSource?: 'fixed' | 'cardBalance';
   active: boolean;
 }
 

@@ -55,19 +55,48 @@ export function mulRound(amount: Minor, rate: number): Minor {
   return assertSafe(Math.sign(r) * Math.round(Math.abs(r)));
 }
 
-/**
- * Parse a human-typed amount into minor units. Accepts:
- *   "12", "12.5", "12.50", "1,234.56", "1.234,56", "12,50", "£12.50", "-3", "(12.50)", "12.50-"
- * Separator rule: if both `.` and `,` appear, the last one is the decimal point.
- * If only one kind appears and it is followed by 1–2 trailing digits once, it is decimal;
- * otherwise it is a thousands separator.
- * Returns null when the text isn't a recognisable amount.
- */
-export function parseAmount(input: string, digits = 2): Minor | null {
-  let s = input.trim().replace(/[\s  ']/g, '');
-  if (!s) return null;
+export type DecimalMark = '.' | ',';
 
+/**
+ * How a user with this decimal mark types amounts, for onboarding/Settings copy:
+ * "." → "12.50", "," → "12,50".
+ */
+export function amountExample(dec: DecimalMark): string {
+  return `12${dec}50`;
+}
+
+/**
+ * The decimal mark a locale uses ("en-US" → ".", "de-DE" → ",").
+ * Only used to pick the default for `settings.decimalSeparator`; after that, read the setting.
+ */
+export function decimalMarkFor(locale: string): DecimalMark {
+  let mark = markCache.get(locale);
+  if (!mark) {
+    const part = new Intl.NumberFormat(locale).formatToParts(1.5).find((p) => p.type === 'decimal');
+    mark = part?.value === ',' ? ',' : '.';
+    markCache.set(locale, mark);
+  }
+  return mark;
+}
+const markCache = new Map<string, DecimalMark>();
+
+export type AmountParse =
+  | { kind: 'ok'; value: Minor }
+  /**
+   * Unusual for the user's format — ask "Did you mean {suggested}?".
+   * `literal` is the strict reading in the user's format, or null if there isn't one.
+   */
+  | { kind: 'confirm'; suggested: Minor; literal: Minor | null }
+  | { kind: 'invalid' };
+
+/** Strip spaces, signs and currency symbols. Returns the bare digits/separators and the sign. */
+function normalise(input: string): { s: string; negative: boolean } | null {
+  let s = input.trim().replace(/[\s  ']/g, '');
   let negative = false;
+  const flip = () => {
+    negative = !negative;
+    s = s.slice(1);
+  };
   if (/^\(.*\)$/.test(s)) {
     negative = true;
     s = s.slice(1, -1);
@@ -76,51 +105,78 @@ export function parseAmount(input: string, digits = 2): Minor | null {
     negative = !negative;
     s = s.slice(0, -1);
   }
-  // Strip currency symbols/codes anywhere around the number.
-  s = s.replace(/^[+]/, '');
-  if (s.startsWith('-')) {
-    negative = !negative;
-    s = s.slice(1);
-  }
+  s = s.replace(/^\+/, '');
+  if (s.startsWith('-')) flip();
   s = s.replace(/^(?:[A-Z]{3}|[$£€]|A\$|C\$|CA\$|AU\$|US\$)/i, '').replace(/(?:[A-Z]{3}|[$£€])$/i, '');
-  if (s.startsWith('-')) {
-    negative = !negative;
-    s = s.slice(1);
-  }
+  if (s.startsWith('-')) flip();
   if (!/^[0-9.,]+$/.test(s) || !/[0-9]/.test(s)) return null;
+  return { s, negative };
+}
 
-  let intPart = s;
-  let fracPart = '';
-  const lastDot = s.lastIndexOf('.');
-  const lastComma = s.lastIndexOf(',');
-  if (lastDot >= 0 && lastComma >= 0) {
-    const dec = Math.max(lastDot, lastComma);
-    intPart = s.slice(0, dec);
-    fracPart = s.slice(dec + 1);
-  } else if (lastDot >= 0 || lastComma >= 0) {
-    const sep = lastDot >= 0 ? '.' : ',';
-    const count = s.split(sep).length - 1;
-    const after = s.slice(s.lastIndexOf(sep) + 1);
-    const isDecimal = count === 1 && (after.length <= 2 || (sep === '.' && after.length !== 3));
-    if (isDecimal) {
-      intPart = s.slice(0, s.lastIndexOf(sep));
-      fracPart = after;
-    } else if (!s.split(sep).slice(1).every((g) => g.length === 3)) {
-      return null; // e.g. "1,23,4" — not a valid grouping
-    }
+/**
+ * Strict reading of `s` with `dec` as the decimal mark and the other mark as the
+ * thousands separator (groups of exactly 3). Returns integer + fraction digit strings,
+ * or null if the text isn't valid in this format.
+ */
+function readStrict(s: string, dec: DecimalMark): { int: string; frac: string; grouped: boolean } | null {
+  const grp = dec === '.' ? ',' : '.';
+  const pieces = s.split(dec);
+  if (pieces.length > 2) return null;
+  const [intRaw, frac = ''] = pieces;
+  if (frac.includes(grp)) return null;
+  const groups = intRaw.split(grp);
+  if (groups.length > 1 && (!/^\d{1,3}$/.test(groups[0]) || !groups.slice(1).every((g) => /^\d{3}$/.test(g)))) {
+    return null;
   }
-  intPart = intPart.replace(/[.,]/g, '');
-  if (/[.,]/.test(fracPart)) return null;
-  if (fracPart.length > digits) {
-    // Round half up on the digit string (e.g. 3 decimals from a bank export).
-    const keep = fracPart.slice(0, digits);
-    const roundUp = Number(fracPart[digits]) >= 5;
-    const n = Number(intPart || '0') * 10 ** digits + Number(keep || '0') + (roundUp ? 1 : 0);
-    return assertSafe(negative ? -n : n) || 0;
-  }
-  const n = Number(intPart || '0') * 10 ** digits + Number(fracPart.padEnd(digits, '0') || '0');
-  if (!Number.isSafeInteger(n)) return null;
+  const int = groups.join('');
+  if (!int && !frac) return null;
+  return { int, frac, grouped: groups.length > 1 };
+}
+
+function toMinorDigits(int: string, frac: string, digits: number, negative: boolean): Minor {
+  // Round half up on the digit string when there are more decimals than the currency has.
+  const keep = frac.slice(0, digits).padEnd(digits, '0');
+  const roundUp = frac.length > digits && Number(frac[digits]) >= 5;
+  const n = assertSafe(Number(int || '0') * 10 ** digits + Number(keep || '0') + (roundUp ? 1 : 0));
   return negative && n !== 0 ? -n : n;
+}
+
+/**
+ * Parse a typed amount using the user's decimal mark — never guessing from the digits.
+ *   "." locales (USD/GBP/CAD/AUD, en-IE EUR):  "1,234.56" ok · "12,50" → confirm 12.50 ·
+ *        "1.234" → confirm 1,234.00 (literal 1.23)
+ *   "," locales (most EUR):  "1.234,56" ok · "1.234" ok (1,234) · "12.50" → confirm 12,50
+ * Also accepts currency symbols/codes, "-3", "(12.50)", "12.50-".
+ */
+export function parseAmount(input: string, dec: DecimalMark = '.', digits = 2): AmountParse {
+  const norm = normalise(input);
+  if (!norm) return { kind: 'invalid' };
+  const { s, negative } = norm;
+  const other: DecimalMark = dec === '.' ? ',' : '.';
+
+  const strict = readStrict(s, dec);
+  if (strict) {
+    const value = toMinorDigits(strict.int, strict.frac, digits, negative);
+    // Exactly 3 decimals with no grouping looks like a thousands separator from the other format.
+    if (strict.frac.length === 3 && !strict.grouped && /^[1-9]\d{0,2}$/.test(strict.int)) {
+      return { kind: 'confirm', suggested: toMinorDigits(strict.int + strict.frac, '', digits, negative), literal: value };
+    }
+    return { kind: 'ok', value };
+  }
+  const alt = readStrict(s, other);
+  if (alt) return { kind: 'confirm', suggested: toMinorDigits(alt.int, alt.frac, digits, negative), literal: null };
+  return { kind: 'invalid' };
+}
+
+/**
+ * Non-interactive parse for a known format (e.g. a bank CSV whose format was detected
+ * for that file): takes the strict reading only. Returns null if invalid in that format.
+ */
+export function parseAmountStrict(input: string, dec: DecimalMark, digits = 2): Minor | null {
+  const norm = normalise(input);
+  if (!norm) return null;
+  const strict = readStrict(norm.s, dec);
+  return strict ? toMinorDigits(strict.int, strict.frac, digits, norm.negative) : null;
 }
 
 const fmtCache = new Map<string, Intl.NumberFormat>();
@@ -144,6 +200,11 @@ export interface FormatOptions {
   wholeIfRound?: boolean;
   /** Always show a leading + for positive amounts. */
   signed?: boolean;
+  /**
+   * The user's decimal mark. When it differs from the locale's, decimal and grouping marks
+   * are swapped so displayed amounts match how the user types them.
+   */
+  decimal?: DecimalMark;
 }
 
 /** Format minor units for display via Intl.NumberFormat. */
@@ -156,8 +217,24 @@ export function formatMoney(
   const digits = fractionDigits(currency);
   const major = amount / 10 ** digits; // display only — never stored
   const whole = opts.wholeIfRound && amount % 10 ** digits === 0;
-  const text = formatter(currency, locale, !!whole).format(major);
+  const f = formatter(currency, locale, !!whole);
+  let text: string;
+  if (opts.decimal && opts.decimal !== decimalMarkFor(locale)) {
+    const group = opts.decimal === '.' ? ',' : '.';
+    text = f
+      .formatToParts(major)
+      .map((p) => (p.type === 'decimal' ? opts.decimal : p.type === 'group' ? group : p.value))
+      .join('');
+  } else {
+    text = f.format(major);
+  }
   return opts.signed && amount > 0 ? `+${text}` : text;
+}
+
+/** Amount as the user would type it in an input ("1234.50" or "1234,50"), no symbol or grouping. */
+export function toInputString(amount: Minor, dec: DecimalMark = '.', digits = 2): string {
+  const s = toDecimalString(amount, digits);
+  return dec === ',' ? s.replace('.', ',') : s;
 }
 
 /** Plain decimal string for editing inputs and CSV export ("1234.50", "-3.00"). */
