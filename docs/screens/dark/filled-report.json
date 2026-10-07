@@ -202,16 +202,24 @@
         "smallTargets": [],
         "clipped": [
           {
+            "text": "Friday, October 16",
+            "why": "runs off screen (16–401 of 390px)"
+          },
+          {
             "text": "Monday, October 5",
-            "why": "runs off screen (16–409 of 390px)"
+            "why": "runs off screen (16–423 of 390px)"
           },
           {
             "text": "+$1,850.00",
-            "why": "runs off screen (309–392 of 390px)"
+            "why": "runs off screen (309–406 of 390px)"
           },
           {
             "text": "-$950.00",
-            "why": "runs off screen (322–392 of 390px)"
+            "why": "runs off screen (328–406 of 390px)"
+          },
+          {
+            "text": "Friday, October 2",
+            "why": "runs off screen (16–401 of 390px)"
           }
         ],
         "overlaps": [],
