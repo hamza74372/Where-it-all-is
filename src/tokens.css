@@ -1,10 +1,7 @@
-/* Design tokens — the only file allowed raw px and colour values (test/tokens.test.ts checks).
-   Brand: navy #1F2A44, mint #7CC8B5, cream #F7F3EA. Mint is for fills and accents only: it is
-   never used as text on cream (it fails contrast there). Dark theme ("Midnight") is derived
-   from the same three colours. Every text/background pair below meets WCAG AA. */
+/* Design tokens — the only file allowed raw px and colour values.
+   Brand anchors: navy #1F2A44, mint #7CC8B5, cream #F7F3EA. */
 
 :root {
-  /* ----- Spacing (4 px base) ----- */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -13,138 +10,244 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  /* ----- Type (system UI font; 17 px body for an iOS-native feel) ----- */
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-code: ui-monospace, Menlo, Consolas, monospace; /* share codes only */
-  --text-hero: clamp(48px, 15vw, 64px); /* the Today number only */
-  --text-title: 28px; /* screen titles */
-  --text-heading: 20px; /* card and section titles */
-  --text-body: 17px; /* body, list primary line, inputs (16+ stops iOS zoom) */
-  --text-small: 15px; /* second lines, hints, captions */
-  --text-label: 14px; /* field labels, badges, section headers */
-  --leading-tight: 1.15;
-  --leading: 1.45;
+  --font: 'Inter', system-ui, sans-serif;
+  --font-display: 'Fraunces Variable', Georgia, serif;
+  --font-code: ui-monospace, Menlo, Consolas, monospace;
+  --text-hero: clamp(56px, 15vw, 88px);
+  --text-title: clamp(30px, 4vw, 42px);
+  --text-heading: 20px;
+  --text-body: 17px;
+  --text-small: 15px;
+  --text-label: 14px;
+  --leading-tight: 1.08;
+  --leading: 1.5;
   --weight-regular: 400;
   --weight-semibold: 600;
   --weight-bold: 700;
-  --weight-hero: 750;
+  --weight-hero: 680;
 
-  /* ----- Radius ----- */
   --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-lg: 24px;
   --radius-full: 999px;
 
-  /* ----- Sizes ----- */
-  --tap: 44px; /* smallest touch target */
-  --control: 48px; /* buttons and inputs */
+  --tap: 44px;
+  --control: 50px;
   --icon-sm: 20px;
   --icon: 24px;
-  --stroke: 1.75; /* every line icon */
-  --line: 1px; /* borders, dividers */
+  --icon-lg: 32px;
+  --stroke: 1.75;
+  --line: 1px;
   --line-strong: 2px;
   --focus-ring: 3px;
-  --content-max: 640px;
-  --bar: 8px; /* progress bars */
-  --dot: 8px; /* calendar dots */
+  --reading-max: 680px;
+  --content-max: 1280px;
+  --sidebar: 252px;
+  --rail: 80px;
+  --bar: 10px;
+  --bar-lg: 14px;
+  --dot: 8px;
+  --ring: 92px;
+  --ring-stroke: 9px;
   --switch-w: 52px;
   --switch-h: 32px;
   --switch-knob: 24px;
+  --chart-h: 220px;
 
-  /* ----- Motion (subtle; off with prefers-reduced-motion) ----- */
   --ease: cubic-bezier(0.2, 0, 0, 1);
-  --fast: 120ms;
-  --medium: 200ms;
+  --fast: 150ms;
+  --medium: 220ms;
+
+  /* Stable category colours: strong tone plus AA-safe tint. */
+  --cat-sage: #35705C;
+  --cat-sage-soft: #E1EEE8;
+  --cat-ocean: #356A91;
+  --cat-ocean-soft: #E0ECF5;
+  --cat-plum: #76507E;
+  --cat-plum-soft: #EEE4F0;
+  --cat-sand: #7A6033;
+  --cat-sand-soft: #F1E9D8;
+  --cat-coral: #A14F3B;
+  --cat-coral-soft: #F7E3DD;
+  --cat-slate: #526174;
+  --cat-slate-soft: #E5E9EE;
+  --cat-teal: #24736F;
+  --cat-teal-soft: #DDF0EE;
+  --cat-amber: #805A10;
+  --cat-amber-soft: #F5E8C9;
 }
 
-/* ----- Colours by role: light ("Soft") ----- */
 :root,
 [data-theme='soft'] {
-  --bg: #F7F3EA; /* cream */
+  --bg: #F7F3EA;
   --surface: #FFFDF8;
-  --surface-2: #EFE9DD;
-  --border: #DDD5C4;
-  --text: #1F2A44; /* navy */
-  --text-muted: #535C70; /* 6.3:1 on --bg */
-  --primary: #1F2A44; /* primary button: navy fill */
+  --surface-raised: #FFFFFF;
+  --surface-2: #EEE8DC;
+  --border: #D9D0BE;
+  --text: #1F2A44;
+  --text-muted: #596175;
+  --primary: #1F2A44;
   --on-primary: #F7F3EA;
-  --accent: #7CC8B5; /* mint: fills only */
+  --accent: #7CC8B5;
   --on-accent: #1F2A44;
-  --accent-soft: #E1F0EA; /* mint tint behind navy text */
-  --link: #2A6B5D; /* deep mint, text-safe: 5.6:1 on --bg */
-  --income: #2A6B5D;
-  --progress-ok: #7CC8B5;
-  --progress-warn: #E8B54A;
-  --progress-over: #E48A72;
-  --warn-text: #8A5A00; /* 5.4:1 on --bg */
-  --danger: #A8432B; /* destructive actions only */
+  --accent-soft: #DDEEE8;
+  --link: #28675A;
+  --income: #286B4D;
+  --progress-ok: #4B9B82;
+  --progress-warn: #C58B20;
+  --progress-over: #C66D58;
+  --warn-text: #7A5209;
+  --danger: #A8432B;
   --focus: #1D5FD1;
   --logo-body: #1F2A44;
   --logo-flap: #7CC8B5;
-  --backdrop: rgb(20 28 46 / 45%);
-  --shadow-0: none;
-  --shadow-1: 0 1px 2px rgb(31 42 68 / 8%);
-  --shadow-2: 0 8px 24px rgb(31 42 68 / 14%);
+  --hero-start: #1F2A44;
+  --hero-end: #32466B;
+  --hero-text: #F7F3EA;
+  --hero-muted: #D7DBE5;
+  --hero-accent: #7CC8B5;
+  --backdrop: rgb(20 28 46 / 48%);
+  --shadow-0: 0 1px 2px rgb(31 42 68 / 5%);
+  --shadow-1: 0 6px 18px rgb(31 42 68 / 9%);
+  --shadow-2: 0 20px 50px rgb(31 42 68 / 17%);
   color-scheme: light;
 }
 
-/* ----- Colours by role: dark ("Midnight"), derived from navy / mint / cream ----- */
 [data-theme='midnight'] {
-  --bg: #141C2E;
-  --surface: #1C2539;
-  --surface-2: #26314A;
-  --border: #3A4763;
+  --bg: #111827;
+  --surface: #182236;
+  --surface-raised: #1D2940;
+  --surface-2: #26334B;
+  --border: #3A4864;
   --text: #F7F3EA;
   --text-muted: #B8BFCC;
   --primary: #7CC8B5;
   --on-primary: #1F2A44;
   --accent: #7CC8B5;
   --on-accent: #1F2A44;
-  --accent-soft: #1F3B3B;
-  --link: #7CC8B5; /* mint on navy is fine: 8:1 */
-  --income: #8FD6C3;
-  --progress-ok: #6BB8A5;
-  --progress-warn: #C99536;
-  --progress-over: #C46A54;
+  --accent-soft: #203D3B;
+  --link: #91D6C5;
+  --income: #8FD6A7;
+  --progress-ok: #75C4AC;
+  --progress-warn: #D6A44B;
+  --progress-over: #DC8A76;
   --warn-text: #F0C36A;
   --danger: #F2A28D;
-  --focus: #8AB4FF;
+  --focus: #9FC2FF;
   --logo-body: #F7F3EA;
   --logo-flap: #7CC8B5;
-  --backdrop: rgb(4 8 16 / 60%);
+  --hero-start: #24324E;
+  --hero-end: #182236;
+  --hero-text: #F7F3EA;
+  --hero-muted: #CDD4E0;
+  --hero-accent: #7CC8B5;
+  --backdrop: rgb(4 8 16 / 68%);
   --shadow-0: none;
-  --shadow-1: 0 1px 2px rgb(0 0 0 / 30%);
-  --shadow-2: 0 8px 24px rgb(0 0 0 / 40%);
+  --shadow-1: none;
+  --shadow-2: 0 20px 50px rgb(0 0 0 / 42%);
+  --cat-sage-soft: #253D35;
+  --cat-ocean-soft: #23394A;
+  --cat-plum-soft: #3B3042;
+  --cat-sand-soft: #423824;
+  --cat-coral-soft: #472E2B;
+  --cat-slate-soft: #303948;
+  --cat-teal-soft: #203E3D;
+  --cat-amber-soft: #43371E;
+  --cat-sage: #9AD5BD;
+  --cat-ocean: #9AC7E8;
+  --cat-plum: #CFADDA;
+  --cat-sand: #D8BF8B;
+  --cat-coral: #F0A08C;
+  --cat-slate: #BCC7D7;
+  --cat-teal: #87D2CB;
+  --cat-amber: #E7C574;
   color-scheme: dark;
+}
+
+[data-accent='navy'] {
+  --theme-accent: #1F2A44;
+  --theme-accent-soft: #DDE4EE;
+  --theme-on-accent: #F7F3EA;
+  --theme-hero-start: #1F2A44;
+  --theme-hero-end: #32466B;
+}
+[data-accent='sage'] {
+  --theme-accent: #355F50;
+  --theme-accent-soft: #DDEAE3;
+  --theme-on-accent: #FFFDF8;
+  --theme-hero-start: #294D42;
+  --theme-hero-end: #3F715F;
+}
+[data-accent='plum'] {
+  --theme-accent: #624A68;
+  --theme-accent-soft: #ECE2EE;
+  --theme-on-accent: #FFFDF8;
+  --theme-hero-start: #503955;
+  --theme-hero-end: #775D7E;
+}
+[data-accent='ocean'] {
+  --theme-accent: #315F7B;
+  --theme-accent-soft: #DDEAF1;
+  --theme-on-accent: #FFFDF8;
+  --theme-hero-start: #264E68;
+  --theme-hero-end: #3C7594;
+}
+[data-accent='sand'] {
+  --theme-accent: #745A31;
+  --theme-accent-soft: #EFE6D3;
+  --theme-on-accent: #FFFDF8;
+  --theme-hero-start: #5B4526;
+  --theme-hero-end: #896F43;
+}
+[data-accent] {
+  --hero-start: var(--theme-hero-start);
+  --hero-end: var(--theme-hero-end);
+}
+[data-theme='soft'][data-accent],
+[data-theme='auto'][data-accent] {
+  --primary: var(--theme-accent);
+  --on-primary: var(--theme-on-accent);
+  --link: var(--theme-accent);
+  --accent-soft: var(--theme-accent-soft);
 }
 
 @media (prefers-color-scheme: dark) {
   [data-theme='auto'] {
-    --bg: #141C2E;
-    --surface: #1C2539;
-    --surface-2: #26314A;
-    --border: #3A4763;
+    --bg: #111827;
+    --surface: #182236;
+    --surface-raised: #1D2940;
+    --surface-2: #26334B;
+    --border: #3A4864;
     --text: #F7F3EA;
     --text-muted: #B8BFCC;
     --primary: #7CC8B5;
     --on-primary: #1F2A44;
     --accent: #7CC8B5;
     --on-accent: #1F2A44;
-    --accent-soft: #1F3B3B;
-    --link: #7CC8B5;
-    --income: #8FD6C3;
-    --progress-ok: #6BB8A5;
-    --progress-warn: #C99536;
-    --progress-over: #C46A54;
+    --accent-soft: #203D3B;
+    --link: #91D6C5;
+    --income: #8FD6A7;
+    --progress-ok: #75C4AC;
+    --progress-warn: #D6A44B;
+    --progress-over: #DC8A76;
     --warn-text: #F0C36A;
     --danger: #F2A28D;
-    --focus: #8AB4FF;
+    --focus: #9FC2FF;
     --logo-body: #F7F3EA;
     --logo-flap: #7CC8B5;
-    --backdrop: rgb(4 8 16 / 60%);
+    --hero-text: #F7F3EA;
+    --hero-muted: #CDD4E0;
+    --hero-accent: #7CC8B5;
+    --backdrop: rgb(4 8 16 / 68%);
     --shadow-0: none;
-    --shadow-1: 0 1px 2px rgb(0 0 0 / 30%);
-    --shadow-2: 0 8px 24px rgb(0 0 0 / 40%);
+    --shadow-1: none;
+    --shadow-2: 0 20px 50px rgb(0 0 0 / 42%);
     color-scheme: dark;
+  }
+  [data-theme='auto'][data-accent] {
+    --primary: #7CC8B5;
+    --on-primary: #1F2A44;
+    --link: #91D6C5;
+    --accent-soft: #203D3B;
   }
 }
