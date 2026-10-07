@@ -55,6 +55,9 @@ Always run `npm run build:all` before e2e or the audit; they test the built file
 - **Import:** `src/lib/csv/`, `src/lib/rules.ts`, `src/state/importActions.ts`
 - **Storage and migrations:** `src/db/` (`schema.ts` migrations, `types.ts`), `src/state/store.ts`, `src/state/actions.ts`, `src/lib/iconKeys.ts`
 - **Backup, encryption, sharing:** `src/lib/backup/` (`crypto.ts`, `format.ts`, `merge.ts`, `partner.ts`, `csvExport.ts`), `src/state/backupActions.ts`
-- **Tests that pin behaviour:** `test/`. Only change an e2e selector when you rename visible text, and say so in your PR.
-
 If a visual change seems to need any of these, stop and ask instead of editing.
+
+## Tests
+- **You may** add new tests, and update tests that check only markup, copy or layout: selectors, accessible names, visible wording, CSS classes, screenshot steps in `audit/`. Mention each change in your PR.
+- **You may not** change any test that asserts money values, dates, import results, matching, storage, backup or migration behaviour. That includes all of `test/` except `tokens.test.ts` and `icons.test.ts`, and the amounts, dates, counts and balances inside e2e tests.
+- **If one of those fails, stop and report it:** say which test, the expected and actual values, and what you changed just before. Don't adjust the expectation, skip the test or work around it.
