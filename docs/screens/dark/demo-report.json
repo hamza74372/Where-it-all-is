@@ -10,7 +10,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -23,7 +23,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     }
   ],

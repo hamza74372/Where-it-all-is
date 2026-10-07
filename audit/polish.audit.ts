@@ -101,13 +101,24 @@ test('a realistic month', async ({ page }, info) => {
   await page.getByRole('button', { name: /^Your data/ }).click();
   await shot('your-data');
 
-  // Tight: a cushion bigger than what's left.
+  // Keep both constrained examples believable: $40 left, then exactly $85 short.
   await page.getByRole('button', { name: 'Back to More' }).click();
+  await nav(page, 'Today').click();
+  const periodText = await page.locator('.hero-sub .money').textContent();
+  const periodLeft = Number((periodText ?? '').replace(/[^0-9.-]/g, ''));
+  expect(periodLeft).toBeGreaterThan(0);
+  await nav(page, 'More').click();
   await page.getByRole('button', { name: /^Settings/ }).click();
-  await page.getByLabel('Cushion').fill('9000');
+  await page.getByLabel('Cushion').fill(String(Math.max(0, periodLeft - 40)));
+  await nav(page, 'Today').click();
+  await expect(page.getByText('Tight until payday').first()).toBeVisible();
+  await shot('today-tight');
+  await nav(page, 'More').click();
+  await page.getByRole('button', { name: /^Settings/ }).click();
+  await page.getByLabel('Cushion').fill(String(periodLeft + 85));
   await nav(page, 'Today').click();
   await expect(page.getByText('Short until payday').first()).toBeVisible();
-  await shot('today-tight');
+  await shot('today-short');
 });
 
 test('plan with example numbers', async ({ page }, info) => {

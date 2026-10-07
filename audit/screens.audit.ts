@@ -386,16 +386,27 @@ test('filled data', async ({ page }, info) => {
     await h.shot('partner');
   });
   await h.step('tight', async () => {
+    await nav(page, 'Today').click();
+    const periodText = await page.locator('.hero-sub .money').textContent();
+    const periodLeft = Number((periodText ?? '').replace(/[^0-9.-]/g, ''));
+    expect(periodLeft).toBeGreaterThan(0);
     await nav(page, 'More').click();
     await page.getByRole('button', { name: /^Settings/ }).click();
-    // A cushion bigger than everything left for the period → "Short until payday".
-    await page.getByLabel('Cushion').fill('9000');
+    // Calm, realistic constrained examples: $40 left, then $85 short.
+    await page.getByLabel('Cushion').fill(String(Math.max(0, periodLeft - 40)));
+    await page.getByRole('button', { name: 'Back to More' }).click();
+    await nav(page, 'Today').click();
+    await expect(page.getByText('Tight until payday').first()).toBeVisible();
+    await h.shot('today-tight');
+    await nav(page, 'More').click();
+    await page.getByRole('button', { name: /^Settings/ }).click();
+    await page.getByLabel('Cushion').fill(String(periodLeft + 85));
     await page.getByRole('button', { name: 'Back to More' }).click();
     await nav(page, 'Today').click();
     await expect(page.getByText('Short until payday').first()).toBeVisible();
-    await h.shot('today-tight');
+    await h.shot('today-short');
     await page.getByRole('button', { name: 'How is this worked out?' }).last().click();
-    await h.shot('today-tight-explain');
+    await h.shot('today-short-explain');
     await closeSheet(page);
     await nav(page, 'More').click();
     await page.getByRole('button', { name: /^Settings/ }).click();

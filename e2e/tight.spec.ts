@@ -27,11 +27,11 @@ test('tight (above zero, little spare) and short (below zero) read differently o
   await expect(hero.getByRole('heading', { name: 'Safe to spend today' })).toBeVisible();
   await expect(hero.locator('.status')).toHaveText('On track');
 
-  // Cushion 950.00 → 50.00 left for the period (5% of 1,000) → tight, still a positive number.
-  await setCushion(page, '950');
+  // Cushion 960.00 → 40.00 left for the period (4% of 1,000) → tight, still a positive number.
+  await setCushion(page, '960');
   await expect(hero.getByRole('heading', { name: 'Tight until payday' })).toBeVisible();
   await expect(hero.getByText('Short until payday')).toHaveCount(0);
-  await expect(page.locator('.big-number')).toHaveText('$1'); // 50.00 ÷ 26 days = 1.92 → $1
+  await expect(page.locator('.big-number')).toHaveText('$1'); // 40.00 ÷ 26 days = 1.53 → $1
   await expect(page.locator('.big-number')).not.toHaveClass(/big-number-tight/);
   await expect(hero.getByText('What you can spend today and still cover your bills until the end of the month.')).toBeVisible();
   await expect(hero.locator('.status')).toHaveText('Not much spare after bills');
