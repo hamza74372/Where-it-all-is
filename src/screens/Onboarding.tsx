@@ -100,7 +100,7 @@ export function Onboarding() {
 
   if (step === 'restore') {
     return (
-      <main class="screen onboarding" id="main">
+      <main class="screen onboarding welcome-screen" id="main">
         <button type="button" class="link-btn back-btn" onClick={() => setStep('welcome')} aria-label="Back to welcome">
           <Icon name="back" small /> Back
         </button>

@@ -129,5 +129,15 @@ test('plan with example numbers', async ({ page }, info) => {
   await expect(page.locator('.big-number')).toBeVisible();
   await nav(page, 'Plan').click();
   await page.getByRole('radio', { name: 'Envelopes' }).click();
+  const overflowing = await page.locator('.envelope-summary').evaluate((card) => {
+    const bounds = card.getBoundingClientRect();
+    return [...card.querySelectorAll<HTMLElement>('.section-label, .summary-amount, small')]
+      .filter((node) => {
+        const rect = node.getBoundingClientRect();
+        return rect.left < bounds.left || rect.right > bounds.right || node.scrollWidth > node.clientWidth + 1;
+      })
+      .map((node) => node.textContent?.trim());
+  });
+  expect(overflowing).toEqual([]);
   await shot('plan');
 });

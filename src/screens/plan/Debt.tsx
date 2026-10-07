@@ -76,6 +76,7 @@ export function DebtPlan() {
               max={sliderMax}
               step={500}
               value={extra}
+              style={{ '--slider-progress': `${(extra / sliderMax) * 100}%` }}
               aria-valuetext={fmt.money(extra)}
               onInput={(e) => setExtra(Number(e.currentTarget.value))}
             />

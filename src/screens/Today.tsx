@@ -122,13 +122,13 @@ export function Today() {
         <div class="dashboard-hero-primary">
           <SafeNumber result={result} fmt={fmt} periodProgress={periodProgress} />
           {paydayCards.some(Boolean) ? paydayCards : !focus && <NextUp result={result} />}
+          <QuickLog inputRef={logRef} />
         </div>
         <section class="card desktop-breakdown" aria-labelledby="desktop-breakdown-title">
           <h2 id="desktop-breakdown-title" class="card-title">How this number is made</h2>
-          <Explain result={result} fmt={fmt} />
+          <Explain result={result} fmt={fmt} collapseDetail />
         </section>
       </div>
-      <QuickLog inputRef={logRef} />
       {!focus && (
         <>
           <TodayStats result={result} />
@@ -419,6 +419,7 @@ function TodayOverview({ today }: { today: string }) {
   const spentByCategory = data.categories
     .map((category) => ({
       label: category.name,
+      tone: category.order,
       value: data.transactions
         .filter((tx) => tx.date.startsWith(month) && tx.categoryId === category.id && tx.amount < 0 && tx.source !== 'transfer')
         .reduce((sum, tx) => sum - tx.amount, 0),
@@ -538,7 +539,7 @@ function NextUp({ result }: { result: SafeToSpendResult }) {
 
 const capital = (s: string) => s[0].toUpperCase() + s.slice(1);
 
-function Explain({ result: r, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
+function Explain({ result: r, fmt, collapseDetail = false }: { result: SafeToSpendResult; fmt: Fmt; collapseDetail?: boolean }) {
   const lastDay = addDays(r.nextPayday, -1);
   const line = (label: string, amount: number, sign: '+' | '−' | '=' | '', sub?: string) => (
     <li class={`explain-line ${sign === '=' ? 'explain-total' : ''}`}>
@@ -551,6 +552,27 @@ function Explain({ result: r, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
         {fmt.money(amount)}
       </span>
     </li>
+  );
+  const detail = (
+    <>
+      {r.billLines.length === 0 && <p class="muted">No bills are due before your next pay.</p>}
+      {r.lookAhead && (
+        <p class="muted">
+          {r.lookAhead.setAside > 0
+            ? `Looking ahead: bills from ${fmt.day(r.lookAhead.periodStart)} to ${fmt.day(r.lookAhead.periodEnd)} come to ${fmt.money(r.lookAhead.billsTotal)}, but your next pay is about ${fmt.money(r.lookAhead.expectedPay)}. The ${fmt.money(r.lookAhead.setAside)} gap is kept back now so those bills are covered.`
+            : `Looking ahead: your next pay (about ${fmt.money(r.lookAhead.expectedPay)}) covers the ${fmt.money(r.lookAhead.billsTotal)} of bills due ${fmt.day(r.lookAhead.periodStart)} – ${fmt.day(r.lookAhead.periodEnd)}.`}{' '}
+          This looks one pay period ahead only — big bills further out (like a yearly renewal) aren't set aside yet.
+        </p>
+      )}
+      {r.cardsToPay.length > 0 && (
+        <p class="muted">
+          Card spending isn't taken off straight away. You owe{' '}
+          {r.cardsToPay.map((c) => `${fmt.money(c.amount)} on ${c.name}`).join(', ')}; it's set aside when the card bill
+          is due.
+        </p>
+      )}
+      <p class="muted">Savings and accounts you've left out of safe-to-spend aren't counted.</p>
+    </>
   );
   return (
     <div class="explain">
@@ -578,23 +600,12 @@ function Explain({ result: r, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
         {r.spentToday > 0 && line('Already spent today', r.spentToday, '−')}
         {line('Safe to spend today', r.safeToSpendToday, '=', 'Shown on Today rounded down to a whole amount')}
       </ul>
-      {r.billLines.length === 0 && <p class="muted">No bills are due before your next pay.</p>}
-      {r.lookAhead && (
-        <p class="muted">
-          {r.lookAhead.setAside > 0
-            ? `Looking ahead: bills from ${fmt.day(r.lookAhead.periodStart)} to ${fmt.day(r.lookAhead.periodEnd)} come to ${fmt.money(r.lookAhead.billsTotal)}, but your next pay is about ${fmt.money(r.lookAhead.expectedPay)}. The ${fmt.money(r.lookAhead.setAside)} gap is kept back now so those bills are covered.`
-            : `Looking ahead: your next pay (about ${fmt.money(r.lookAhead.expectedPay)}) covers the ${fmt.money(r.lookAhead.billsTotal)} of bills due ${fmt.day(r.lookAhead.periodStart)} – ${fmt.day(r.lookAhead.periodEnd)}.`}{' '}
-          This looks one pay period ahead only — big bills further out (like a yearly renewal) aren't set aside yet.
-        </p>
-      )}
-      {r.cardsToPay.length > 0 && (
-        <p class="muted">
-          Card spending isn't taken off straight away. You owe{' '}
-          {r.cardsToPay.map((c) => `${fmt.money(c.amount)} on ${c.name}`).join(', ')}; it's set aside when the card bill
-          is due.
-        </p>
-      )}
-      <p class="muted">Savings and accounts you've left out of safe-to-spend aren't counted.</p>
+      {collapseDetail ? (
+        <details class="explain-more">
+          <summary>More detail</summary>
+          <div class="explain-more-content">{detail}</div>
+        </details>
+      ) : detail}
     </div>
   );
 }

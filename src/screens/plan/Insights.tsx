@@ -27,6 +27,7 @@ export function Insights() {
   })();
   const donutRows = rows.filter((row) => row.thisMonth > 0).map((row) => ({
     label: row.name,
+    tone: data.categories.find((category) => category.id === row.categoryId)?.order ?? 0,
     value: row.thisMonth,
     display: fmt.money(row.thisMonth, { wholeIfRound: true }),
   }));

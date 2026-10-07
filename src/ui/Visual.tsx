@@ -4,6 +4,10 @@ import { Icon } from './icons';
 export const toneClass = (index: number) => `tone-${Math.abs(index) % 8}`;
 export const progressPercent = (value: number) => Math.max(0, Math.min(1, value)) * 100;
 export const shouldUseDonut = (categoryCount: number) => categoryCount >= 2;
+export const progressArc = (value: number) => {
+  const length = progressPercent(value);
+  return { length, offset: 100 - length };
+};
 
 export function CategoryChip(props: { name: string; icon?: string; index?: number; compact?: boolean }) {
   return (
@@ -30,6 +34,7 @@ export function StatTile(props: { label: string; value: string; sub?: string; ch
 
 export function ProgressRing(props: { value: number; label: string; valueText: string; children?: ComponentChildren }) {
   const pct = progressPercent(props.value);
+  const arc = progressArc(props.value);
   return (
     <span
       class="progress-ring"
@@ -42,7 +47,7 @@ export function ProgressRing(props: { value: number; label: string; valueText: s
     >
       <svg viewBox="0 0 44 44" aria-hidden="true">
         <circle class="ring-track" cx="22" cy="22" r="18" pathLength="100" />
-        <circle class="ring-value" cx="22" cy="22" r="18" pathLength="100" strokeDasharray={`${pct} ${100 - pct}`} />
+        <circle class="ring-value" cx="22" cy="22" r="18" pathLength="100" stroke-dasharray="100" stroke-dashoffset={arc.offset} />
       </svg>
       <span class="ring-content">{props.children ?? `${Math.round(pct)}%`}</span>
     </span>
@@ -53,16 +58,31 @@ export interface ChartDatum {
   label: string;
   value: number;
   display: string;
+  tone?: number;
+}
+
+const DONUT_GAP = 1.5;
+
+export function donutArcs(data: ChartDatum[]) {
+  const rows = data.slice(0, 8);
+  const total = Math.max(1, rows.reduce((sum, item) => sum + Math.max(0, item.value), 0));
+  let cursor = 0;
+  return rows.map((item, index) => {
+    const share = (Math.max(0, item.value) / total) * 100;
+    const gap = Math.min(DONUT_GAP, share / 3);
+    const arc = { item, tone: Math.abs(item.tone ?? index) % 8, length: Math.max(0, share - gap), offset: -(cursor + gap / 2) };
+    cursor += share;
+    return arc;
+  });
 }
 
 export function DonutChart(props: { title: string; total: string; data: ChartDatum[] }) {
-  const total = Math.max(1, props.data.reduce((sum, item) => sum + Math.max(0, item.value), 0));
   if (!shouldUseDonut(props.data.length)) {
     return (
       <div class="category-bars" aria-label={`${props.title}. Total ${props.total}.`}>
         <ul aria-label={`${props.title} data`}>
           {props.data.map((item, index) => (
-            <li key={item.label} class={`chart-tone-${index}`}>
+            <li key={item.label} class={`chart-tone-${Math.abs(item.tone ?? index) % 8}`}>
               <span><i aria-hidden="true" />{item.label}</span>
               <strong class="money">{item.display}</strong>
               <span class="category-bar-track" aria-hidden="true"><i /></span>
@@ -72,26 +92,23 @@ export function DonutChart(props: { title: string; total: string; data: ChartDat
       </div>
     );
   }
-  let offset = 0;
+  const arcs = donutArcs(props.data);
   return (
     <div class="donut-wrap">
       <div class="donut-chart" role="img" aria-label={`${props.title}. Total ${props.total}.`}>
         <svg viewBox="0 0 44 44" aria-hidden="true">
           <circle class="donut-track" cx="22" cy="22" r="16" pathLength="100" />
-          {props.data.slice(0, 6).map((item, index) => {
-            const pct = (Math.max(0, item.value) / total) * 100;
-            const currentOffset = offset;
-            offset += pct;
+          {arcs.map(({ item, tone, length, offset }) => {
             return (
               <circle
                 key={item.label}
-                class={`donut-segment chart-tone-${index % 6}`}
+                class={`donut-segment chart-tone-${tone}`}
                 cx="22"
                 cy="22"
                 r="16"
                 pathLength="100"
-                strokeDasharray={`${pct} ${100 - pct}`}
-                strokeDashoffset={-currentOffset}
+                stroke-dasharray={`${length} ${100 - length}`}
+                stroke-dashoffset={offset}
               />
             );
           })}
@@ -102,8 +119,8 @@ export function DonutChart(props: { title: string; total: string; data: ChartDat
         </span>
       </div>
       <ul class="chart-legend" aria-label={`${props.title} data`}>
-        {props.data.slice(0, 6).map((item, index) => (
-          <li key={item.label}><i class={`chart-tone-${index % 6}`} /> <span>{item.label}</span><strong class="money">{item.display}</strong></li>
+        {arcs.map(({ item, tone }) => (
+          <li key={item.label}><i class={`chart-tone-${tone}`} /> <span>{item.label}</span><strong class="money">{item.display}</strong></li>
         ))}
       </ul>
     </div>

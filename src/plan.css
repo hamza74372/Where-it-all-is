@@ -82,6 +82,8 @@
   font-family: var(--font-display);
   font-size: var(--text-title);
   line-height: var(--leading-tight);
+  max-width: 100%;
+  white-space: normal;
 }
 .envelope-summary small {
   color: var(--text-muted);
@@ -133,9 +135,55 @@
   max-width: calc(var(--space-7) * 4);
 }
 .slider {
+  appearance: none;
+  -webkit-appearance: none;
   width: 100%;
   min-height: var(--tap);
-  accent-color: var(--accent);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.slider::-webkit-slider-runnable-track {
+  height: var(--slider-track);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius-full);
+  background: linear-gradient(to right, var(--accent) 0, var(--accent) var(--slider-progress), var(--surface-2) var(--slider-progress), var(--surface-2) 100%);
+}
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: var(--slider-thumb);
+  height: var(--slider-thumb);
+  margin-top: calc((var(--slider-track) - var(--slider-thumb)) / 2 - var(--line));
+  border: var(--line-strong) solid var(--surface-raised);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  box-shadow: var(--shadow-1);
+}
+.slider::-moz-range-track {
+  height: var(--slider-track);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+}
+.slider::-moz-range-progress {
+  height: var(--slider-track);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+.slider::-moz-range-thumb {
+  width: var(--slider-thumb);
+  height: var(--slider-thumb);
+  border: var(--line-strong) solid var(--surface-raised);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  box-shadow: var(--shadow-1);
+}
+.slider:focus-visible {
+  outline: var(--focus-ring) solid var(--focus);
+  outline-offset: var(--line-strong);
+  border-radius: var(--radius-full);
 }
 .compare {
   display: grid;
@@ -158,6 +206,9 @@
   font-weight: var(--weight-bold);
 }
 .debt-chart {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
   display: grid;
   gap: var(--space-2);
   padding: var(--space-3);
@@ -165,7 +216,9 @@
   background: var(--surface-2);
 }
 .debt-chart svg {
+  display: block;
   width: 100%;
+  max-width: 100%;
   height: var(--chart-h);
   max-height: calc(var(--space-7) * 4);
 }

@@ -38,6 +38,8 @@ for (const theme of THEMES) {
     if (heroOpacity !== 1) throw new Error(`Hero number did not finish at full opacity (${heroOpacity})`);
     const ringValue = Number(await page.locator('.hero .progress-ring').getAttribute('aria-valuenow'));
     if (ringValue <= 0 || ringValue >= 100) throw new Error(`Payday ring is not a partial arc (${ringValue}%)`);
+    const ringOffset = Number(await page.locator('.hero .ring-value').getAttribute('stroke-dashoffset'));
+    if (ringOffset <= 0 || ringOffset >= 100) throw new Error(`Payday ring stroke is not visibly partial (offset ${ringOffset})`);
     if (device.width >= 1100) {
       const hero = (await page.locator('.big-number').textContent())?.trim();
       const sidebar = (await page.locator('.nav-summary > strong').textContent())?.trim();

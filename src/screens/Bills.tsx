@@ -82,16 +82,15 @@ function BillList({ bills, onEdit, onAdd }: { bills: Bill[]; onEdit: (b: Bill) =
         return (
           <li key={bill.id} class="row row-bill">
             <button type="button" class="row-main row-button" onClick={() => onEdit(bill)} aria-label={`Edit ${bill.name}`}>
-              <span>
-                {bill.name}
-                {bill.autopay && <span class="badge">Autopay</span>}
+              <span class="bill-name">{bill.name}</span>
+              <span class="bill-chip-row">
+                {category && <CategoryChip name={category.name} icon={category.icon} index={category.order} compact />}
                 {overdue && <span class="due-chip due-overdue">Overdue</span>}
                 {!overdue && dueIn != null && dueIn <= 7 && <span class="due-chip">In {dueIn} {dueIn === 1 ? 'day' : 'days'}</span>}
               </span>
-              {category && <CategoryChip name={category.name} icon={category.icon} index={category.order} compact />}
               <span class="row-sub">
                 {due ? `${overdue ? 'Was due' : 'Next'} ${fmt.day(due)} (${fmt.relative(due, today)})` : 'No more due dates'} ·{' '}
-                {describeSchedule(bill.schedule)}
+                {describeSchedule(bill.schedule)}{bill.autopay ? ' · Autopay' : ''}
               </span>
             </button>
             <span class="row-end">

@@ -54,6 +54,8 @@
   --switch-w: 52px;
   --switch-h: 32px;
   --switch-knob: 24px;
+  --slider-thumb: 24px;
+  --slider-track: 8px;
   --chart-h: 220px;
 
   --ease: cubic-bezier(0.2, 0, 0, 1);

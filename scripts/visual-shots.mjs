@@ -42,11 +42,46 @@ for (const theme of THEMES) {
         if (heroOpacity !== 1) throw new Error(`Hero number did not finish at full opacity (${heroOpacity})`);
         const ringValue = Number(await page.locator('.hero .progress-ring').getAttribute('aria-valuenow'));
         if (ringValue <= 0 || ringValue >= 100) throw new Error(`Payday ring is not a partial arc (${ringValue}%)`);
+        const ringOffset = Number(await page.locator('.hero .ring-value').getAttribute('stroke-dashoffset'));
+        if (ringOffset <= 0 || ringOffset >= 100) throw new Error(`Payday ring stroke is not visibly partial (offset ${ringOffset})`);
         if (viewport.width >= 1100) {
           const hero = (await page.locator('.big-number').textContent())?.trim();
           const sidebar = (await page.locator('.nav-summary > strong').textContent())?.trim();
           if (hero !== sidebar) throw new Error(`Sidebar value ${sidebar} does not match hero ${hero}`);
         }
+      }
+      if (name === 'plan-envelopes') {
+        const overflowed = await page.locator('.envelope-summary').evaluate((card) => {
+          const bounds = card.getBoundingClientRect();
+          return [...card.querySelectorAll('.section-label, .summary-amount, small')].some((node) => {
+            const rect = node.getBoundingClientRect();
+            return rect.left < bounds.left || rect.right > bounds.right || node.scrollWidth > node.clientWidth + 1;
+          });
+        });
+        if (overflowed) throw new Error(`Envelope summary text overflow at ${viewport.width}px (${theme})`);
+      }
+      if (name === 'insights') {
+        const chart = await page.evaluate(() => {
+          const segments = [...document.querySelectorAll('.donut-segment')];
+          const strokes = segments.map((segment) => getComputedStyle(segment).stroke);
+          const months = [...document.querySelectorAll('.inout-month')];
+          const heights = months.map((month) => [...month.querySelectorAll('.inout-bars i')].map((bar) => Number.parseFloat(bar.style.height)));
+          return { segmentCount: segments.length, uniqueStrokes: new Set(strokes).size, heights };
+        });
+        if (chart.segmentCount < 5 || chart.uniqueStrokes !== chart.segmentCount) {
+          throw new Error(`Donut segments are not distinct (${chart.uniqueStrokes}/${chart.segmentCount})`);
+        }
+        if (chart.heights.length !== 6 || !chart.heights.slice(0, 5).every((month) => month.length === 2 && month.every((height) => height > 0))) {
+          throw new Error('The five historical months do not all contain money in and money out');
+        }
+      }
+      if (name === 'debt') {
+        const contained = await page.locator('.debt-chart').evaluate((chart) => {
+          const parent = chart.parentElement?.getBoundingClientRect();
+          const rect = chart.getBoundingClientRect();
+          return !!parent && rect.left >= parent.left && rect.right <= parent.right && rect.right <= window.innerWidth;
+        });
+        if (!contained) throw new Error(`Debt chart overflow at ${viewport.width}px (${theme})`);
       }
       const overflow = await page.evaluate(() => ({
         page: document.documentElement.scrollWidth > window.innerWidth + 1,
