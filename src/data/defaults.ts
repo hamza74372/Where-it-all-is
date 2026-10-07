@@ -109,6 +109,37 @@ export function buildExampleData(today: ISODate, categories: Category[]) {
     id: uid(), date: addDays(today, -daysAgo), amount: -amount, accountId, categoryId: cat(categoryName), note,
     source: 'manual', cleared: true, updatedAt: now,
   });
+  const monthDate = (monthsAgo: number, day: number): ISODate => {
+    const p = parts(today);
+    const date = new Date(Date.UTC(p.y, p.m - 1 - monthsAgo, day));
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+  };
+  const historyMonths = [
+    { monthsAgo: 1, groceries: 82000, eatingOut: 61000, transport: 52000, fun: 50451 },
+    { monthsAgo: 2, groceries: 88000, eatingOut: 67500, transport: 48000, fun: 46951 },
+    { monthsAgo: 3, groceries: 84000, eatingOut: 72000, transport: 53000, fun: 44451 },
+    { monthsAgo: 4, groceries: 80000, eatingOut: 60500, transport: 48000, fun: 51951 },
+    { monthsAgo: 5, groceries: 100000, eatingOut: 76000, transport: 60000, fun: 51451 },
+  ];
+  const historyTransactions: Transaction[] = __DEMO__ ? [] : historyMonths.flatMap((month) => {
+    const entry = (day: number, amount: number, note: string, categoryName?: string): Transaction => ({
+      id: uid(), date: monthDate(month.monthsAgo, day), amount, accountId: checking.id,
+      categoryId: categoryName ? cat(categoryName) : undefined, note, source: 'manual', cleared: true, updatedAt: now,
+    });
+    return [
+      entry(7, 185000, 'Paycheck'),
+      entry(21, 185000, 'Paycheck'),
+      entry(1, -95000, 'Rent', 'Home'),
+      entry(8, -1549, 'Netflix', 'Subscriptions'),
+      entry(12, -4500, 'Phone', 'Bills'),
+      entry(15, -8000, 'Electric', 'Bills'),
+      entry(20, -5500, 'Internet', 'Bills'),
+      entry(6, -month.groceries, 'Groceries', 'Groceries'),
+      entry(11, -month.eatingOut, 'Eating out', 'Eating out'),
+      entry(16, -month.transport, 'Transport', 'Transport'),
+      entry(22, -month.fun, 'Fun', 'Fun'),
+    ];
+  });
   const transactions: Transaction[] = [
     spend(1, 3420, 'Big shop', 'Groceries'),
     spend(1, 450, 'Coffee', 'Coffee'),
@@ -116,6 +147,7 @@ export function buildExampleData(today: ISODate, categories: Category[]) {
     spend(3, 2250, 'Takeaway', 'Eating out', card.id),
     spend(4, 1299, 'Book', 'Fun'),
     spend(5, 2875, 'Groceries', 'Groceries'),
+    ...historyTransactions,
   ];
 
   const limits: Record<string, number> = { Groceries: 40000, 'Eating out': 15000, Transport: 12000, Fun: 10000 };
