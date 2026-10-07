@@ -129,7 +129,7 @@ export function auditPage(): Finding {
 
   // Overlaps between separate pieces of content (not nested, not the fixed nav/toast).
   const boxes = Array.from(
-    root.querySelectorAll('button, input, select, h1, h2, h3, p, label, .mono, .row-sub, .badge, .chip, .big-number'),
+    root.querySelectorAll('button, input, select, h1, h2, h3, p, label, .money, .row-sub, .badge, .chip, .big-number'),
   )
     .filter((el) => isVisible(el) && !inFixed(el))
     .map((el) => ({ el, r: el.getBoundingClientRect() }));

@@ -1,127 +1,127 @@
-/* Phase 3: envelopes, goals, debt, insights, notes, focus mode. */
+/* Envelopes, goals, debt, insights, notes, focus mode. Only tokens (see tokens.css). */
 
-/* Progress bars: soft green → amber → coral; goals use the accent. */
+/* Progress bars: one style everywhere — mint while fine, amber when nearly used, coral when over. */
 .progress-bar {
-  height: 10px;
-  border-radius: 5px;
+  height: var(--bar);
+  border-radius: var(--radius-full);
   background: var(--surface-2);
   overflow: hidden;
-  margin: 8px 0 4px;
 }
 .progress-bar span {
   display: block;
   height: 100%;
-  border-radius: 5px;
-  transition: width 0.3s ease;
-}
-.level-ok span {
-  background: var(--green-fill);
+  border-radius: var(--radius-full);
+  background: var(--progress-ok);
+  transition: width var(--medium) var(--ease);
 }
 .level-near span {
-  background: var(--amber-fill);
+  background: var(--progress-warn);
 }
 .level-over span {
-  background: var(--coral-fill);
-}
-.level-goal span {
-  background: var(--accent);
+  background: var(--progress-over);
 }
 
 .row-envelope .row-main {
   width: 100%;
+  gap: var(--space-2);
 }
 .env-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  gap: var(--space-3);
   width: 100%;
   text-align: left;
 }
+.env-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
 .env-status {
-  font-size: 15px;
+  font-size: var(--text-small);
 }
 .env-near {
-  color: var(--amber);
+  color: var(--warn-text);
 }
 .env-over {
-  color: var(--coral);
+  color: var(--danger);
 }
 .goal-add {
   align-self: flex-start;
-  margin-top: 8px;
-}
-.goal-toggle .toggle-row {
-  margin: 0;
 }
 
-/* Emoji picker */
-.emoji-grid {
+/* Icon picker (categories, goals, chips) */
+.icon-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(var(--control), 1fr));
+  gap: var(--space-2);
 }
-.emoji-choice {
+.icon-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   aspect-ratio: 1;
-  min-height: 44px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  min-height: var(--tap);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius-md);
   background: var(--surface);
-  font-size: 22px;
+  color: var(--text);
   cursor: pointer;
 }
-.emoji-choice[aria-checked='true'] {
-  border: 2px solid var(--accent);
+.icon-choice[aria-checked='true'] {
+  border: var(--line-strong) solid var(--accent);
   background: var(--accent-soft);
 }
 
 /* Debt */
 .input-narrow-wide {
-  max-width: 180px;
+  max-width: calc(var(--space-7) * 4);
 }
 .slider {
   width: 100%;
-  min-height: 44px;
+  min-height: var(--tap);
   accent-color: var(--accent);
 }
 .compare {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* stacks on phones */
-  gap: 10px;
-  margin: 8px 0 12px;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--space-7) * 4.5), 1fr)); /* stacks on phones */
+  gap: var(--space-3);
 }
 .plan-card {
   background: var(--surface-2);
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-1);
 }
 .plan-card h3 {
-  margin: 0 0 2px;
-  font-size: 17px;
-}
-.plan-card p {
-  margin: 6px 0 0;
+  font-size: var(--text-body);
 }
 .plan-date {
-  font-size: 22px;
-  font-weight: 750;
+  font-size: var(--text-heading);
+  font-weight: var(--weight-bold);
 }
-.assumptions {
-  margin-top: 8px;
-}
+
+/* Disclosures ("How this is estimated", "Where do I find my bank's CSV?") use the link style. */
 .assumptions summary {
-  min-height: 44px;
+  min-height: var(--tap);
   display: flex;
   align-items: center;
+  gap: var(--space-1);
   cursor: pointer;
-  color: var(--accent);
-  font-weight: 600;
+  color: var(--link);
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 .assumptions ul {
-  margin: 4px 0 0;
+  margin: var(--space-1) 0 0;
   padding-left: 1.1em;
   color: var(--text-muted);
-  font-size: 15px;
+  font-size: var(--text-small);
+  display: grid;
+  gap: var(--space-1);
 }
 
 /* Insights bars */
@@ -129,15 +129,14 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 10px;
-  font-size: 14px;
-  margin: 0 0 8px;
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--text-label);
 }
 .swatch {
   display: inline-block;
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
+  width: var(--space-3);
+  height: var(--space-3);
+  border-radius: var(--radius-full);
 }
 .swatch-now,
 .bar-now {
@@ -156,26 +155,29 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: 'name values' 'track values';
-  gap: 4px 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: var(--line) solid var(--border);
 }
 .bar-row:last-child {
   border-bottom: 0;
 }
 .bar-name {
   grid-area: name;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 .bar-track {
   grid-area: track;
   display: grid;
-  gap: 3px;
+  gap: var(--line-strong);
 }
 .bar {
   display: block;
-  height: 8px;
-  border-radius: 4px;
-  min-width: 2px;
+  height: var(--bar);
+  border-radius: var(--radius-full);
+  min-width: var(--line-strong);
 }
 .bar-values {
   grid-area: values;
@@ -187,10 +189,9 @@
 
 /* Notes */
 .note-area {
-  min-height: 220px;
+  min-height: calc(var(--space-7) * 4.5);
   resize: vertical;
-  line-height: 1.5;
-  margin-top: 8px;
+  line-height: var(--leading);
 }
 
 /* Focus mode */

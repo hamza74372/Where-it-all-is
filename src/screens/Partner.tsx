@@ -15,6 +15,7 @@ import { Toggle } from '../ui/fields';
 import { makeFmt, useToday } from '../ui/hooks';
 import { Progress } from '../ui/Progress';
 import { toast } from '../ui/Toast';
+import { Icon } from '../ui/icons';
 
 export const STALE_DAYS = 3;
 
@@ -189,7 +190,7 @@ function OpenShare() {
             <label class="field-label" for="paste-code">
               …or paste a share code
             </label>
-            <textarea id="paste-code" class="input share-code" value={code} placeholder="WIAI1.…" onInput={(e) => setCode(e.currentTarget.value)} />
+            <textarea id="paste-code" class="input share-code" value={code} placeholder="Paste the code your partner sent" onInput={(e) => setCode(e.currentTarget.value)} />
           </div>
           <button
             type="button"
@@ -317,7 +318,7 @@ export function PartnerTab() {
                     {b.autopay ? ' · autopay' : ''}
                   </span>
                 </span>
-                <span class="mono">{money(b.amount)}</span>
+                <span class="money">{money(b.amount)}</span>
               </li>
             ))}
           </ul>
@@ -338,7 +339,7 @@ export function PartnerTab() {
                   <span>{p.name}</span>
                   <span class="row-sub">{fmt.day(p.date)}</span>
                 </span>
-                <span class="mono">
+                <span class="money">
                   {p.variable ? '~' : ''}
                   {money(p.amount)}
                 </span>
@@ -361,9 +362,9 @@ export function PartnerTab() {
                   <div class="row-main">
                     <span class="env-head">
                       <span>
-                        <span aria-hidden="true">{e.emoji}</span> {e.name}
+                        <Icon name={e.icon ?? e.emoji} small /> {e.name}
                       </span>
-                      <span class="mono">
+                      <span class="money">
                         {money(e.spent)} of {money(e.limit)}
                       </span>
                     </span>
@@ -387,9 +388,9 @@ export function PartnerTab() {
                 <div class="row-main">
                   <span class="env-head">
                     <span>
-                      <span aria-hidden="true">{g.emoji}</span> {g.name}
+                      <Icon name={g.icon ?? g.emoji} small /> {g.name}
                     </span>
-                    <span class="mono">
+                    <span class="money">
                       {money(g.saved, true)} of {money(g.target, true)}
                     </span>
                   </span>
@@ -416,7 +417,7 @@ export function PartnerTab() {
                     {t.category ? ` · ${t.category}` : ''}
                   </span>
                 </span>
-                <span class={`mono ${t.amount > 0 ? 'amount-in' : ''}`}>{formatMoney(t.amount, s.currency, s.locale, { decimal: s.decimal, signed: true })}</span>
+                <span class={`money ${t.amount > 0 ? 'amount-in' : ''}`}>{formatMoney(t.amount, s.currency, s.locale, { decimal: s.decimal, signed: true })}</span>
               </li>
             ))}
           </ul>

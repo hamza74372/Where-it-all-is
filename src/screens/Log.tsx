@@ -16,6 +16,7 @@ import { Icon } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
 import { Import } from './Import';
+import { EmptyState } from '../ui/EmptyState';
 
 const SOURCE_LABEL: Record<Transaction['source'], string> = {
   manual: '',
@@ -75,13 +76,13 @@ export function Log() {
       {!searching && (
         <div class="cal-head">
           <button type="button" class="icon-btn" onClick={() => setYm(addMonthsYM(ym.y, ym.m, -1))} aria-label="Previous month">
-            ‹
+            <Icon name="back" />
           </button>
           <h2 class="card-title" aria-live="polite">
             {fmt.month(`${prefix}-01`)}
           </h2>
           <button type="button" class="icon-btn" onClick={() => setYm(addMonthsYM(ym.y, ym.m, 1))} aria-label="Next month">
-            ›
+            <Icon name="forward" />
           </button>
         </div>
       )}
@@ -109,7 +110,7 @@ export function Log() {
           options={[
             { value: '', label: 'All categories' },
             { value: 'none', label: 'No category' },
-            ...data.categories.filter((c) => !c.archived).map((c) => ({ value: c.id, label: `${c.emoji} ${c.name}` })),
+            ...data.categories.filter((c) => !c.archived).map((c) => ({ value: c.id, label: c.name })),
           ]}
         />
       </div>
@@ -120,13 +121,20 @@ export function Log() {
       </p>
       {groups.length === 0 ? (
         <div class="card">
-          <p>
-            {searching
-              ? 'Nothing matches that search in any month.'
-              : filtered
-                ? 'Nothing this month matches these filters.'
-                : 'Nothing logged this month yet. Use the box on Today — "12.50 coffee" is enough.'}
-          </p>
+          {searching ? (
+            <EmptyState line="Nothing matches that search in any month." action="Clear search" onAction={() => setQuery('')} icon="search" />
+          ) : filtered ? (
+            <EmptyState
+              line="Nothing this month matches these filters."
+              action="Clear filters"
+              onAction={() => {
+                setAccountId('');
+                setCategoryId('');
+              }}
+            />
+          ) : (
+            <EmptyState line="Nothing logged this month yet." action="Add to the log" onAction={() => setEditing('new')} icon="log" />
+          )}
         </div>
       ) : (
         groups.map(([key, list]) => {
@@ -143,7 +151,7 @@ export function Log() {
                     <li key={tx.id} class="row">
                       <button type="button" class="row-main row-button" onClick={() => setEditing(tx)}>
                         <span>
-                          <span aria-hidden="true">{cat?.emoji ?? '•'} </span>
+                          <Icon name={cat?.icon ?? 'inbox'} small />{' '}
                           {tx.note || cat?.name || 'Spend'}
                         </span>
                         <span class="row-sub">
@@ -152,7 +160,7 @@ export function Log() {
                             .join(' · ')}
                         </span>
                       </button>
-                      <span class={`mono ${tx.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(tx.amount, { signed: true })}</span>
+                      <span class={`money ${tx.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(tx.amount, { signed: true })}</span>
                     </li>
                   );
                 })}
@@ -254,7 +262,7 @@ function TxForm({ tx, onDone }: { tx: Transaction | null; onDone: () => void }) 
               label="Category"
               value={categoryId}
               onChange={setCategoryId}
-              options={[{ value: '', label: 'None' }, ...data.categories.filter((c) => !c.archived).map((c) => ({ value: c.id, label: `${c.emoji} ${c.name}` }))]}
+              options={[{ value: '', label: 'None' }, ...data.categories.filter((c) => !c.archived).map((c) => ({ value: c.id, label: c.name }))]}
             />
           )}
           <DateInput label="Date" value={date} onInput={setDate} />
@@ -281,7 +289,7 @@ function TxForm({ tx, onDone }: { tx: Transaction | null; onDone: () => void }) 
         </>
       )}
       {tx && (
-        <button type="button" class="link-btn delete-btn" onClick={remove}>
+        <button type="button" class="btn btn-danger" onClick={remove}>
           Delete this entry
         </button>
       )}

@@ -12,6 +12,7 @@ import { useFmt, useToday, type Fmt } from '../../ui/hooks';
 import { Icon } from '../../ui/icons';
 import { Sheet } from '../../ui/Sheet';
 import { toast } from '../../ui/Toast';
+import { EmptyState } from '../../ui/EmptyState';
 
 export function DebtPlan() {
   const data = useData();
@@ -29,7 +30,7 @@ export function DebtPlan() {
     <>
       {data.debts.length === 0 ? (
         <div class="card">
-          <p>Add each card or loan with its balance, interest rate and minimum payment. You'll see a debt-free date and two ways to get there.</p>
+          <EmptyState line="Add a card or loan to see your debt-free date." action="Add a debt" onAction={() => setEditing('new')} icon="wallet" />
         </div>
       ) : (
         <>
@@ -39,13 +40,13 @@ export function DebtPlan() {
                 <button type="button" class="row-main row-button" onClick={() => setEditing(d)}>
                   <span>
                     {d.name}
-                    {d.balance <= 0 && <span class="badge">Paid off 🎉</span>}
+                    {d.balance <= 0 && <span class="badge">Paid off</span>}
                   </span>
                   <span class="row-sub">
                     {d.apr}% APR · minimum {fmt.money(d.minPayment)}
                   </span>
                 </button>
-                <span class="mono">{fmt.money(d.balance)}</span>
+                <span class="money">{fmt.money(d.balance)}</span>
               </li>
             ))}
           </ul>
@@ -54,9 +55,11 @@ export function DebtPlan() {
           </p>
         </>
       )}
-      <button type="button" class="btn" onClick={() => setEditing('new')}>
-        <Icon name="plus" /> Add a debt
-      </button>
+      {data.debts.length > 0 && (
+        <button type="button" class="btn" onClick={() => setEditing('new')}>
+          <Icon name="plus" /> Add a debt
+        </button>
+      )}
 
       {open.length > 0 && (
         <section class="card" aria-labelledby="payoff-title">
@@ -227,7 +230,7 @@ function DebtForm({ debt, onDone }: { debt: Debt | null; onDone: () => void }) {
       {debt && (
         <button
           type="button"
-          class="link-btn delete-btn"
+          class="btn btn-danger"
           onClick={async () => {
             const undo = await removeWithUndo(store, 'debts', debt);
             toast(`${debt.name} deleted${linkedBill ? ' (its bill stays — delete it in Bills if you like)' : ''}`, undo);

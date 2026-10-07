@@ -85,14 +85,14 @@ test('import a Chase-style CSV: rules sort most rows, sort the rest, re-import s
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByText('10 already imported before — skipped')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Nothing new to import' })).toBeDisabled();
-  await page.getByRole('button', { name: 'Back' }).click();
-  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
 
   // Undo the whole import from "Recent imports" (a bulk action: it asks first).
   await page.getByRole('button', { name: /^Undo import/ }).click();
   await page.getByRole('button', { name: 'Remove 10 rows' }).click();
   await expect(page.getByRole('status')).toContainText('Import undone — 10 rows removed');
-  await page.getByRole('button', { name: '‹ Log' }).click();
+  await page.getByRole('button', { name: 'Back to Log' }).click();
   await expect(page.getByText('Netflix.com Netflix.com Ca')).toHaveCount(0);
 
   expect(problems).toEqual([]);
@@ -176,7 +176,7 @@ test('manual logs are matched, unlinking works, the balance check fixes the numb
   await page.getByRole('button', { name: /^Unlink/ }).click();
   await expect(page.getByText('10 new transactions')).toBeVisible();
   await expect(page.getByText('already in the app — linked, not added twice')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByText('1 already in the app — linked, not added twice')).toBeVisible();
   await page.getByRole('button', { name: 'Import 9' }).click();
@@ -202,7 +202,7 @@ test('manual logs are matched, unlinking works, the balance check fixes the numb
   await page.getByRole('button', { name: 'Import statement' }).click();
   await page.getByRole('button', { name: /^Undo import/ }).click();
   await page.getByRole('button', { name: 'Remove 9 rows' }).click();
-  await page.getByRole('button', { name: '‹ Log' }).click();
+  await page.getByRole('button', { name: 'Back to Log' }).click();
   await expect(page.locator('.row').filter({ hasText: 'Coffee' })).toHaveCount(1);
   await expect(page.getByText('Whole Foods Market', { exact: false })).toHaveCount(0);
   expect(problems).toEqual([]);

@@ -10,6 +10,7 @@ import { Select, TextInput } from '../ui/fields';
 import { Icon } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
+import { EmptyState } from '../ui/EmptyState';
 
 const MATCH_LABEL: Record<Rule['matchType'], string> = {
   contains: 'contains',
@@ -22,7 +23,7 @@ export function Rules() {
   const [editing, setEditing] = useState<Rule | 'new' | null>(null);
   const catName = (id: string) => {
     const c = data.categories.find((x) => x.id === id);
-    return c ? `${c.emoji} ${c.name}` : 'a hidden category';
+    return c ? c.name : 'a hidden category';
   };
   const sorted = [...data.rules].sort((a, b) => a.priority - b.priority);
   const mine = sorted.filter((r) => r.priority < 1000);
@@ -47,14 +48,16 @@ export function Rules() {
       <h2 class="log-day-title">Your rules</h2>
       {mine.length === 0 ? (
         <div class="card">
-          <p class="muted">None yet. When sorting an import, turn on "Always put … in this category" and a rule appears here.</p>
+          <EmptyState line="No rules of your own yet. Sorting an import offers to make them." action="Add a rule" onAction={() => setEditing('new')} />
         </div>
       ) : (
         <ul class="card rows">{mine.map(row)}</ul>
       )}
-      <button type="button" class="btn" onClick={() => setEditing('new')}>
-        <Icon name="plus" /> Add a rule
-      </button>
+      {mine.length > 0 && (
+        <button type="button" class="btn" onClick={() => setEditing('new')}>
+          <Icon name="plus" /> Add a rule
+        </button>
+      )}
       <details class="card mapping-details">
         <summary class="card-title">Starter rules ({starters.length})</summary>
         <ul class="rows">{starters.map(row)}</ul>
@@ -121,12 +124,18 @@ function RuleForm({ rule, onDone }: { rule: Rule | null; onDone: () => void }) {
       />
       <TextInput label="This text" value={pattern} onInput={setPattern} placeholder="e.g. TESCO" />
       {showErrors && !patternOk && <p class="field-error">{matchType === 'regex' ? "That pattern isn't valid." : 'Type some text to match.'}</p>}
-      <Select label="Put it in" value={categoryId} onChange={setCategoryId} options={cats.map((c) => ({ value: c.id, label: `${c.emoji} ${c.name}` }))} />
+      <Select label="Put it in" value={categoryId} onChange={setCategoryId} options={cats.map((c) => ({ value: c.id, label: c.name }))} />
       <TextInput label="Show it as (optional)" value={renameTo} onInput={setRenameTo} placeholder="e.g. Tesco" hint="Replaces the bank's description in your log." />
       <TextInput label="Try it on a description" value={test} onInput={setTest} placeholder="Paste a line from your statement" />
       {test && patternOk && (
         <p class="field-hint" aria-live="polite">
-          {ruleMatches({ matchType, pattern }, test) ? '✓ This rule would match.' : 'This rule would not match.'}
+          {ruleMatches({ matchType, pattern }, test) ? (
+            <>
+              <Icon name="check" small /> This rule would match.
+            </>
+          ) : (
+            'This rule would not match.'
+          )}
         </p>
       )}
       <div class="form-actions">
@@ -137,7 +146,7 @@ function RuleForm({ rule, onDone }: { rule: Rule | null; onDone: () => void }) {
       {rule && (
         <button
           type="button"
-          class="link-btn delete-btn"
+          class="btn btn-danger"
           onClick={async () => {
             const undo = await removeWithUndo(store, 'rules', rule);
             toast('Rule deleted', undo);

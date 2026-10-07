@@ -61,7 +61,7 @@ test('320px wide, Partner tab showing', async ({ page }, info) => {
   for (const [label, file] of [['Backup & restore', 'more-backup'], ['Share with partner', 'more-share'], ['Settings', 'more-settings']] as const) {
     await page.getByRole('button', { name: new RegExp(`^${label.replace('&', '\\&')}`) }).click();
     await check(file);
-    await page.getByRole('button', { name: '‹ More' }).click();
+    await page.getByRole('button', { name: 'Back to More' }).click();
   }
   await nav(page, 'Log').click();
   await page.getByRole('button', { name: 'Import statement' }).click();

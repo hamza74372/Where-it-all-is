@@ -217,7 +217,7 @@ test('phase 2 walkthrough + audit', async ({ page }, info) => {
   ] as const) {
     await tap(page.getByRole('button', { name: new RegExp(`^${label.replace(/[&]/g, '\\&')}`) }));
     await snap(file);
-    await tap(page.getByRole('button', { name: '‹ More' }));
+    await tap(page.getByRole('button', { name: 'Back to More' }));
   }
 
   const theme = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);

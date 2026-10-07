@@ -83,9 +83,9 @@ async function morePages(page: Page, h: ReturnType<typeof harness>) {
       if (label === 'Help') {
         await page.getByRole('button', { name: /^Safe to spend, explained/ }).click();
         await h.shot('more-help-article');
-        await page.getByRole('button', { name: '‹ All help' }).click();
+        await page.getByRole('button', { name: 'Back to all help' }).click();
       }
-      await page.getByRole('button', { name: '‹ More' }).click();
+      await page.getByRole('button', { name: 'Back to More' }).click();
     });
   }
 }
@@ -105,7 +105,7 @@ test('empty data', async ({ page }, info) => {
   await h.step('restore', async () => {
     await page.getByRole('button', { name: /Restore a backup/ }).click();
     await h.shot('onboarding-restore');
-    await page.getByRole('button', { name: '‹ Back' }).click();
+    await page.getByRole('button', { name: 'Back to welcome' }).click();
   });
   await page.getByRole('button', { name: /Set up mine/ }).click();
   await h.shot('onboarding-1-name');
@@ -218,7 +218,7 @@ test('filled data', async ({ page }, info) => {
   await page.getByLabel('Rent or mortgage day of month').fill('1');
   await page.getByLabel('Phone amount').fill('45');
   await page.getByLabel('Phone day of month').fill('15');
-  await page.getByRole('button', { name: '+ Add another bill' }).click();
+  await page.getByRole('button', { name: 'Add another bill' }).click();
   await page.getByLabel('Bill name').fill('Netflix');
   await page.getByLabel('Netflix amount').fill('15.49');
   await page.getByLabel('Netflix day of month').fill('20');
@@ -314,7 +314,7 @@ test('filled data', async ({ page }, info) => {
     await page.getByRole('button', { name: /^Notes/ }).click();
     await page.locator('textarea').fill('Car insurance renews in March — about 600.\nAsk landlord about the boiler.');
     await page.waitForTimeout(800);
-    await page.getByRole('button', { name: '‹ More' }).click();
+    await page.getByRole('button', { name: 'Back to More' }).click();
   });
   await h.step('partner', async () => {
     await page.getByRole('button', { name: /^Share with partner/ }).click();
@@ -390,9 +390,9 @@ test('filled data', async ({ page }, info) => {
     await page.getByRole('button', { name: /^Settings/ }).click();
     // A cushion bigger than everything left for the period → "Tight until payday".
     await page.getByLabel('Cushion').fill('9000');
-    await page.getByRole('button', { name: '‹ More' }).click();
+    await page.getByRole('button', { name: 'Back to More' }).click();
     await nav(page, 'Today').click();
-    await expect(page.getByRole('heading', { name: 'Tight until payday' })).toBeVisible();
+    await expect(page.getByText('Tight until payday').first()).toBeVisible();
     await h.shot('today-tight');
     await page.getByRole('button', { name: 'How is this worked out?' }).last().click();
     await h.shot('today-tight-explain');
@@ -400,7 +400,7 @@ test('filled data', async ({ page }, info) => {
     await nav(page, 'More').click();
     await page.getByRole('button', { name: /^Settings/ }).click();
     await page.getByLabel('Cushion').fill('');
-    await page.getByRole('button', { name: '‹ More' }).click();
+    await page.getByRole('button', { name: 'Back to More' }).click();
   });
   await morePages(page, h);
   h.save();

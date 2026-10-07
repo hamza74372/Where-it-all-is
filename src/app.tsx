@@ -16,6 +16,7 @@ import { Today } from './screens/Today';
 import { NavContext, type Tab } from './state/nav';
 import { Store, StoreContext, useData, useStore } from './state/store';
 import { Icon, type IconName } from './ui/icons';
+import { LogSkeleton, TodaySkeleton } from './ui/Skeleton';
 import { dismissToast, ToastHost } from './ui/Toast';
 
 const TABS: Array<{ id: Tab; label: string; icon: IconName }> = [
@@ -59,7 +60,29 @@ export function App() {
       </main>
     );
   }
-  if (boot.state === 'loading') return <main class="screen" aria-busy="true" />;
+  if (boot.state === 'loading') {
+    // The shape of the screen while the budget loads from the device — never a blank page.
+    const tab = getPref<Tab>('tab', 'today');
+    return (
+      <div class="shell">
+        <main class="screen skeleton-screen" aria-busy="true" aria-label="Loading your budget">
+          {tab === 'log' ? <LogSkeleton /> : <TodaySkeleton />}
+        </main>
+        <nav class="bottom-nav" aria-hidden="true">
+          <ul>
+            {TABS.map((t) => (
+              <li key={t.id}>
+                <button type="button" tabIndex={-1} disabled aria-current={t.id === tab ? 'page' : undefined}>
+                  <Icon name={t.icon} />
+                  <span>{t.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+    );
+  }
 
   return (
     <StoreContext.Provider value={boot.store}>

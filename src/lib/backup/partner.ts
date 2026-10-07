@@ -21,8 +21,9 @@ export interface PartnerSummary {
   safe: { today: number; period: number; nextPayday: string; untilPayday: boolean; status: 'ok' | 'tight'; shortfall: number };
   bills: Array<{ name: string; date: string; amount: number; autopay: boolean }>;
   paydays: Array<{ name: string; date: string; amount: number; variable: boolean }>;
-  envelopes: Array<{ name: string; emoji: string; limit: number; spent: number }>;
-  goals: Array<{ name: string; emoji: string; target: number; saved: number; targetDate?: string }>;
+  /** icon: a key (ui/icons.tsx); shares from before icons carry an emoji instead. */
+  envelopes: Array<{ name: string; icon?: string; emoji?: string; limit: number; spent: number }>;
+  goals: Array<{ name: string; icon?: string; emoji?: string; target: number; saved: number; targetDate?: string }>;
   transactions?: Array<{ date: string; note: string; amount: number; category?: string }>;
 }
 
@@ -51,9 +52,9 @@ export function buildPartnerSummary(data: AppData, today: string, includeTransac
       .map((b) => ({ name: b.bill.name, date: b.date, amount: b.bill.amount, autopay: b.bill.autopay })),
     paydays: paydaysBetween(data.incomes, today, until).map((p) => ({ name: p.income.name, date: p.date, amount: p.income.amount, variable: p.income.variable })),
     envelopes: envelopeRows(data.categories, data.transactions, data.envelopeMoves, monthOf(today)).map((r) => ({
-      name: r.category.name, emoji: r.category.emoji, limit: r.limit, spent: r.spent,
+      name: r.category.name, icon: r.category.icon, limit: r.limit, spent: r.spent,
     })),
-    goals: data.goals.map((g) => ({ name: g.name, emoji: g.emoji, target: g.target, saved: g.saved, targetDate: g.targetDate })),
+    goals: data.goals.map((g) => ({ name: g.name, icon: g.icon, target: g.target, saved: g.saved, targetDate: g.targetDate })),
   };
   if (includeTransactions) {
     const from = addDays(today, -30);

@@ -1,158 +1,155 @@
-/* Phase 4: bank CSV import and rules. */
+/* Import, backup, sharing, help. Only tokens (see tokens.css). */
 
 .drop-zone {
-  border: 2px dashed var(--border);
-  border-radius: 18px;
-  padding: 22px 18px;
-  text-align: center;
+  border: var(--line-strong) dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-4);
   background: var(--surface);
-  margin-bottom: 14px;
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
 }
 .drop-zone.is-over {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
-.drop-zone .lead {
-  margin-top: 0;
-}
 .file-btn {
   position: relative;
-  margin: 6px 0 4px;
 }
 .file-btn:focus-within {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
+  outline: var(--focus-ring) solid var(--focus);
+  outline-offset: var(--line-strong);
 }
 
 .mapping-details > summary {
-  min-height: 44px;
+  min-height: var(--tap);
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
   cursor: pointer;
-  margin: 0;
+  list-style: none;
 }
-.mapping-details[open] > summary {
-  margin-bottom: 12px;
+.mapping-details > summary::-webkit-details-marker {
+  display: none;
+}
+.mapping-details[open] > summary .chev {
+  transform: rotate(90deg);
 }
 
 .review-list {
   margin: 0;
   padding-left: 1.1em;
-}
-.review-list > li {
-  margin: 6px 0;
+  display: grid;
+  gap: var(--space-2);
 }
 .skipped-list {
   padding-left: 1.1em;
-  font-size: 15px;
+  font-size: var(--text-small);
 }
 
 .sort-card {
   text-align: center;
+  align-items: center;
 }
 .sort-desc {
-  font-size: 22px;
-  margin: 4px 0;
+  font-size: var(--text-heading);
   overflow-wrap: anywhere;
 }
 .sort-meta {
-  font-size: 18px;
-  margin: 0 0 14px;
+  font-size: var(--text-body);
 }
 .sort-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 8px;
-  margin-bottom: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--space-7) * 2.5), 1fr));
+  gap: var(--space-2);
+  width: 100%;
 }
 .sort-choice {
-  min-height: 64px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface-2);
+  min-height: calc(var(--space-7) + var(--space-4));
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  font-weight: 600;
+  gap: var(--space-1);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
-}
-.sort-choice span:first-child {
-  font-size: 22px;
 }
 .sort-card .toggle-row {
   text-align: left;
 }
 
-/* Phase 4c: warnings in the import flow. */
+/* Warnings in the import flow */
 .row-flag {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--amber);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semibold);
+  color: var(--warn-text);
 }
 .review-warn {
-  color: var(--amber);
-}
-.imported-rows {
-  margin: 10px 0;
+  color: var(--warn-text);
 }
 
-/* Phase 5: backup, restore and partner sharing. */
-.warn-box {
-  margin: 4px 0 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--amber-fill);
+/* Backup, restore and partner sharing */
+.warn-box,
+.help-warn {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: var(--line) solid var(--progress-warn);
   background: var(--surface-2);
 }
 .restore-summary {
-  font-size: 18px;
-  margin-top: 0;
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
 }
 .choice-grid {
   display: grid;
-  gap: 10px;
-  margin: 12px 0 6px;
+  gap: var(--space-3);
 }
 .choice {
   text-align: left;
-  min-height: 64px;
-  padding: 14px 16px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
+  min-height: calc(var(--space-7) + var(--space-4));
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: var(--line) solid var(--border);
+  background: var(--surface);
   cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 .choice:hover,
 .choice:focus-visible {
   border-color: var(--accent);
 }
 .choice-title {
-  font-weight: 700;
-  font-size: 17px;
+  font-weight: var(--weight-bold);
 }
 .choice-sub {
-  font-size: 15px;
+  font-size: var(--text-small);
   color: var(--text-muted);
 }
 .share-made {
-  margin-top: 14px;
   display: grid;
-  gap: 8px;
-}
-.qr-block {
-  margin-top: 6px;
+  gap: var(--space-2);
 }
 .qr-svg {
-  width: min(280px, 100%);
-  margin: 4px auto 10px;
-  background: #fff; /* QR codes need a light background to scan, in either theme */
-  border-radius: 12px;
-  padding: 6px;
+  width: min(calc(var(--space-7) * 6), 100%);
+  margin: 0 auto;
+  background: var(--surface); /* QR codes need a light background to scan */
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+[data-theme='midnight'] .qr-svg {
+  background: var(--text); /* cream: still light enough to scan */
+}
+@media (prefers-color-scheme: dark) {
+  [data-theme='auto'] .qr-svg {
+    background: var(--text);
+  }
 }
 .qr-svg svg {
   display: block;
@@ -160,41 +157,36 @@
   height: auto;
 }
 .share-code {
-  min-height: 88px;
-  font-family: ui-monospace, Menlo, Consolas, monospace;
-  font-size: 14px;
+  min-height: calc(var(--space-7) * 2);
+  font-family: var(--font-code);
+  font-size: var(--text-label);
   word-break: break-all;
 }
 .partner-asof {
-  margin: -8px 0 14px;
   color: var(--text-muted);
 }
 .partner-asof .badge {
-  margin: 0 6px 0 0;
+  margin: 0 var(--space-2) 0 0;
 }
 
-/* Phase 6: help articles. */
+/* Help articles */
 .help-title {
-  font-size: 24px;
-  margin: 4px 0 14px;
+  font-size: var(--text-title);
+}
+.help-article {
+  display: grid;
+  gap: var(--space-4);
 }
 .help-article h3 {
-  font-size: 17px;
-  margin: 18px 0 6px;
+  font-size: var(--text-body);
+  margin-top: var(--space-2);
 }
 .help-article ul,
 .help-steps {
   padding-left: 1.2em;
-  margin: 8px 0 12px;
-}
-.help-article li {
-  margin: 6px 0;
-}
-.help-warn {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--amber-fill);
-  background: var(--surface-2);
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
 }
 
 /* Transfer suggestions: details on top, the yes/no choice underneath (no squeezing at 320px). */

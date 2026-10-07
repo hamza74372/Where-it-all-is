@@ -32,7 +32,7 @@ test('phase 5 screens', async ({ page }, info) => {
   await nav(page, 'More').click();
   await page.getByRole('button', { name: /^Settings/ }).click();
   await page.getByLabel('Your name').fill('Sam');
-  await page.getByRole('button', { name: '‹ More' }).click();
+  await page.getByRole('button', { name: 'Back to More' }).click();
 
   // 1. Backup screen (with the passphrase option open, showing the warning).
   await page.getByRole('button', { name: /^Backup & restore/ }).click();
@@ -56,7 +56,7 @@ test('phase 5 screens', async ({ page }, info) => {
   await page.getByRole('button', { name: 'Cancel' }).click();
 
   // 4. Share with partner (made, with the QR option open).
-  await page.getByRole('button', { name: '‹ More' }).click();
+  await page.getByRole('button', { name: 'Back to More' }).click();
   await page.getByRole('button', { name: /^Share with partner/ }).click();
   await page.getByLabel('Passphrase for this share').fill('our house 12');
   await page.getByLabel('Type it again').fill('our house 12');

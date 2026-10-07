@@ -222,7 +222,7 @@ describe('safe to spend', () => {
   });
 
   it('22. goal set-aside: one contribution per goal when switched on', () => {
-    const goal: Goal = { id: 'g', name: 'Trip', target: 60000, saved: 0, targetDate: '2026-11-20', emoji: '✈️', updatedAt: 0 };
+    const goal: Goal = { id: 'g', name: 'Trip', target: 60000, saved: 0, targetDate: '2026-11-20', icon: 'package', updatedAt: 0 };
     // Paydays after today through 20 Nov: 9 Oct, 23 Oct, 6 Nov, 20 Nov → 4 → 150.00 each.
     const on = run({ goals: [goal], settings: { buffer: 0, setAsideGoals: true } });
     expect(on.goalLines).toEqual([{ goalId: 'g', name: 'Trip', amount: 15000 }]);

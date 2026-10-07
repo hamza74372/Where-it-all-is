@@ -16,6 +16,7 @@ const site = JSON.parse(fs.readFileSync('site.config.json', 'utf8')) as {
   etsyUrl: string;
   themeColor: string;
   downloadFileName: string;
+  icons: { faviconSvg: string };
 };
 const HOSTED = process.env.HOSTED === '1';
 
@@ -44,10 +45,14 @@ function injectHead(demo: boolean): Plugin {
       if (HOSTED) {
         head +=
           `\n    <link rel="manifest" href="manifest.webmanifest" />` +
-          `\n    <link rel="icon" type="image/png" href="icons/icon-192.png" />` +
-          `\n    <link rel="apple-touch-icon" href="icons/icon-192.png" />` +
+          `\n    <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />` +
+          `\n    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />` +
+          `\n    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />` +
           // The full app's path is private: keep it out of search engines.
           (demo ? '' : `\n    <meta name="robots" content="noindex, nofollow" />`);
+      } else {
+        // The single file carries its favicon inside it (no other files to load).
+        head += `\n    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,${fs.readFileSync(site.icons.faviconSvg).toString('base64')}" />`;
       }
       return html.replace('<meta charset="UTF-8" />', head).replace(/<meta name="theme-color" content="[^"]*" \/>/, `<meta name="theme-color" content="${site.themeColor}" />`);
     },

@@ -88,7 +88,7 @@ test('back up, clear all data, restore — the same safe-to-spend', async ({ pag
   const file = await backUp(page);
   expect(path.basename(file)).toBe('where-it-all-is-backup-2026-10-06.json');
   const json = JSON.parse(fs.readFileSync(file, 'utf8'));
-  expect(json).toMatchObject({ format: 'wiai-backup', schemaVersion: 3 });
+  expect(json).toMatchObject({ format: 'wiai-backup', schemaVersion: 4 });
   expect(json.checksum).toMatch(/^sha256:/);
 
   await wipeAndReload(page);

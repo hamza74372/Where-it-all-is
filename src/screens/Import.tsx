@@ -21,6 +21,7 @@ import { useFmt, useToday } from '../ui/hooks';
 import { Confirm } from '../ui/Confirm';
 import { dismissToast, toast } from '../ui/Toast';
 import { ImportHistory } from './YourData';
+import { Icon } from '../ui/icons';
 
 /** Rows shown in the column preview (spec: the first 10). */
 const PREVIEW_ROWS = 10;
@@ -168,8 +169,8 @@ export function Import({ onClose }: { onClose: () => void }) {
 function ImportFrame(props: { title: string; onClose: () => void; children: ComponentChildren }) {
   return (
     <>
-      <button type="button" class="link-btn back-btn" onClick={props.onClose}>
-        ‹ Log
+      <button type="button" class="link-btn back-btn" onClick={props.onClose} aria-label="Back to Log">
+        <Icon name="back" small /> Log
       </button>
       <h1 class="screen-title">{props.title}</h1>
       {props.children}
@@ -300,7 +301,7 @@ function MapStep(props: {
       )}
 
       {futureRows.length > 0 && (
-        <div class="card card-accent" role="alert">
+        <div class="card warn-box" role="alert">
           <p>
             <strong>
               {futureRows.length} {futureRows.length === 1 ? 'row is' : 'rows are'} dated in the future — check the date format.
@@ -330,7 +331,7 @@ function MapStep(props: {
                   </span>
                   {it.draft.date > today && <span class="row-flag">Dated in the future — check the date format</span>}
                 </span>
-                <span class={`mono ${it.draft.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(it.draft.amount, { signed: true })}</span>
+                <span class={`money ${it.draft.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(it.draft.amount, { signed: true })}</span>
               </li>
             ))}
           </ul>
@@ -516,7 +517,7 @@ function ReviewStep(props: {
                 <li key={index} class="row transfer-row">
                   <span class="row-main">
                     <span>
-                      {it.note} · <span class="mono">{fmt.money(it.draft.amount, { signed: true })}</span>
+                      {it.note} · <span class="money">{fmt.money(it.draft.amount, { signed: true })}</span>
                     </span>
                     <span class="row-sub">
                       {fmt.day(it.draft.date)}
@@ -541,9 +542,15 @@ function ReviewStep(props: {
                       disabled={!partner && !t.accountId}
                       onClick={() => props.onItem(index, { transfer: { ...t, confirmed: !t.confirmed } })}
                     >
-                      {confirmed ? "✓ It's a transfer" : "Yes, it's a transfer"}
+                      {confirmed ? (
+                        <>
+                          <Icon name="check" small /> It's a transfer
+                        </>
+                      ) : (
+                        "Yes, it's a transfer"
+                      )}
                     </button>
-                    <button type="button" class="btn btn-small btn-quiet" onClick={() => props.onItem(index, { transfer: undefined })}>
+                    <button type="button" class="link-btn" onClick={() => props.onItem(index, { transfer: undefined })}>
                       No
                     </button>
                   </span>
@@ -568,7 +575,7 @@ function ReviewStep(props: {
                 <li key={index} class="row">
                   <span class="row-main">
                     <span>
-                      {it.note} <span class="muted">↔</span> {entry?.note || 'your entry'}
+                      {it.note} <Icon name="transfer" small label="is the same as" /> {entry?.note || 'your entry'}
                     </span>
                     <span class="row-sub">
                       {fmt.money(it.draft.amount, { signed: true })} · bank {fmt.day(it.draft.date)} · {entry ? `${entryKind(entry)}, ${fmt.day(entry.date)}` : ''}
@@ -657,7 +664,7 @@ function ChooseStep({ prepared, onChoose, onDone }: { prepared: Prepared; onChoo
         {current.it.note}
       </h2>
       <p class="sort-meta">
-        <span class="mono">{fmt.money(current.it.draft.amount, { signed: true })}</span> · {fmt.day(current.it.draft.date)}
+        <span class="money">{fmt.money(current.it.draft.amount, { signed: true })}</span> · {fmt.day(current.it.draft.date)}
       </p>
       <p>This could be more than one thing already in the app. Which is it?</p>
       <div class="stack" role="group" aria-label="Which entry is it?">
@@ -671,7 +678,7 @@ function ChooseStep({ prepared, onChoose, onDone }: { prepared: Prepared; onChoo
         <button type="button" class="btn" onClick={() => choose('new')}>
           It's something else — add it
         </button>
-        <button type="button" class="btn btn-quiet" onClick={() => choose('skip')}>
+        <button type="button" class="link-btn" onClick={() => choose('skip')}>
           Leave it out
         </button>
       </div>
@@ -725,7 +732,7 @@ function StatementCheck({ accountId, prepared, onDone }: { accountId: Id; prepar
       <ul class="review-list">
         {report.notOnStatement.slice(0, 6).map((t) => (
           <li key={t.id}>
-            <strong>{t.note || 'An entry'}</strong> · <span class="mono">{fmt.money(t.amount, { signed: true })}</span> on {fmt.day(t.date)} — {entryNoun(t)}, not on this statement
+            <strong>{t.note || 'An entry'}</strong> · <span class="money">{fmt.money(t.amount, { signed: true })}</span> on {fmt.day(t.date)} — {entryNoun(t)}, not on this statement
           </li>
         ))}
         {report.notOnStatement.length > 6 && <li>…and {report.notOnStatement.length - 6} more in the app that aren't on this statement</li>}
@@ -747,7 +754,7 @@ function StatementCheck({ accountId, prepared, onDone }: { accountId: Id; prepar
         <button type="button" class="btn btn-primary" onClick={adjust}>
           Add a balance adjustment of {fmt.money(diff, { signed: true })}
         </button>
-        <button type="button" class="btn btn-quiet" onClick={onDone}>
+        <button type="button" class="link-btn" onClick={onDone}>
           Leave it
         </button>
       </div>
@@ -839,7 +846,7 @@ function BalanceStep({ accountId, importedIds, onDone }: { accountId: Id; import
                           {t.date > today ? ' · dated in the future' : ''}
                         </span>
                       </span>
-                      <span class={`mono ${t.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(t.amount, { signed: true })}</span>
+                      <span class={`money ${t.amount > 0 ? 'amount-in' : ''}`}>{fmt.money(t.amount, { signed: true })}</span>
                     </li>
                   ))}
                 </ul>
@@ -852,7 +859,7 @@ function BalanceStep({ accountId, importedIds, onDone }: { accountId: Id; import
                 <button type="button" class="btn" onClick={() => setEntered(null)}>
                   Re-enter
                 </button>
-                <button type="button" class="btn btn-quiet" onClick={onDone}>
+                <button type="button" class="link-btn" onClick={onDone}>
                   Leave it
                 </button>
               </div>
@@ -867,7 +874,7 @@ function BalanceStep({ accountId, importedIds, onDone }: { accountId: Id; import
                 <button type="button" class="btn" onClick={() => setEntered(null)}>
                   Re-enter
                 </button>
-                <button type="button" class="btn btn-quiet" onClick={onDone}>
+                <button type="button" class="link-btn" onClick={onDone}>
                   Leave it
                 </button>
               </div>
@@ -933,7 +940,7 @@ function SortStep({ ids, onDone }: { ids: Id[]; onDone: () => void }) {
     return (
       <section class="card sort-card" aria-labelledby="rule-q">
         <p class="muted">
-          {tx.note} → {cat?.emoji} {cat?.name}
+          {tx.note} → {cat?.name}
         </p>
         <h2 id="rule-q" class="sort-desc">
           Always put “{tidyDescription(offer.key)}” in {cat?.name}?
@@ -960,21 +967,21 @@ function SortStep({ ids, onDone }: { ids: Id[]; onDone: () => void }) {
         {tx.note}
       </h2>
       <p class="sort-meta">
-        <span class="mono">{fmt.money(tx.amount)}</span> · {fmt.day(tx.date)}
+        <span class="money">{fmt.money(tx.amount)}</span> · {fmt.day(tx.date)}
       </p>
       <div class="sort-grid" role="group" aria-label="Choose a category">
         {cats.map((c) => (
           <button key={c.id} type="button" class="sort-choice" onClick={() => choose(c.id)}>
-            <span aria-hidden="true">{c.emoji}</span>
+            <Icon name={c.icon} small />
             <span>{c.name}</span>
           </button>
         ))}
       </div>
       <div class="row-gap">
-        <button type="button" class="btn btn-quiet" onClick={() => choose(null)}>
+        <button type="button" class="link-btn" onClick={() => choose(null)}>
           Skip this one
         </button>
-        <button type="button" class="btn btn-quiet" onClick={onDone}>
+        <button type="button" class="link-btn" onClick={onDone}>
           Finish later
         </button>
       </div>

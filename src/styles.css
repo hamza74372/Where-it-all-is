@@ -1,69 +1,5 @@
-/* Two calm themes: "Soft" (light) and "Midnight" (dark). All pairs meet WCAG AA. */
-:root,
-[data-theme='soft'] {
-  --bg: #f6f4ef;
-  --surface: #ffffff;
-  --surface-2: #efece5;
-  --text: #1f2430;
-  --text-muted: #5a6070; /* 5.9:1 on --bg */
-  --border: #dcd8ce;
-  --accent: #2f6f62; /* 5.9:1 on white */
-  --accent-text: #ffffff;
-  --accent-soft: #dcece7;
-  --ok: #2f7d4f;
-  --amber: #8a5a00; /* text-safe amber, 5.6:1 on white */
-  --amber-fill: #e8b54a;
-  --coral: #a8432b; /* text-safe coral, 5.9:1 on white */
-  --coral-fill: #e48a72;
-  --green-fill: #7cbf9a;
-  --focus: #1d5fd1;
-  --shadow: 0 1px 2px rgb(31 36 48 / 6%), 0 4px 16px rgb(31 36 48 / 6%);
-  color-scheme: light;
-}
-
-[data-theme='midnight'] {
-  --bg: #11151d;
-  --surface: #1a202b;
-  --surface-2: #232a37;
-  --text: #e9ebf1;
-  --text-muted: #a6adbd; /* 7.4:1 on --bg */
-  --border: #2f3746;
-  --accent: #7cc7b5; /* 9.3:1 on --bg */
-  --accent-text: #0d1a17;
-  --accent-soft: #1f3a34;
-  --ok: #86d1a3;
-  --amber: #f0c36a;
-  --amber-fill: #c99536;
-  --coral: #f2a28d;
-  --coral-fill: #c46a54;
-  --green-fill: #4e9a73;
-  --focus: #8ab4ff;
-  --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
-  color-scheme: dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  [data-theme='auto'] {
-    --bg: #11151d;
-    --surface: #1a202b;
-    --surface-2: #232a37;
-    --text: #e9ebf1;
-    --text-muted: #a6adbd;
-    --border: #2f3746;
-    --accent: #7cc7b5;
-    --accent-text: #0d1a17;
-    --accent-soft: #1f3a34;
-    --ok: #86d1a3;
-    --amber: #f0c36a;
-    --amber-fill: #c99536;
-    --coral: #f2a28d;
-    --coral-fill: #c46a54;
-    --green-fill: #4e9a73;
-    --focus: #8ab4ff;
-    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
-    color-scheme: dark;
-  }
-}
+/* Base: reset, shell, navigation, buttons, cards. Only tokens (see tokens.css). */
+@import './tokens.css';
 
 *,
 *::before,
@@ -80,9 +16,9 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  font-size: 17px;
-  line-height: 1.45;
+  font-family: var(--font);
+  font-size: var(--text-body);
+  line-height: var(--leading);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior-y: none;
 }
@@ -95,18 +31,25 @@ textarea {
   color: inherit;
 }
 
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
 :focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
-  border-radius: 6px;
+  outline: var(--focus-ring) solid var(--focus);
+  outline-offset: var(--line-strong);
+  border-radius: var(--radius-sm);
 }
 
 .sr-only {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  width: var(--line);
+  height: var(--line);
   padding: 0;
-  margin: -1px;
+  margin: calc(var(--line) * -1);
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
@@ -114,8 +57,8 @@ textarea {
 }
 
 /* ---------- Shell ---------- */
-/* App-style layout: the screen area scrolls; the toast and nav sit below it in the flow,
-   so neither ever covers content. */
+/* App-style layout: the screen area scrolls; the toast and nav sit below it in the flow, so
+   neither ever covers content. */
 .shell {
   height: 100vh;
   height: 100dvh;
@@ -128,144 +71,222 @@ textarea {
   flex: none;
   background: var(--accent-soft);
   color: var(--text);
-  font-size: 14px;
-  padding: calc(6px + env(safe-area-inset-top)) 12px 6px;
+  font-size: var(--text-label);
+  padding: calc(var(--space-2) + env(safe-area-inset-top)) var(--space-3) var(--space-2);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 4px 12px;
+  gap: var(--space-1) var(--space-3);
   text-align: center;
 }
 .demo-cta {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: 12px;
-  background: var(--accent);
-  color: var(--accent-text);
-  font-weight: 700;
+  min-height: var(--tap);
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-weight: var(--weight-semibold);
   text-decoration: none;
 }
 
+/* Every screen is one vertical stack with even gaps — nothing can touch the thing below it. */
 main.screen {
   flex: 1;
   min-height: 0;
   width: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
-  /* Centre a 640px column while the scrollbar stays at the window edge. */
-  padding: 20px max(16px, calc((100% - 640px) / 2)) 24px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  /* A centred column while the scrollbar stays at the window edge. */
+  padding: var(--space-5) max(var(--space-4), calc((100% - var(--content-max)) / 2)) var(--space-6);
+}
+main.screen > * {
+  flex: none;
 }
 
 .screen-title {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
   letter-spacing: -0.01em;
-  margin: 8px 0 16px;
 }
 
+/* ---------- Cards ---------- */
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  padding: 18px;
-  box-shadow: var(--shadow);
-  margin-bottom: 14px;
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-0);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+/* Less visual weight: secondary information below the main content. */
+.card-quiet {
+  background: var(--surface-2);
+  border-color: transparent;
+}
+.card-note {
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+.card-accent {
+  border: var(--line-strong) solid var(--accent);
+}
+.card-title {
+  display: block;
+  font-size: var(--text-heading);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
 }
 
 .muted {
   color: var(--text-muted);
 }
 
+/* Money: same width digits everywhere, so columns line up and numbers don't jump. */
+.money,
 .big-number {
-  font-size: clamp(44px, 14vw, 64px);
-  font-weight: 750;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.big-number {
+  font-size: var(--text-hero);
+  font-weight: var(--weight-hero);
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
+/* ---------- Buttons: primary, secondary, destructive. One link style. ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 0 20px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
+  gap: var(--space-2);
+  min-height: var(--control);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-md);
+  border: var(--line) solid var(--border);
   background: var(--surface);
+  color: var(--text);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
-  font-weight: 600;
+  text-decoration: none;
+  transition: background-color var(--fast) var(--ease), transform var(--fast) var(--ease);
 }
-
+.btn:active {
+  transform: scale(0.98);
+}
+.btn-small {
+  min-height: var(--tap);
+  padding: 0 var(--space-4);
+  font-size: var(--text-small);
+}
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-text);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+.btn-danger {
+  background: var(--surface);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.btn:disabled {
+  background: var(--surface-2);
+  border-color: transparent;
+  color: var(--text-muted);
+  cursor: default;
+  transform: none;
+}
+.btn-block {
+  width: 100%;
+}
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--tap);
+  min-width: var(--tap);
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--link);
+  font-weight: var(--weight-semibold);
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+.link-btn:disabled {
+  color: var(--text-muted);
+  cursor: default;
 }
 
-.footer-note {
-  font-size: 14px;
-  color: var(--text-muted);
-  text-align: center;
-  margin-top: 28px;
+/* ---------- Icons (Lucide, one stroke width) ---------- */
+.icon {
+  width: var(--icon);
+  height: var(--icon);
+  flex: none;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: var(--stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vertical-align: -0.2em; /* sits on the text line when inline */
+}
+.icon-sm {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
 }
 
 /* ---------- Bottom nav ---------- */
 nav.bottom-nav {
   flex: none;
   background: var(--surface);
-  border-top: 1px solid var(--border);
+  border-top: var(--line) solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);
 }
-
 nav.bottom-nav ul {
   list-style: none;
   margin: 0 auto;
   padding: 0;
-  max-width: 640px;
+  max-width: var(--content-max);
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr; /* 5 tabs, or 6 while a partner's share is held */
 }
-
 nav.bottom-nav button {
   width: 100%;
-  min-height: 64px;
+  min-height: calc(var(--space-7) + var(--space-4));
   border: 0;
   background: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  font-size: 14px;
-  font-weight: 600;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semibold);
   color: var(--text-muted);
   cursor: pointer;
 }
-
 nav.bottom-nav button[aria-current='page'] {
-  color: var(--accent);
+  color: var(--link);
 }
 
-nav.bottom-nav svg {
-  width: 26px;
-  height: 26px;
-}
-
-.icon {
-  width: 24px;
-  height: 24px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  flex: none;
+.footer-note {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  text-align: center;
+  padding-top: var(--space-4);
 }
 
 @media (prefers-reduced-motion: reduce) {

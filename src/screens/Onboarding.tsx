@@ -10,6 +10,8 @@ import { RestorePanel } from './Backup';
 import { useData, useStore } from '../state/store';
 import { checkMoney, MoneyInput, ScheduleFields, Select, TextInput, Toggle } from '../ui/fields';
 import { useToday } from '../ui/hooks';
+import { Wordmark } from '../ui/Brand';
+import { Icon } from '../ui/icons';
 
 type Step = 'welcome' | 'restore' | 1 | 2 | 3 | 4;
 
@@ -18,7 +20,7 @@ interface BillRow {
   /** Added with "Add another bill": the name is typed by the user. */
   custom?: boolean;
   name: string;
-  emoji: string;
+  icon: string;
   amount: string;
   day: string;
 }
@@ -39,7 +41,7 @@ export function Onboarding() {
   const [noPay, setNoPay] = useState(false);
   const nextFriday = addDays(today, (5 - weekday(today) + 7) % 7 || 7);
   const [paySchedule, setPaySchedule] = useState<Schedule>({ kind: 'biweekly', anchorDate: nextFriday, weekendShift: 'before' });
-  const [bills, setBills] = useState<BillRow[]>(COMMON_BILLS.map((b) => ({ id: b.name, name: b.name, emoji: b.emoji, amount: '', day: '' })));
+  const [bills, setBills] = useState<BillRow[]>(COMMON_BILLS.map((b) => ({ id: b.name, name: b.name, icon: b.icon, amount: '', day: '' })));
   const [showErrors, setShowErrors] = useState(false);
 
   // The decimal choice applies while typing in onboarding, before settings are saved.
@@ -99,8 +101,8 @@ export function Onboarding() {
   if (step === 'restore') {
     return (
       <main class="screen onboarding" id="main">
-        <button type="button" class="link-btn back-btn" onClick={() => setStep('welcome')}>
-          ‹ Back
+        <button type="button" class="link-btn back-btn" onClick={() => setStep('welcome')} aria-label="Back to welcome">
+          <Icon name="back" small /> Back
         </button>
         <h1 class="screen-title">Restore a backup</h1>
         <p class="muted">Pick the backup file from your old phone or computer. Everything comes back exactly as it was.</p>
@@ -113,10 +115,9 @@ export function Onboarding() {
     return (
       <main class="screen onboarding" id="main">
         <div class="welcome">
-          <p class="welcome-mark" aria-hidden="true">
-            ◎
-          </p>
-          <h1 class="screen-title">Where It All Is</h1>
+          <h1>
+            <Wordmark />
+          </h1>
           <p class="lead">A calm budget that answers one question: how much is safe to spend today?</p>
           <ul class="plain-list muted">
             <li>No account, no bank login, no subscription.</li>
@@ -162,7 +163,7 @@ export function Onboarding() {
       </div>
 
       {step === 1 && (
-        <section>
+        <section class="onb-step">
           <h1 class="screen-title">Hello. Let's start simple.</h1>
           <TextInput label="What should we call you? (optional)" value={name} onInput={setName} placeholder="Your name" />
           <Select
@@ -173,7 +174,7 @@ export function Onboarding() {
           />
           <div class="card card-quiet">
             <p>
-              You'll type amounts like <strong class="mono">{amountExample(dec)}</strong>
+              You'll type amounts like <strong class="money">{amountExample(dec)}</strong>
             </p>
             <button type="button" class="btn btn-small" onClick={() => setDecimal(dec === '.' ? ',' : '.')}>
               Switch to {amountExample(dec === '.' ? ',' : '.')}
@@ -183,7 +184,7 @@ export function Onboarding() {
       )}
 
       {step === 2 && (
-        <section>
+        <section class="onb-step">
           <h1 class="screen-title">How much is in your main account right now?</h1>
           <MoneyInput
             label="Balance today"
@@ -197,7 +198,7 @@ export function Onboarding() {
       )}
 
       {step === 3 && (
-        <section>
+        <section class="onb-step">
           <h1 class="screen-title">When do you get paid?</h1>
           {noPay ? (
             <div class="card card-quiet">
@@ -231,7 +232,7 @@ export function Onboarding() {
       )}
 
       {step === 4 && (
-        <section>
+        <section class="onb-step">
           <h1 class="screen-title">Your main monthly bills</h1>
           <p class="muted">Fill in the ones you have. Leave the rest blank. You can add more, or other schedules, any time.</p>
           <ul class="bill-quick-list">
@@ -246,7 +247,7 @@ export function Onboarding() {
                     </>
                   ) : (
                     <span class="bill-quick-name">
-                      <span aria-hidden="true">{b.emoji}</span> {b.name}
+                      <Icon name={b.icon} small /> {b.name}
                     </span>
                   )}
                   <BillRowInputs row={b} showErrors={showErrors} onChange={update} />
@@ -257,9 +258,9 @@ export function Onboarding() {
           <button
             type="button"
             class="btn"
-            onClick={() => setBills([...bills, { id: `custom-${bills.length}`, custom: true, name: '', emoji: '🧾', amount: '', day: '' }])}
+            onClick={() => setBills([...bills, { id: `custom-${bills.length}`, custom: true, name: '', icon: 'receipt', amount: '', day: '' }])}
           >
-            + Add another bill
+            <Icon name="plus" /> Add another bill
           </button>
         </section>
       )}

@@ -15,7 +15,10 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 
 if (!/^app-[a-z0-9]{12}$/.test(cfg.appPath)) throw new Error(`site.config.json appPath must look like "app-" + 12 characters, got "${cfg.appPath}"`);
 
-execSync('node scripts/make-icons.mjs', { stdio: 'inherit' });
+// Brand files come from scripts/make-logo.mjs (committed in branding/). Never generate stand-ins.
+for (const [key, file] of Object.entries(cfg.icons)) {
+  if (!fs.existsSync(file)) throw new Error(`site.config.json icons.${key} points at ${file}, which doesn't exist. Run: node scripts/make-logo.mjs`);
+}
 
 // 1. The two hosted builds (single-file pages with manifest + service worker registration).
 fs.rmSync(TMP, { recursive: true, force: true });
@@ -37,6 +40,9 @@ function pwaDir(dir, srcHtml, { name, shortName }) {
   fs.copyFileSync(cfg.icons.icon192, path.join(target, 'icons/icon-192.png'));
   fs.copyFileSync(cfg.icons.icon512, path.join(target, 'icons/icon-512.png'));
   fs.copyFileSync(cfg.icons.maskable512, path.join(target, 'icons/icon-maskable-512.png'));
+  fs.copyFileSync(cfg.icons.appleTouch180, path.join(target, 'icons/apple-touch-icon.png'));
+  fs.copyFileSync(cfg.icons.favicon32, path.join(target, 'icons/favicon-32.png'));
+  fs.copyFileSync(cfg.icons.faviconSvg, path.join(target, 'icons/icon.svg'));
   const manifest = {
     name,
     short_name: shortName,
@@ -54,7 +60,10 @@ function pwaDir(dir, srcHtml, { name, shortName }) {
     ],
   };
   fs.writeFileSync(path.join(target, 'manifest.webmanifest'), JSON.stringify(manifest, null, 2));
-  const files = ['index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png'];
+  const files = [
+    'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png',
+    'icons/apple-touch-icon.png', 'icons/favicon-32.png', 'icons/icon.svg',
+  ];
   const hash = crypto.createHash('sha256');
   for (const f of files) hash.update(fs.readFileSync(path.join(target, f)));
   const version = hash.digest('hex').slice(0, 12);
@@ -107,7 +116,11 @@ const demoVersion = pwaDir('demo', path.join(TMP, 'demo/index.html'), { name: `$
 
 // 3. Landing page: links to the demo and the Etsy listing only. Never the app path.
 fs.mkdirSync(path.join(OUT, 'icons'), { recursive: true });
-fs.copyFileSync(cfg.icons.icon192, path.join(OUT, 'icons/icon-192.png'));
+fs.copyFileSync(cfg.icons.favicon32, path.join(OUT, 'icons/favicon-32.png'));
+fs.copyFileSync(cfg.icons.faviconSvg, path.join(OUT, 'icons/icon.svg'));
+fs.copyFileSync(cfg.icons.appleTouch180, path.join(OUT, 'icons/apple-touch-icon.png'));
+fs.copyFileSync(cfg.icons.wordmark, path.join(OUT, 'icons/wordmark.svg'));
+fs.copyFileSync(cfg.icons.wordmarkReverse, path.join(OUT, 'icons/wordmark-reverse.svg'));
 fs.writeFileSync(path.join(OUT, 'index.html'), landingPage());
 fs.writeFileSync(path.join(OUT, 'robots.txt'), 'User-agent: *\nAllow: /\n');
 // Cloudflare Pages reads _headers (it isn't served as a file).
@@ -138,21 +151,24 @@ function landingPage() {
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'" />
 <title>${esc(cfg.productName)} — a calm budget planner</title>
 <meta name="description" content="A calm, offline budget planner that tells you what’s safe to spend today. ADHD-friendly design. No account, no bank login — your data stays on your device." />
-<link rel="icon" type="image/png" href="icons/icon-192.png" />
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <style>
-  :root { color-scheme: light dark; --bg:#f6f4ef; --text:#1f2430; --muted:#5a6070; --accent:#2f6f62; --accent-text:#fff; --card:#fff; --border:#dcd8ce; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#11151d; --text:#e9ebf1; --muted:#a6adbd; --accent:#7cc7b5; --accent-text:#0d1a17; --card:#1a202b; --border:#2f3746; } }
+  /* Brand: navy #1F2A44, mint #7CC8B5 (fills only on cream), cream #F7F3EA. */
+  :root { color-scheme: light dark; --bg:#F7F3EA; --text:#1F2A44; --muted:#535C70; --primary:#1F2A44; --on-primary:#F7F3EA; --card:#FFFDF8; --border:#DDD5C4; --link:#2A6B5D; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141C2E; --text:#F7F3EA; --muted:#B8BFCC; --primary:#7CC8B5; --on-primary:#1F2A44; --card:#1C2539; --border:#33405C; --link:#7CC8B5; } }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font: 18px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
   main { max-width: 640px; margin: 0 auto; padding: 48px 20px; }
-  img { width: 72px; height: 72px; border-radius: 18px; }
-  h1 { font-size: 34px; margin: 16px 0 8px; letter-spacing: -0.01em; }
+  .wordmark { display: block; width: 280px; max-width: 100%; height: auto; margin: 0 0 20px; }
+  h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .lead { font-size: 20px; margin: 0 0 24px; }
   ul { padding-left: 1.2em; color: var(--muted); }
   li { margin: 6px 0; }
   .actions { display: grid; gap: 12px; margin: 28px 0; }
   a.btn { display: flex; align-items: center; justify-content: center; min-height: 52px; border-radius: 14px; font-weight: 700; text-decoration: none; }
-  a.primary { background: var(--accent); color: var(--accent-text); }
+  a.primary { background: var(--primary); color: var(--on-primary); }
   a.secondary { border: 1px solid var(--border); background: var(--card); color: var(--text); }
   footer { font-size: 14px; color: var(--muted); margin-top: 40px; }
   a:focus-visible { outline: 3px solid #1d5fd1; outline-offset: 2px; }
@@ -160,7 +176,10 @@ function landingPage() {
 </head>
 <body>
 <main>
-  <img src="icons/icon-192.png" alt="" />
+  <picture>
+    <source srcset="icons/wordmark-reverse.svg" media="(prefers-color-scheme: dark)" />
+    <img class="wordmark" src="icons/wordmark.svg" alt="" width="280" height="43" />
+  </picture>
   <h1>${esc(cfg.productName)}</h1>
   <p class="lead">A calm budget planner that answers one question: how much is safe to spend today?</p>
   <ul>

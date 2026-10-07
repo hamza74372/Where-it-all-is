@@ -34,7 +34,8 @@ export type Theme = 'auto' | 'soft' | 'midnight';
 
 export interface QuickPreset {
   id: Id;
-  emoji: string;
+  /** Icon key (ui/icons.tsx). */
+  icon: string;
   label: string;
   /** Minor units, positive = spend. */
   amount: number;
@@ -122,7 +123,8 @@ export interface Bill extends BaseRecord {
 
 export interface Category extends BaseRecord {
   name: string;
-  emoji: string;
+  /** Icon key (ui/icons.tsx). */
+  icon: string;
   monthlyLimit?: Minor;
   color: string;
   order: number;
@@ -171,7 +173,8 @@ export interface Goal extends BaseRecord {
   target: Minor;
   saved: Minor;
   targetDate?: ISODate;
-  emoji: string;
+  /** Icon key (ui/icons.tsx). */
+  icon: string;
 }
 
 export interface Rule extends BaseRecord {

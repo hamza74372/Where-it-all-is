@@ -4,11 +4,15 @@ import { useState } from 'preact/hooks';
 import { compareMonths, currentMonth, milestones, previousMonth, topPlaces, type Milestone } from '../../lib/insights';
 import { useData } from '../../state/store';
 import { useFmt, useToday, type Fmt } from '../../ui/hooks';
+import { useNav } from '../../state/nav';
+import { EmptyState } from '../../ui/EmptyState';
+import { Icon } from '../../ui/icons';
 
 export function Insights() {
   const data = useData();
   const fmt = useFmt();
   const today = useToday();
+  const nav = useNav();
   const [month, setMonth] = useState(currentMonth(today));
   const rows = compareMonths(data.transactions, data.categories, month);
   const places = topPlaces(data.transactions, month);
@@ -25,16 +29,22 @@ export function Insights() {
     <>
       <div class="cal-head">
         <button type="button" class="icon-btn" onClick={() => setMonth(previousMonth(month))} aria-label="Previous month">
-          ‹
+          <Icon name="back" />
         </button>
         <h2 class="card-title" aria-live="polite">
           {label}
         </h2>
         <button type="button" class="icon-btn" onClick={() => setMonth(next)} aria-label="Next month" disabled={month >= currentMonth(today)}>
-          ›
+          <Icon name="forward" />
         </button>
       </div>
 
+      {rows.length === 0 && places.length === 0 && wins.length === 0 ? (
+        <div class="card">
+          <EmptyState line="Insights appear once you've logged for a week or so." action="Log a spend" onAction={() => nav('today')} icon="plan" />
+        </div>
+      ) : (
+      <>
       <section class="card" aria-labelledby="cmp-title">
         <h2 id="cmp-title" class="card-title">
           This month vs last month
@@ -50,15 +60,15 @@ export function Insights() {
               {rows.map((r) => (
                 <li key={r.categoryId ?? 'none'} class="bar-row">
                   <span class="bar-name">
-                    <span aria-hidden="true">{r.emoji}</span> {r.name}
+                    <Icon name={r.icon} small /> {r.name}
                   </span>
                   <span class="bar-track" aria-hidden="true">
                     <span class="bar bar-now" style={{ width: `${(r.thisMonth / max) * 100}%`, visibility: r.thisMonth > 0 ? 'visible' : 'hidden' }} />
                     <span class="bar bar-before" style={{ width: `${(r.lastMonth / max) * 100}%`, visibility: r.lastMonth > 0 ? 'visible' : 'hidden' }} />
                   </span>
                   <span class="bar-values">
-                    <span class="mono">{fmt.money(r.thisMonth, { wholeIfRound: true })}</span>
-                    <span class="row-sub mono">was {fmt.money(r.lastMonth, { wholeIfRound: true })}</span>
+                    <span class="money">{fmt.money(r.thisMonth, { wholeIfRound: true })}</span>
+                    <span class="row-sub money">was {fmt.money(r.lastMonth, { wholeIfRound: true })}</span>
                   </span>
                 </li>
               ))}
@@ -83,7 +93,7 @@ export function Insights() {
                     {p.times} {p.times === 1 ? 'time' : 'times'}
                   </span>
                 </span>
-                <span class="mono">{fmt.money(p.total)}</span>
+                <span class="money">{fmt.money(p.total)}</span>
               </li>
             ))}
           </ol>
@@ -100,12 +110,16 @@ export function Insights() {
           <ul class="rows">
             {wins.map((w, i) => (
               <li key={i} class="row">
-                <span>🎉 {milestoneText(w, fmt)}</span>
+                <span>
+                  <Icon name="sparkles" small /> {milestoneText(w, fmt)}
+                </span>
               </li>
             ))}
           </ul>
         )}
       </section>
+      </>
+      )}
     </>
   );
 }

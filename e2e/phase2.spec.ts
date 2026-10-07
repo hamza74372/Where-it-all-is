@@ -133,7 +133,8 @@ test('payday: confirm-your-pay card leads Today, rent today still set aside', as
   const card = page.getByRole('region', { name: 'Payday — confirm your pay' });
   await expect(card).toBeVisible();
   // Before pay: 300 − 950 rent = tight by 650
-  await expect(page.getByRole('heading', { name: 'Tight until payday' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Short until payday' })).toBeVisible();
+  await expect(page.locator('.status').filter({ hasText: 'Tight until payday' })).toBeVisible();
   await expect(page.locator('.big-number')).toHaveText('$650');
   await shot(page, '12-payday-before');
 
@@ -172,6 +173,6 @@ test('comma-decimal user: switch in onboarding, amounts shown to match', async (
   await page.getByRole('button', { name: 'Skip setup' }).click();
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'More' }).click();
   await page.getByRole('button', { name: /Accounts/ }).click();
-  await expect(page.locator('.row .mono').first()).toHaveText('$1.240,50');
+  await expect(page.locator('.row .money').first()).toHaveText('$1.240,50');
   expect(problems).toEqual([]);
 });

@@ -140,7 +140,7 @@ async function ensureBankFeesCategory(store: Store): Promise<Category> {
   const [cat] = await store.upsert('categories', [
     existing
       ? { ...existing, archived: false }
-      : { id: uid(), name: BANK_FEES, emoji: '🏦', color: '#b7b2c9', order: store.data.categories.length, archived: false },
+      : { id: uid(), name: BANK_FEES, icon: 'landmark', color: '#b7b2c9', order: store.data.categories.length, archived: false },
   ]);
   return cat;
 }

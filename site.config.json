@@ -1,16 +1,21 @@
 {
-  "_readme": "Hosting + branding settings. appPath is the private path of the full app: keep it stable (customers bookmark it) and never link it publicly. Replace the icon files at these paths with the real logo (PNG, square).",
+  "_readme": "Hosting + branding settings. appPath is the private path of the full app: keep it stable (customers bookmark it) and never link it publicly. Brand files are made by node scripts/make-logo.mjs; the paths below point at them.",
   "productName": "Where It All Is",
   "shortName": "Where It All Is",
   "siteUrl": "https://where-it-all-is.pages.dev",
   "appPath": "app-qkp36e2gkm8f",
   "etsyUrl": "https://www.etsy.com/listing/0000000000/where-it-all-is-budget-app",
-  "themeColor": "#2f6f62",
-  "backgroundColor": "#f6f4ef",
+  "themeColor": "#1F2A44",
+  "backgroundColor": "#F7F3EA",
   "icons": {
-    "icon192": "branding/icon-192.png",
-    "icon512": "branding/icon-512.png",
-    "maskable512": "branding/icon-maskable-512.png"
+    "icon192": "branding/png/app-icon-192.png",
+    "icon512": "branding/png/app-icon-512.png",
+    "maskable512": "branding/png/app-icon-square-512.png",
+    "appleTouch180": "branding/png/app-icon-180.png",
+    "favicon32": "branding/png/app-icon-32.png",
+    "faviconSvg": "branding/logo.svg",
+    "wordmark": "branding/wordmark.svg",
+    "wordmarkReverse": "branding/wordmark-reverse.svg"
   },
   "downloadFileName": "Where-It-All-Is-Budget-App.html",
   "startHere": {

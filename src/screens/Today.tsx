@@ -19,6 +19,8 @@ import { useFmt, useToday, type Fmt } from '../ui/hooks';
 import { Confirm } from '../ui/Confirm';
 import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
+import { EmptyState } from '../ui/EmptyState';
+import { Icon } from '../ui/icons';
 
 export function useSafeToSpend(data: AppData, today: string): SafeToSpendResult {
   return useMemo(
@@ -53,29 +55,33 @@ export function Today() {
     setPref('focus', !focus);
   };
 
+  const paydayCards = result.unconfirmedPaydaysToday.map((p) => {
+    const income = data.incomes.find((i) => i.id === p.incomeId);
+    return income ? <PaydayCard key={income.id} income={income} today={today} /> : null;
+  });
+
+  // Order: the number first (always, whatever the day), then what's next, then the log box.
+  // Everything else sits below with less weight.
   return (
     <>
-      {data.settings.exampleData && !focus && <ExampleBanner />}
-      {!focus && !data.settings.exampleData && <StorageNote />}
-      {!focus && !data.settings.exampleData && <BackupReminder />}
       <div class="title-row">
         <h1 class="screen-title">{greeting}</h1>
         <button type="button" class="btn btn-small focus-btn" aria-pressed={focus} onClick={toggleFocus}>
           {focus ? 'Show everything' : 'Focus'}
         </button>
       </div>
-      {/* The payday card stays in focus mode: without it the number would look wrong on payday. */}
-      {result.unconfirmedPaydaysToday.map((p) => {
-        const income = data.incomes.find((i) => i.id === p.incomeId);
-        return income ? <PaydayCard key={income.id} income={income} today={today} /> : null;
-      })}
-      {!focus && showAway && <AwayCard away={away!} today={today} onDismiss={() => setAwayDismissed(true)} />}
       <SafeNumber result={result} fmt={fmt} />
+      {/* On payday, confirming the pay is what's next (it stays in focus mode: the number depends on it). */}
+      {paydayCards.some(Boolean) ? paydayCards : !focus && <NextUp result={result} />}
       <QuickLog inputRef={logRef} />
       {!focus && (
         <>
+          {data.settings.exampleData && <ExampleBanner />}
+          {showAway && <AwayCard away={away!} today={today} onDismiss={() => setAwayDismissed(true)} />}
           <RightNow today={today} skipOverdue={showAway} onLogFocus={() => logRef.current?.focus()} />
           <NextBillsCard today={today} />
+          {!data.settings.exampleData && <StorageNote />}
+          {!data.settings.exampleData && <BackupReminder />}
         </>
       )}
     </>
@@ -99,7 +105,7 @@ function AwayCard({ away, today, onDismiss }: { away: CatchUp; today: string; on
   };
 
   return (
-    <section class="card card-accent" aria-labelledby="away-title">
+    <section class="card card-quiet" aria-labelledby="away-title">
       <h2 id="away-title" class="card-title">
         While you were away
       </h2>
@@ -108,7 +114,9 @@ function AwayCard({ away, today, onDismiss }: { away: CatchUp; today: string; on
         {away.paydays.map((p) => (
           <li key={`p-${p.income.id}-${p.date}`} class="row">
             <span class="row-main">
-              <span>💰 {p.income.name}</span>
+              <span>
+                <Icon name="pay" small /> {p.income.name}
+              </span>
               <span class="row-sub">
                 {fmt.day(p.date)} · {p.income.variable ? 'amount varies' : fmt.money(p.income.amount)}
               </span>
@@ -150,7 +158,7 @@ function AwayCard({ away, today, onDismiss }: { away: CatchUp; today: string; on
             They all happened
           </button>
         )}
-        <button type="button" class="btn btn-quiet" onClick={onDismiss}>
+        <button type="button" class="link-btn" onClick={onDismiss}>
           Later
         </button>
       </div>
@@ -196,7 +204,7 @@ function PaydayCard({ income, today }: { income: Income; today: string }) {
   };
 
   return (
-    <section class="card card-accent" aria-labelledby={`payday-${income.id}`}>
+    <section class="card next-up" aria-labelledby={`payday-${income.id}`}>
       <h2 id={`payday-${income.id}`} class="card-title">
         Payday — confirm your pay
       </h2>
@@ -215,7 +223,7 @@ function PaydayCard({ income, today }: { income: Income; today: string }) {
             <button type="button" class={income.variable ? 'btn btn-primary' : 'btn'} onClick={() => setMode('edit')}>
               {income.variable ? 'Enter amount' : 'Different amount'}
             </button>
-            <button type="button" class="btn btn-quiet" onClick={() => setMode('later')}>
+            <button type="button" class="link-btn" onClick={() => setMode('later')}>
               Not yet
             </button>
           </div>
@@ -234,7 +242,7 @@ function PaydayCard({ income, today }: { income: Income; today: string }) {
             <button type="submit" class="btn btn-primary">
               Confirm
             </button>
-            <button type="button" class="btn btn-quiet" onClick={() => setMode('ask')}>
+            <button type="button" class="link-btn" onClick={() => setMode('ask')}>
               Cancel
             </button>
           </div>
@@ -247,64 +255,102 @@ function PaydayCard({ income, today }: { income: Income; today: string }) {
 function SafeNumber({ result, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
   const [open, setOpen] = useState(false);
   const nav = useNav();
-  const until =
-    result.nextPaydaySource === 'income' ? `until payday ${fmt.day(result.nextPayday)}` : 'until the end of the month';
+  const toPayday = result.nextPaydaySource === 'income';
+  const until = toPayday ? `until payday ${fmt.day(result.nextPayday)}` : 'until the end of the month';
   // The big number is whole units: safe-to-spend rounds down, a shortfall rounds up — both
   // err on the careful side. Everything else keeps its cents.
   const whole = { wholeIfRound: true };
   const UNIT = 100;
   const downToWhole = (n: number) => Math.floor(n / UNIT) * UNIT;
   const upToWhole = (n: number) => Math.ceil(n / UNIT) * UNIT;
+  const ok = result.status === 'ok';
 
+  // The number always comes first; then what it means; then a status. No card frame: it's the screen's one big thing.
   return (
-    <section class="card hero" aria-labelledby="safe-label">
-      {result.status === 'ok' ? (
-        <>
-          <h2 id="safe-label" class="hero-label">
-            Safe to spend today
-          </h2>
-          <button type="button" class="hero-number" onClick={() => setOpen(true)} aria-describedby="safe-sub">
-            <span class="big-number">{fmt.money(downToWhole(Math.max(0, result.safeToSpendToday)), whole)}</span>
-            <span class="sr-only">. How is this worked out?</span>
-          </button>
-          <p class="hero-what">
-            What you can spend today and still cover your bills {result.nextPaydaySource === 'income' ? 'until payday' : 'until the end of the month'}.
-          </p>
-          <p id="safe-sub" class="muted">
-            {result.safeToSpendToday < 0
-              ? `You've gone ${fmt.money(-result.safeToSpendToday)} past today's share — that's fine, the days ahead adjust. `
-              : ''}
-            {capital(until)}: {fmt.money(result.safeToSpendPeriod)}
-          </p>
-        </>
+    <section class="hero" aria-labelledby="safe-label">
+      <h2 id="safe-label" class="hero-label">
+        {ok ? 'Safe to spend today' : 'Short until payday'}
+      </h2>
+      <button type="button" class="hero-number" onClick={() => setOpen(true)} aria-describedby="safe-what">
+        <span class={ok ? 'big-number' : 'big-number big-number-tight'}>
+          {ok ? fmt.money(downToWhole(Math.max(0, result.safeToSpendToday)), whole) : fmt.money(upToWhole(result.shortfall), whole)}
+        </span>
+        <span class="sr-only">. How is this worked out?</span>
+      </button>
+      <p id="safe-what" class="hero-what">
+        {ok
+          ? `What you can spend today and still cover your bills ${toPayday ? 'until payday' : 'until the end of the month'}.`
+          : `What's missing to cover everything ${until}.`}
+      </p>
+      <p class={ok ? 'status' : 'status status-tight'}>
+        <span class="status-dot" aria-hidden="true" />
+        {ok ? 'On track' : 'Tight until payday'}
+      </p>
+      {ok ? (
+        <p id="safe-sub" class="hero-sub">
+          {result.safeToSpendToday < 0
+            ? `You've gone ${fmt.money(-result.safeToSpendToday)} past today's share — that's fine, the days ahead adjust. `
+            : ''}
+          {capital(until)}: <span class="money">{fmt.money(result.safeToSpendPeriod)}</span>
+        </p>
+      ) : result.unconfirmedPaydaysToday.length > 0 ? (
+        <p class="hero-sub">Your pay isn't counted until you confirm it below — this will update then.</p>
       ) : (
         <>
-          <h2 id="safe-label" class="hero-label">
-            Tight until payday
-          </h2>
-          <button type="button" class="hero-number" onClick={() => setOpen(true)}>
-            <span class="big-number big-number-tight">{fmt.money(upToWhole(result.shortfall), whole)}</span>
-            <span class="sr-only">. How is this worked out?</span>
+          <p class="hero-sub">One idea: check whether a bill can move to after payday.</p>
+          <button type="button" class="btn btn-small" onClick={() => nav('bills')}>
+            Look at bills
           </button>
-          <p class="muted">short of covering everything {until}.</p>
-          {result.unconfirmedPaydaysToday.length > 0 ? (
-            <p>Your pay isn't counted until you confirm it above — this will update then.</p>
-          ) : (
-            <>
-              <p>One idea: check whether a bill can move to after payday.</p>
-              <button type="button" class="btn btn-small" onClick={() => nav('bills')}>
-                Look at bills
-              </button>
-            </>
-          )}
         </>
       )}
-      <button type="button" class="link-btn how-link block-center" onClick={() => setOpen(true)}>
+      <button type="button" class="link-btn" onClick={() => setOpen(true)}>
         How is this worked out?
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} title="How this is worked out">
         <Explain result={result} fmt={fmt} />
       </Sheet>
+    </section>
+  );
+}
+
+/** One card for whatever comes next: a bill, or pay — whichever is sooner. */
+function NextUp({ result }: { result: SafeToSpendResult }) {
+  const data = useData();
+  const store = useStore();
+  const fmt = useFmt();
+  const today = useToday();
+  const nav = useNav();
+  const bill = nextBills(data.bills, today, data.transactions, 1)[0];
+  const pay = result.nextPaydaySource === 'income' ? data.incomes.find((i) => i.active) : undefined;
+  const payFirst = pay && (!bill || result.nextPayday < bill.date);
+  if (!bill && !pay) {
+    return (
+      <section class="card next-up" aria-labelledby="next-up-title">
+        <h2 id="next-up-title" class="card-title">
+          Next up
+        </h2>
+        <EmptyState line="No bills or paydays yet." action="Add a bill" onAction={() => nav('bills')} />
+      </section>
+    );
+  }
+  const when = (d: string) => `${capital(fmt.relative(d, today))} · ${fmt.day(d)}`;
+  return (
+    <section class="card next-up" aria-labelledby="next-up-title">
+      <h2 id="next-up-title" class="card-title">
+        Next up
+      </h2>
+      <div class="next-up-row">
+        <span class="next-up-icon" aria-hidden="true">
+          <Icon name={payFirst ? 'pay' : 'receipt'} />
+        </span>
+        <span class="next-up-main">
+          <strong>{payFirst ? pay!.name : bill!.bill.name}</strong>
+          <span class="next-up-when">{payFirst ? `Pay · ${when(result.nextPayday)}` : `Bill · ${when(bill!.date)}`}</span>
+        </span>
+        <span class={payFirst ? 'money amount-in' : 'money'}>
+          {payFirst ? `${pay!.variable ? '~' : '+'}${fmt.money(pay!.amount)}` : fmt.money(billPaymentAmount(store, bill!.bill, today))}
+        </span>
+      </div>
     </section>
   );
 }
@@ -319,7 +365,7 @@ function Explain({ result: r, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
         {label}
         {sub && <span class="explain-sub">{sub}</span>}
       </span>
-      <span class="mono">
+      <span class="money">
         {sign && sign !== '=' ? `${sign} ` : ''}
         {fmt.money(amount)}
       </span>
@@ -427,7 +473,7 @@ function QuickLog({ inputRef }: { inputRef: { current: HTMLInputElement | null }
           {parsed.kind === 'ok' && !parsed.confirm && (
             <>
               {parsed.direction === 'in' ? 'Money in: ' : ''}
-              {fmt.money(parsed.amount)} · {cat ? `${cat.emoji} ${cat.name}` : 'No category yet'}
+              {fmt.money(parsed.amount)} · {cat ? cat.name : 'No category yet'}
             </>
           )}
           {parsed.kind === 'noAmount' && <>Add an amount, like "{dec === ',' ? '4,50' : '4.50'} {parsed.text}".</>}
@@ -459,7 +505,7 @@ function QuickLog({ inputRef }: { inputRef: { current: HTMLInputElement | null }
                 save(p.amount, { categoryId: categoryByName(categories, p.categoryName)?.id, note: p.label, direction: 'out' })
               }
             >
-              <span aria-hidden="true">{p.emoji}</span> {p.label} {fmt.money(p.amount, { wholeIfRound: true })}
+              <Icon name={p.icon} small /> {p.label} {fmt.money(p.amount, { wholeIfRound: true })}
             </button>
           ))}
         </div>
@@ -512,7 +558,7 @@ function RightNow({ today, skipOverdue, onLogFocus }: { today: string; skipOverd
 
   const item = items.find((i) => !dismissed.includes(i.key));
   return (
-    <section class="card" aria-labelledby="rn-title">
+    <section class="card card-quiet" aria-labelledby="rn-title">
       <h2 id="rn-title" class="card-title">
         Right now — one thing
       </h2>
@@ -523,7 +569,7 @@ function RightNow({ today, skipOverdue, onLogFocus }: { today: string; skipOverd
             <button type="button" class="btn btn-primary btn-small" onClick={item.run}>
               {item.action}
             </button>
-            <button type="button" class="btn btn-quiet btn-small" onClick={() => setDismissed([...dismissed, item.key])}>
+            <button type="button" class="link-btn" onClick={() => setDismissed([...dismissed, item.key])}>
               Not now
             </button>
           </div>
@@ -542,12 +588,12 @@ function NextBillsCard({ today }: { today: string }) {
   const store = useStore();
   const items = nextBills(data.bills, today, data.transactions, 3);
   return (
-    <section class="card" aria-labelledby="nb-title">
+    <section class="card card-quiet" aria-labelledby="nb-title">
       <h2 id="nb-title" class="card-title">
         Next bills
       </h2>
       {items.length === 0 ? (
-        <p class="muted">No bills coming up. Add your regular bills so they're set aside automatically.</p>
+        <EmptyState line="No bills coming up." action="Add a bill" onAction={() => nav('bills')} />
       ) : (
         <ul class="rows">
           {items.map((i) => (
@@ -558,14 +604,16 @@ function NextBillsCard({ today }: { today: string }) {
                   {capital(fmt.relative(i.date, today))} · {fmt.day(i.date)}
                 </span>
               </span>
-              <span class="mono">{fmt.money(billPaymentAmount(store, i.bill, today))}</span>
+              <span class="money">{fmt.money(billPaymentAmount(store, i.bill, today))}</span>
             </li>
           ))}
         </ul>
       )}
-      <button type="button" class="link-btn" onClick={() => nav('bills')}>
-        {items.length ? 'See all bills' : 'Add a bill'}
-      </button>
+      {items.length > 0 && (
+        <button type="button" class="link-btn" onClick={() => nav('bills')}>
+          See all bills
+        </button>
+      )}
     </section>
   );
 }
@@ -581,7 +629,7 @@ function StorageNote() {
   const { settings } = useData();
   if (settings.storageNoteSeen || isInstalled()) return null;
   return (
-    <section class="card card-note" aria-labelledby="storage-note">
+    <section class="card card-quiet" aria-labelledby="storage-note">
       <h2 id="storage-note" class="card-title">
         Keep your budget safe
       </h2>
@@ -626,7 +674,7 @@ function BackupReminder() {
         </button>
         <button
           type="button"
-          class="btn btn-small btn-quiet"
+          class="link-btn"
           onClick={() => {
             setPref('backupReminderDismissedAt', Date.now());
             setDismissedAt(Date.now());

@@ -4,7 +4,7 @@ import { catchUp } from '../src/lib/away';
 import { effectiveLimit, envelopeRows, levelFor, moveSuggestions, spentByCategory } from '../src/lib/envelopes';
 import { compareMonths, milestones, previousMonth, topPlaces } from '../src/lib/insights';
 
-const cat = (id: string, monthlyLimit?: number): Category => ({ id, name: id, emoji: '•', color: '#ccc', order: 0, archived: false, monthlyLimit, updatedAt: 0 });
+const cat = (id: string, monthlyLimit?: number): Category => ({ id, name: id, icon: 'package', color: '#ccc', order: 0, archived: false, monthlyLimit, updatedAt: 0 });
 let n = 0;
 const tx = (date: string, amount: number, extra: Partial<Transaction> = {}): Transaction => ({
   id: `t${n++}`, date, amount, accountId: 'chk', note: '', source: 'manual', cleared: false, updatedAt: 0, ...extra,
@@ -101,7 +101,7 @@ describe('insights', () => {
       tx('2026-10-01', 500000, { source: 'income' }), // current month: not finished
     ];
     const debts: Debt[] = [{ id: 'd', name: 'Store card', balance: 0, apr: 20, minPayment: 0, createdAt: 0, updatedAt: 0 }];
-    const goals: Goal[] = [{ id: 'g', name: 'Trip', target: 50000, saved: 50000, emoji: '✈️', updatedAt: 0 }];
+    const goals: Goal[] = [{ id: 'g', name: 'Trip', target: 50000, saved: 50000, icon: 'package', updatedAt: 0 }];
     expect(milestones(history, debts, goals, '2026-10-06')).toEqual([
       { kind: 'inTheBlack', month: '2026-09' },
       { kind: 'debtPaid', name: 'Store card' },

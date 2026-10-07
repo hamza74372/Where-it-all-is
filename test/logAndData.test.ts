@@ -15,8 +15,8 @@ const tx = (id: string, date: string, amount: number, extra: Partial<Transaction
   id, date, amount, accountId: 'chk', note: '', source: 'manual', cleared: false, updatedAt: 0, ...extra,
 });
 const cats: Category[] = [
-  { id: 'cof', name: 'Coffee', emoji: '☕', color: '', order: 0, archived: false, updatedAt: 0 },
-  { id: 'gro', name: 'Groceries', emoji: '🛒', color: '', order: 1, archived: false, updatedAt: 0 },
+  { id: 'cof', name: 'Coffee', icon: 'package', color: '', order: 0, archived: false, updatedAt: 0 },
+  { id: 'gro', name: 'Groceries', icon: 'package', color: '', order: 1, archived: false, updatedAt: 0 },
 ];
 const rows: Transaction[] = [
   tx('a', '2026-08-03', -450, { note: 'Flat white', categoryId: 'cof' }),
@@ -73,7 +73,7 @@ describe('Erase all my data', () => {
   it('removes everything, resets settings, keeps default categories and rules, and returns to the welcome screen', async () => {
     const store = await freshStore();
     await logTransaction(store, { amount: 450, direction: 'out', date: '2026-10-06', note: 'Coffee', accountId: 'chk' });
-    await store.upsert('goals', [{ id: 'g', name: 'Holiday', emoji: '✈️', target: 1000, saved: 0 }]);
+    await store.upsert('goals', [{ id: 'g', name: 'Holiday', icon: 'package', target: 1000, saved: 0 }]);
     await store.upsert('notes', [{ id: 'n', month: '2026-10', text: 'secret' }]);
     await store.saveSettings({ name: 'Sam', onboarded: true, buffer: 5000, lastBackupAt: 1, defaultAccountId: 'chk', storageNoteSeen: true });
     await store.setPartner({ id: 'partner', receivedAt: 1, summary: {} as never });

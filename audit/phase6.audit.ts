@@ -55,7 +55,7 @@ test('demo banner and help articles', async ({ page }, info) => {
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
     await check(`help-${i + 1}`, true);
     await page.setViewportSize(size);
-    await page.getByRole('button', { name: '‹ All help' }).click();
+    await page.getByRole('button', { name: 'Back to all help' }).click();
   }
 
   fs.writeFileSync(path.join(dir, 'report.json'), JSON.stringify({ findings, errors }, null, 2));

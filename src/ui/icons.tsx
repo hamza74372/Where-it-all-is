@@ -1,29 +1,152 @@
-// Inline SVG icons (no icon font, no network). 24×24 stroke icons.
+// One line-icon set for the whole interface: Lucide (ISC licence, lucide.dev), inlined as SVG —
+// no icon font, no network. One stroke width (--stroke), drawn at 24 px (or 20 px with small).
+// Categories, goals and quick-log chips store one of these keys; text the user types is free.
 
-const PATHS = {
-  today: 'M12 3v2M12 19v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M3 12h2M19 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
-  log: 'M4 6h16M4 12h16M4 18h10',
-  bills: 'M7 3h10a1 1 0 0 1 1 1v17l-3-2-3 2-3-2-3 2V4a1 1 0 0 1 1-1zM9 8h6M9 12h6',
-  plan: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
-  more: 'M5 12h.01M12 12h.01M19 12h.01',
-  partner: 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20a6.5 6.5 0 0 1 13 0M16.5 11a3 3 0 1 0-1-5.8M17 14.2A5.5 5.5 0 0 1 21.5 20',
-  plus: 'M12 5v14M5 12h14',
-  close: 'M6 6l12 12M18 6L6 18',
-  info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01',
-} as const;
+import {
+  ArrowLeftRight, Baby, Banknote, Bike, Book, Building2, Bus, CalendarDays, Car, Cat, ChartNoAxesColumn, Check, ChevronDown,
+  ChevronLeft, ChevronRight, CircleCheck, Coffee, Dog, Droplet, Dumbbell, Ellipsis, Flame, Fuel, Gamepad2, Gift, GraduationCap,
+  HandCoins, Heart, House, Inbox, Info, Landmark, LifeBuoy, Lightbulb, List, Music, Package, PartyPopper, PawPrint, PiggyBank, Pill,
+  Plane, Plus, Popcorn, Receipt, ReceiptText, Sandwich, Scissors, Search, Shirt, ShoppingBag, ShoppingCart, Smartphone, Sparkles,
+  Sprout, Star, Stethoscope, Sun, TrainFront, TriangleAlert, Tv, Users, Utensils, Wallet, Wifi, X, Zap,
+  type IconNode,
+} from 'lucide';
+import { iconKeyFrom } from '../lib/iconKeys';
 
-export type IconName = keyof typeof PATHS;
+/** Interface icons (navigation, actions). */
+const UI = {
+  today: Sun,
+  log: List,
+  bills: ReceiptText,
+  plan: ChartNoAxesColumn,
+  more: Ellipsis,
+  partner: Users,
+  plus: Plus,
+  close: X,
+  info: Info,
+  back: ChevronLeft,
+  forward: ChevronRight,
+  down: ChevronDown,
+  check: Check,
+  done: CircleCheck,
+  warn: TriangleAlert,
+  transfer: ArrowLeftRight,
+  pay: HandCoins,
+  calendar: CalendarDays,
+  search: Search,
+  inbox: Inbox,
+  wallet: Wallet,
+} satisfies Record<string, IconNode>;
 
-export function Icon({ name, label }: { name: IconName; label?: string }) {
+/** Icons a person can give a category, goal or quick-log chip (same set, same style). */
+export const CHOICE_ICONS = {
+  'shopping-cart': ShoppingCart,
+  utensils: Utensils,
+  coffee: Coffee,
+  sandwich: Sandwich,
+  bus: Bus,
+  train: TrainFront,
+  car: Car,
+  fuel: Fuel,
+  bike: Bike,
+  'shopping-bag': ShoppingBag,
+  shirt: Shirt,
+  'party-popper': PartyPopper,
+  popcorn: Popcorn,
+  music: Music,
+  gamepad: Gamepad2,
+  pill: Pill,
+  stethoscope: Stethoscope,
+  dumbbell: Dumbbell,
+  house: House,
+  lightbulb: Lightbulb,
+  zap: Zap,
+  droplet: Droplet,
+  flame: Flame,
+  wifi: Wifi,
+  smartphone: Smartphone,
+  receipt: Receipt,
+  tv: Tv,
+  gift: Gift,
+  heart: Heart,
+  baby: Baby,
+  'paw-print': PawPrint,
+  cat: Cat,
+  dog: Dog,
+  book: Book,
+  'graduation-cap': GraduationCap,
+  scissors: Scissors,
+  sparkles: Sparkles,
+  sprout: Sprout,
+  landmark: Landmark,
+  building: Building2,
+  banknote: Banknote,
+  'piggy-bank': PiggyBank,
+  'life-buoy': LifeBuoy,
+  plane: Plane,
+  star: Star,
+  package: Package,
+} satisfies Record<string, IconNode>;
+
+export type IconName = keyof typeof UI | keyof typeof CHOICE_ICONS;
+const ALL: Record<string, IconNode> = { ...UI, ...CHOICE_ICONS };
+
+/** A valid icon key for anything stored: a key, an old emoji (data from before icons), or nothing. */
+export function iconFor(key: string | undefined): IconName {
+  const k = iconKeyFrom(key);
+  return (k in ALL ? k : 'package') as IconName;
+}
+
+export function Icon({ name, label, small }: { name: IconName | string | undefined; label?: string; small?: boolean }) {
+  const node = (name && ALL[name]) || ALL[iconFor(name)];
   return (
     <svg
-      class="icon"
+      class={small ? 'icon icon-sm' : 'icon'}
       viewBox="0 0 24 24"
       aria-hidden={label ? undefined : 'true'}
       role={label ? 'img' : undefined}
       aria-label={label}
+      focusable="false"
     >
-      <path d={PATHS[name]} stroke-width={name === 'more' ? 3 : undefined} />
+      {node.map(([tag, attrs], i) => {
+        const Tag = tag as 'path';
+        return <Tag key={i} {...(attrs as Record<string, string>)} />;
+      })}
     </svg>
+  );
+}
+
+/** A category/goal/chip icon in a small tinted circle, for list rows. */
+export function RowIcon({ name }: { name: string | undefined }) {
+  return (
+    <span class="row-icon" aria-hidden="true">
+      <Icon name={iconFor(name)} small />
+    </span>
+  );
+}
+
+const iconLabel = (key: string) => (key.charAt(0).toUpperCase() + key.slice(1)).replace(/-/g, ' ');
+
+/** Pick an icon for a category, goal or chip (radio group; arrow keys move, like any radio set). */
+export function IconPicker({ value, onChange, label = 'Icon' }: { value: string; onChange: (key: string) => void; label?: string }) {
+  const current = iconFor(value);
+  return (
+    <div class="field">
+      <span class="field-label">{label}</span>
+      <div class="icon-grid" role="radiogroup" aria-label={label}>
+        {(Object.keys(CHOICE_ICONS) as Array<keyof typeof CHOICE_ICONS>).map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="radio"
+            aria-checked={current === key}
+            aria-label={iconLabel(key)}
+            class="icon-choice"
+            onClick={() => onChange(key)}
+          >
+            <Icon name={key} />
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

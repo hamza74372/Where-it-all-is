@@ -1,6 +1,7 @@
 // Backup file format: build, read (decrypt if needed), verify, upgrade, and summarise.
 
 import { SCHEMA_VERSION } from '../../db/schema';
+import { withIcon } from '../iconKeys';
 import type { StoreName } from '../../db/types';
 import { decryptJson, isEncryptedFile, NotOurFileError, sha256Hex, TamperedFileError, type EncryptedFile } from './crypto';
 
@@ -75,6 +76,12 @@ export function upgradeBackup(f: BackupFile): BackupFile {
   if (f.schemaVersion < 2) stores.envelopeMoves ??= [];
   // v2 → v3: no deletion records yet (nothing to carry over).
   if (f.schemaVersion < 3) stores.tombstones ??= [];
+  if (f.schemaVersion < 4) {
+    // Line icons replaced emoji.
+    stores.categories = (stores.categories ?? []).map((c) => withIcon(c as never)) as never;
+    stores.goals = (stores.goals ?? []).map((g) => withIcon(g as never)) as never;
+    stores.settings = (stores.settings ?? []).map((s) => ({ ...s, presets: ((s as { presets?: never[] }).presets ?? []).map(withIcon) })) as never;
+  }
   return { ...f, schemaVersion: SCHEMA_VERSION, stores };
 }
 

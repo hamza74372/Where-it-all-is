@@ -83,53 +83,54 @@ const makeHtml = (PAPER, PAGE) => `<!doctype html><html lang="en"><head><meta ch
 <style>
   @page { size: ${PAPER}; margin: 0; }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 10.5pt/1.42 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; color: #1f2430; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font: 10.5pt/1.42 system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; color: #1F2A44; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page { width: ${PAGE.w}; height: ${PAGE.h}; padding: 0.55in 0.6in 0.8in; overflow: hidden; page-break-after: always; position: relative; background: #fff; }
   .page:last-child { page-break-after: auto; }
-  header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
-  header img { width: 52px; height: 52px; border-radius: 13px; }
-  h1 { font-size: 22pt; margin: 0; letter-spacing: -0.01em; }
-  .sub { margin: 2px 0 0; color: #5a6070; font-size: 11pt; }
-  h2 { font-size: 13.5pt; margin: 12px 0 6px; color: #2f6f62; }
-  h2 .n { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: #2f6f62; color: #fff; font-size: 11pt; align-items: center; justify-content: center; margin-right: 6px; vertical-align: 1px; }
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 3px solid #7CC8B5; }
+  header .wordmark { height: 40px; width: auto; display: block; }
+  h1 { font-size: 15pt; margin: 0; letter-spacing: -0.01em; }
+  header > div { text-align: right; max-width: 2.6in; }
+  .sub { margin: 2px 0 0; color: #535C70; font-size: 11pt; }
+  h2 { font-size: 13.5pt; margin: 12px 0 6px; color: #2A6B5D; }
+  h2 .n { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: #1F2A44; color: #F7F3EA; font-size: 11pt; align-items: center; justify-content: center; margin-right: 6px; vertical-align: 1px; }
   p { margin: 4px 0; }
-  .url { display: block; margin: 6px 0; padding: 9px 12px; border: 1.5px solid #2f6f62; border-radius: 10px; font: 600 10.5pt ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; background: #f1f7f5; }
+  .url { display: block; margin: 6px 0; padding: 9px 12px; border: 1.5px solid #2A6B5D; border-radius: 10px; font: 600 10.5pt ui-monospace, Menlo, Consolas, monospace; overflow-wrap: anywhere; background: #EEF6F3; }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-  .box { border: 1px solid #dcd8ce; border-radius: 12px; padding: 10px 12px; background: #fbfaf7; }
+  .box { border: 1px solid #DDD5C4; border-radius: 12px; padding: 10px 12px; background: #FBF8F1; }
   .box h3 { margin: 0 0 6px; font-size: 11pt; }
   .warn { border: 1.5px solid #e8b54a; background: #fff8e8; border-radius: 12px; padding: 9px 12px; margin: 10px 0; }
-  .note { border-left: 4px solid #2f6f62; background: #f1f7f5; padding: 8px 12px; border-radius: 0 10px 10px 0; margin: 10px 0; }
+  .note { border-left: 4px solid #2A6B5D; background: #EEF6F3; padding: 8px 12px; border-radius: 0 10px 10px 0; margin: 10px 0; }
   ol, ul { margin: 4px 0; padding-left: 1.2em; }
   li { margin: 3px 0; }
   ol.mini { list-style: none; padding: 0; margin: 0; }
   ol.mini li { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 10pt; }
-  .pill { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 8px; background: #fff; border: 1px solid #c9c4b8; color: #1d5fd1; flex: none; }
+  .pill { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 6px; border-radius: 8px; background: #fff; border: 1px solid #DDD5C4; color: #1F2A44; flex: none; }
   .pill-text { font-weight: 700; font-size: 9pt; }
   .glyph { width: 20px; height: 20px; }
   .shots { display: flex; gap: 14px; align-items: flex-start; }
-  .phone { width: 1.75in; border-radius: 18px; border: 6px solid #1f2430; overflow: hidden; flex: none; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+  .phone { width: 1.75in; border-radius: 18px; border: 6px solid #1F2A44; overflow: hidden; flex: none; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
   .phone img { display: block; width: 100%; }
-  .device-shot { width: 100%; border-radius: 10px; border: 1px solid #dcd8ce; }
-  .cap { font-size: 9pt; color: #5a6070; margin-top: 4px; text-align: center; }
-  footer { position: absolute; left: 0.6in; right: 0.6in; bottom: 0.38in; font-size: 8.5pt; color: #5a6070; display: flex; justify-content: space-between; border-top: 1px solid #e6e2d8; padding-top: 6px; }
+  .device-shot { width: 100%; border-radius: 10px; border: 1px solid #DDD5C4; }
+  .cap { font-size: 9pt; color: #535C70; margin-top: 4px; text-align: center; }
+  footer { position: absolute; left: 0.6in; right: 0.6in; bottom: 0.38in; font-size: 8.5pt; color: #535C70; display: flex; justify-content: space-between; border-top: 1px solid #e6e2d8; padding-top: 6px; }
   b { font-weight: 700; }
   a { color: inherit; text-decoration: none; }
   .qr-row { display: flex; align-items: center; gap: 12px; margin: 8px 0 2px; }
   .qr { width: 1.05in; height: 1.05in; flex: none; display: block; }
   .qr-cap { font-size: 10pt; font-weight: 600; margin: 0; }
-  .week { margin-top: 8px; border: 1px solid #b9d8cf; background: #f1f7f5; border-radius: 12px; padding: 10px 14px; }
-  .week h3 { margin: 0 0 4px; font-size: 12pt; color: #2f6f62; }
+  .week { margin-top: 8px; border: 1px solid #7CC8B5; background: #EEF6F3; border-radius: 12px; padding: 10px 14px; }
+  .week h3 { margin: 0 0 4px; font-size: 12pt; color: #2A6B5D; }
   .week ul { list-style: none; padding: 0; margin: 0; }
   .week li { margin: 3px 0; }
 </style></head><body>
 
 <section class="page">
   <header>
-    <img src="${dataUri(cfg.icons.icon192)}" alt="" />
+    <img class="wordmark" src="data:image/svg+xml;base64,${fs.readFileSync(cfg.icons.wordmark).toString('base64')}" alt="${esc(cfg.productName)}" />
     <div>
-      <h1>${esc(cfg.productName)} — start here</h1>
-      <p class="sub">Your calm budget app. Thank you for your order — this page gets you going in a few minutes.</p>
+      <h1>Start here</h1>
+      <p class="sub">Thank you for your order — this page gets you going in a few minutes.</p>
     </div>
   </header>
 

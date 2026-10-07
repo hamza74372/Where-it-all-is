@@ -4,6 +4,7 @@
 // Each migration runs inside the versionchange transaction, in order, only for
 // versions newer than what the user's database already has.
 
+import { withIcon } from '../lib/iconKeys';
 import type { StoreName } from './types';
 
 /**
@@ -64,6 +65,24 @@ export const MIGRATIONS: Migration[] = [
   // v3 — deletion tombstones (so merges don't bring deleted things back) and the partner's
   // read-only shared view, kept apart from the user's own data (Phase 5)
   (db) => createStores(db, V3_STORES),
+  // v4 — line icons instead of emoji: categories, goals and quick-log chips get an icon key
+  (_db, tx) => {
+    for (const name of ['categories', 'goals'] as const) {
+      const req = tx.objectStore(name).openCursor();
+      req.onsuccess = () => {
+        const cur = req.result;
+        if (!cur) return;
+        cur.update(withIcon(cur.value));
+        cur.continue();
+      };
+    }
+    const settings = tx.objectStore('settings');
+    const get = settings.get('main');
+    get.onsuccess = () => {
+      const s = get.result;
+      if (s?.presets) settings.put({ ...s, presets: s.presets.map(withIcon) });
+    };
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

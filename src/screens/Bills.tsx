@@ -13,6 +13,7 @@ import { useFmt, useToday } from '../ui/hooks';
 import { Icon } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
+import { EmptyState } from '../ui/EmptyState';
 
 export function Bills() {
   const data = useData();
@@ -38,14 +39,14 @@ export function Bills() {
           { value: 'calendar', label: 'Calendar' },
         ]}
       />
-      {view === 'list' ? <BillList bills={active} onEdit={setEditing} /> : <Calendar onEdit={setEditing} />}
+      {view === 'list' ? <BillList bills={active} onEdit={setEditing} onAdd={() => setEditing('new')} /> : <Calendar onEdit={setEditing} />}
       {yearly.length > 0 && view === 'list' && <BigBills bills={yearly} />}
       <BillSheet bill={editing} onClose={() => setEditing(null)} />
     </>
   );
 }
 
-function BillList({ bills, onEdit }: { bills: Bill[]; onEdit: (b: Bill) => void }) {
+function BillList({ bills, onEdit, onAdd }: { bills: Bill[]; onEdit: (b: Bill) => void; onAdd: () => void }) {
   const store = useStore();
   const data = useData();
   const fmt = useFmt();
@@ -53,7 +54,7 @@ function BillList({ bills, onEdit }: { bills: Bill[]; onEdit: (b: Bill) => void 
   if (!bills.length) {
     return (
       <div class="card">
-        <p>No bills yet. Add rent, phone, subscriptions — anything that comes out regularly. They'll be set aside before payday.</p>
+        <EmptyState line="No bills yet. Anything regular — rent, phone, subscriptions — is set aside before payday." action="Add a bill" onAction={onAdd} icon="bills" />
       </div>
     );
   }
@@ -79,7 +80,7 @@ function BillList({ bills, onEdit }: { bills: Bill[]; onEdit: (b: Bill) => void 
               </span>
             </button>
             <span class="row-end">
-              <span class="mono">{fmt.money(amount)}</span>
+              <span class="money">{fmt.money(amount)}</span>
               {due && (
                 <button
                   type="button"
@@ -119,7 +120,7 @@ function BigBills({ bills }: { bills: Bill[] }) {
                 {fmt.money(b.amount)}, {describeSchedule(b.schedule)}
               </span>
             </span>
-            <span class="mono">{fmt.money(monthlySetAside(b))}/mo</span>
+            <span class="money">{fmt.money(monthlySetAside(b))}/mo</span>
           </li>
         ))}
       </ul>
@@ -156,13 +157,13 @@ function Calendar({ onEdit }: { onEdit: (b: Bill) => void }) {
     <section class="card cal-card" aria-label="Bills calendar">
       <div class="cal-head">
         <button type="button" class="icon-btn" onClick={() => shift(-1)} aria-label="Previous month">
-          ‹
+          <Icon name="back" />
         </button>
         <h2 class="card-title" aria-live="polite">
           {fmt.month(first)}
         </h2>
         <button type="button" class="icon-btn" onClick={() => shift(1)} aria-label="Next month">
-          ›
+          <Icon name="forward" />
         </button>
       </div>
       <div class="cal-grid" role="grid">
@@ -208,8 +209,12 @@ function Calendar({ onEdit }: { onEdit: (b: Bill) => void }) {
         <ul class="rows">
           {selPay.map((p) => (
             <li key={p.income.id} class="row">
-              <span class="row-main">💰 {p.income.name}</span>
-              <span class="mono">{fmt.money(p.income.amount)}</span>
+              <span class="row-main">
+                <span>
+                  <Icon name="pay" small /> {p.income.name}
+                </span>
+              </span>
+              <span class="money">{fmt.money(p.income.amount)}</span>
             </li>
           ))}
           {selBills.map((b) => (
@@ -217,7 +222,7 @@ function Calendar({ onEdit }: { onEdit: (b: Bill) => void }) {
               <button type="button" class="row-main row-button" onClick={() => onEdit(b.bill)}>
                 {b.bill.name} {b.paid && <span class="badge">Paid</span>}
               </button>
-              <span class="mono">{fmt.money(b.bill.amount)}</span>
+              <span class="money">{fmt.money(b.bill.amount)}</span>
             </li>
           ))}
         </ul>
@@ -324,7 +329,7 @@ function BillForm({ bill, onDone }: { bill: Bill | null; onDone: () => void }) {
           label="Category"
           value={categoryId}
           onChange={setCategoryId}
-          options={[{ value: '', label: 'None' }, ...data.categories.filter((c) => !c.archived).map((c) => ({ value: c.id, label: `${c.emoji} ${c.name}` }))]}
+          options={[{ value: '', label: 'None' }, ...data.categories.filter((c) => !c.archived).map((c) => ({ value: c.id, label: c.name }))]}
         />
       )}
       <Toggle label="Autopay" checked={autopay} onChange={setAutopay} hint="Comes out by itself. We'll still ask you to confirm it went." />
@@ -334,7 +339,7 @@ function BillForm({ bill, onDone }: { bill: Bill | null; onDone: () => void }) {
         </button>
       </div>
       {bill && (
-        <button type="button" class="link-btn delete-btn" onClick={remove}>
+        <button type="button" class="btn btn-danger" onClick={remove}>
           Delete this bill
         </button>
       )}

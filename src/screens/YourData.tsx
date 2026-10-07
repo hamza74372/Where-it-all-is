@@ -5,14 +5,16 @@ import type { ImportBatch } from '../db/types';
 import { todayISO } from '../lib/dates';
 import { eraseEverything } from '../state/actions';
 import { undoImport } from '../state/importActions';
+import { useNav } from '../state/nav';
 import { useData, useStore } from '../state/store';
 import { Confirm } from '../ui/Confirm';
+import { EmptyState } from '../ui/EmptyState';
 import { useFmt } from '../ui/hooks';
 import { toast } from '../ui/Toast';
 import { lastBackupText } from './Backup';
 
 /** Past imports, newest first. Undoing one removes only the rows it added (after a confirm). */
-export function ImportHistory({ limit }: { limit?: number }) {
+export function ImportHistory({ limit, onImport }: { limit?: number; onImport?: () => void }) {
   const store = useStore();
   const data = useData();
   const fmt = useFmt();
@@ -20,7 +22,7 @@ export function ImportHistory({ limit }: { limit?: number }) {
   const batches = [...data.importBatches].sort((a, b) => b.importedAt - a.importedAt).slice(0, limit);
   const accName = (id: string) => data.accounts.find((a) => a.id === id)?.name;
   const linkedCount = (b: ImportBatch) => data.transactions.filter((t) => t.matchedBatchId === b.id).length;
-  if (!batches.length) return <p class="muted">No imports yet. Log → Import statement brings in a bank CSV.</p>;
+  if (!batches.length) return <EmptyState line="No imports yet." action="Import a statement" onAction={onImport} icon="inbox" />;
   return (
     <>
       <ul class="rows" aria-label="Past imports">
@@ -69,6 +71,7 @@ export function ImportHistory({ limit }: { limit?: number }) {
 
 export function YourData({ onBackup }: { onBackup: () => void }) {
   const store = useStore();
+  const nav = useNav();
   const { settings } = useData();
   const [erasing, setErasing] = useState(false);
   return (
@@ -77,7 +80,7 @@ export function YourData({ onBackup }: { onBackup: () => void }) {
         <h2 id="history-title" class="card-title">
           Import history
         </h2>
-        <ImportHistory />
+        <ImportHistory onImport={() => nav('log')} />
       </section>
       <section class="card" aria-labelledby="erase-title">
         <h2 id="erase-title" class="card-title">
@@ -93,7 +96,7 @@ export function YourData({ onBackup }: { onBackup: () => void }) {
             Back up first
           </button>
         )}
-        <button type="button" class="link-btn delete-btn" onClick={() => setErasing(true)}>
+        <button type="button" class="btn btn-danger" onClick={() => setErasing(true)}>
           Erase everything…
         </button>
       </section>

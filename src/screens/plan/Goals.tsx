@@ -8,10 +8,11 @@ import { saveWithUndo, removeWithUndo } from '../../state/actions';
 import { useData, useStore } from '../../state/store';
 import { checkMoney, DateInput, MoneyInput, moneyText, Segmented, TextInput, Toggle } from '../../ui/fields';
 import { useFmt, useToday } from '../../ui/hooks';
-import { Icon } from '../../ui/icons';
+import { Icon, IconPicker } from '../../ui/icons';
 import { Progress } from '../../ui/Progress';
 import { Sheet } from '../../ui/Sheet';
 import { toast } from '../../ui/Toast';
+import { EmptyState } from '../../ui/EmptyState';
 
 export function Goals() {
   const store = useStore();
@@ -25,7 +26,7 @@ export function Goals() {
     <>
       {data.goals.length === 0 ? (
         <div class="card">
-          <p>A goal is something you're saving towards — a trip, a laptop, a cushion for emergencies. Add one to see how much to put aside each payday.</p>
+          <EmptyState line="Saving for something? A goal shows how much to put aside each payday." action="New goal" onAction={() => setEditing('new')} icon="piggy-bank" />
         </div>
       ) : (
         <ul class="card rows" aria-label="Goals">
@@ -37,10 +38,10 @@ export function Goals() {
                 <div class="row-main">
                   <button type="button" class="row-button env-head" onClick={() => setEditing(g)} aria-label={`Edit ${g.name}`}>
                     <span>
-                      <span aria-hidden="true">{g.emoji}</span> {g.name}
-                      {reached && <span class="badge">Reached 🎉</span>}
+                      <Icon name={g.icon} small /> {g.name}
+                      {reached && <span class="badge">Reached</span>}
                     </span>
-                    <span class="mono">
+                    <span class="money">
                       {fmt.money(g.saved, { wholeIfRound: true })} of {fmt.money(g.target, { wholeIfRound: true })}
                     </span>
                   </button>
@@ -65,9 +66,11 @@ export function Goals() {
           })}
         </ul>
       )}
-      <button type="button" class="btn" onClick={() => setEditing('new')}>
-        <Icon name="plus" /> New goal
-      </button>
+      {data.goals.length > 0 && (
+        <button type="button" class="btn" onClick={() => setEditing('new')}>
+          <Icon name="plus" /> New goal
+        </button>
+      )}
       {data.goals.some((g) => g.targetDate) && (
         <div class="card card-quiet goal-toggle">
           <Toggle
@@ -134,7 +137,7 @@ function GoalForm({ goal, onDone }: { goal: Goal | null; onDone: () => void }) {
   const today = useToday();
   const dec = settings.decimalSeparator;
   const [name, setName] = useState(goal?.name ?? '');
-  const [emoji, setEmoji] = useState(goal?.emoji ?? '⭐');
+  const [icon, setIcon] = useState(goal?.icon ?? 'piggy-bank');
   const [target, setTarget] = useState(moneyText(goal?.target, dec));
   const [saved, setSaved] = useState(moneyText(goal?.saved ?? null, dec));
   const [hasDate, setHasDate] = useState(!!goal?.targetDate);
@@ -149,7 +152,7 @@ function GoalForm({ goal, onDone }: { goal: Goal | null; onDone: () => void }) {
     const undo = await saveWithUndo(store, 'goals', {
       id: goal?.id ?? uid(),
       name: name.trim(),
-      emoji: emoji.trim() || '⭐',
+      icon,
       target: Math.abs(t.value),
       saved: s.state === 'ok' ? Math.abs(s.value) : 0,
       targetDate: hasDate ? date : undefined,
@@ -162,7 +165,7 @@ function GoalForm({ goal, onDone }: { goal: Goal | null; onDone: () => void }) {
     <form class="form" onSubmit={save}>
       <TextInput label="What are you saving for?" value={name} onInput={setName} placeholder="e.g. Trip to see family" autoFocus={!goal} />
       {showErrors && !name.trim() && <p class="field-error">Give it a name.</p>}
-      <TextInput label="Emoji" value={emoji} onInput={setEmoji} />
+      <IconPicker value={icon} onChange={setIcon} />
       <MoneyInput label="Target" value={target} onInput={setTarget} showErrors={showErrors} />
       <MoneyInput label="Saved so far" value={saved} onInput={setSaved} showErrors={showErrors} />
       <Toggle label="I have a date in mind" checked={hasDate} onChange={setHasDate} />
@@ -175,7 +178,7 @@ function GoalForm({ goal, onDone }: { goal: Goal | null; onDone: () => void }) {
       {goal && (
         <button
           type="button"
-          class="link-btn delete-btn"
+          class="btn btn-danger"
           onClick={async () => {
             const undo = await removeWithUndo(store, 'goals', goal);
             toast(`${goal.name} deleted`, undo);

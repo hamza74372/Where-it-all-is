@@ -1,0 +1,32 @@
+{
+  "shots": [
+    {
+      "file": "demo-01-today.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "demo-02-backup-off.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    }
+  ],
+  "failures": [],
+  "errors": []
+}

@@ -1,0 +1,578 @@
+{
+  "shots": [
+    {
+      "file": "filled-01-onboarding-3-pay.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-02-onboarding-4-bills.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-03-today-first-day.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-04-today-away-and-payday.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-05-today-toast-undo.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-06-import-map.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-07-import-review.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-08-import-sort.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-09-import-balance-check.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-10-import-done.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-11-today-did-you-mean.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-12-more-share-made.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-13-today.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-14-today-explain.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-15-today-focus.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-16-log.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-17-log-search-no-results.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-18-log-edit-sheet.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-19-bills.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-20-bills-calendar.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-21-bill-edit-sheet.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-22-plan-envelopes.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-23-plan-goals.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-24-plan-debt.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-25-plan-insights.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-26-plan-move-money-sheet.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-27-partner.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-28-today-tight.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-29-today-tight-explain.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-30-more-menu.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-31-more-accounts.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-32-more-paychecks.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-33-more-categories.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-34-more-rules.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-35-more-notes.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-36-more-backup.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-37-more-share.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-38-more-data.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-39-more-data-erase-confirm.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-40-more-chips.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-41-more-settings.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-42-more-help.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-43-more-help-article.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    },
+    {
+      "file": "filled-44-more-about.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(20, 28, 46)"
+      }
+    }
+  ],
+  "failures": [],
+  "errors": []
+}

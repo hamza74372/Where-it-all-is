@@ -3,6 +3,7 @@
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 import { DISCLAIMER } from '../copy';
+import { Icon } from '../ui/icons';
 
 interface Article {
   id: string;
@@ -296,8 +297,8 @@ export function HelpScreen() {
   if (article) {
     return (
       <article class="help-article" aria-labelledby="help-title">
-        <button type="button" class="link-btn back-btn" onClick={() => setOpen(null)}>
-          ‹ All help
+        <button type="button" class="link-btn back-btn" onClick={() => setOpen(null)} aria-label="Back to all help">
+          <Icon name="back" small /> All help
         </button>
         <h2 id="help-title" class="help-title">
           {article.title}
@@ -317,7 +318,7 @@ export function HelpScreen() {
               <span class="row-sub">{a.summary}</span>
             </button>
             <span aria-hidden="true" class="chev">
-              ›
+              <Icon name="forward" small />
             </span>
           </li>
         ))}

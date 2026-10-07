@@ -24,7 +24,7 @@ test('onboarding: monthly bills step, "Add another bill", first-day prompt, look
   await expect(page.getByText('Day of month').first()).toBeVisible();
   await page.getByLabel('Rent or mortgage amount').fill('1200');
   await page.getByLabel('Rent or mortgage day of month').fill('15');
-  await page.getByRole('button', { name: '+ Add another bill' }).click();
+  await page.getByRole('button', { name: 'Add another bill' }).click();
   await page.getByLabel('Bill name').fill('Netflix');
   await page.getByLabel('Netflix amount').fill('15');
   await page.getByLabel('Netflix day of month').fill('20');

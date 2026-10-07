@@ -30,7 +30,7 @@ describe('IndexedDB wrapper', () => {
 
   it('keepStamp preserves updatedAt (for merge/restore)', async () => {
     const db = await fresh();
-    const rec = await db.put('goals', { id: 'g', name: 'Trip', target: 1, saved: 0, emoji: '✈️', updatedAt: 42 }, true);
+    const rec = await db.put('goals', { id: 'g', name: 'Trip', target: 1, saved: 0, icon: 'package', updatedAt: 42 }, true);
     expect(rec.updatedAt).toBe(42);
     db.close();
   });

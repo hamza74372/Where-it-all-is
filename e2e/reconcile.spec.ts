@@ -39,14 +39,14 @@ async function addSavings(page: Page) {
   await page.getByLabel('Type').selectOption('savings');
   await page.getByLabel('Balance right now').fill('500');
   await page.getByRole('button', { name: 'Save' }).click();
-  await page.getByRole('button', { name: '‹ More' }).click();
+  await page.getByRole('button', { name: 'Back to More' }).click();
 }
 
 async function balanceOf(page: Page, account: string) {
   await nav(page, 'More').click();
   await page.getByRole('button', { name: /^Accounts/ }).click();
-  const text = (await page.locator('.row').filter({ hasText: account }).locator('.mono').textContent())!.trim();
-  await page.getByRole('button', { name: '‹ More' }).click();
+  const text = (await page.locator('.row').filter({ hasText: account }).locator('.money').textContent())!.trim();
+  await page.getByRole('button', { name: 'Back to More' }).click();
   return text;
 }
 
@@ -132,7 +132,7 @@ test('transfers: typed in the Log, and suggested on import — never spending, b
   await importText(page, 'Date,Description,Amount\n10/16/2026,ONLINE TRANSFER TO SAV XXXX1234,-150.00\n10/16/2026,TESCO,-25.00\n', info);
   await expect(page.getByRole('heading', { name: 'Moves between your accounts?' })).toBeVisible();
   await page.getByRole('button', { name: "Yes, it's a transfer" }).click();
-  await expect(page.getByRole('button', { name: "✓ It's a transfer" })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: "It's a transfer", exact: true })).toHaveAttribute('aria-pressed', 'true');
   await shot(page, 'transfer-suggested');
   await page.getByRole('button', { name: 'Import 2' }).click();
   const done = page.getByRole('heading', { name: /^Imported 2/ });

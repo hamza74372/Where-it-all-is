@@ -15,7 +15,7 @@ export function previousMonth(month: string): string {
 export interface CategoryCompare {
   categoryId: Id | null;
   name: string;
-  emoji: string;
+  icon: string;
   thisMonth: Minor;
   lastMonth: Minor;
 }
@@ -26,13 +26,13 @@ export function compareMonths(transactions: Transaction[], categories: Category[
   const before = spentByCategory(transactions, previousMonth(month));
   const rows: CategoryCompare[] = categories
     .filter((c) => (now.get(c.id) ?? 0) > 0 || (before.get(c.id) ?? 0) > 0)
-    .map((c) => ({ categoryId: c.id, name: c.name, emoji: c.emoji, thisMonth: now.get(c.id) ?? 0, lastMonth: before.get(c.id) ?? 0 }));
+    .map((c) => ({ categoryId: c.id, name: c.name, icon: c.icon, thisMonth: now.get(c.id) ?? 0, lastMonth: before.get(c.id) ?? 0 }));
   const uncategorised = (m: string) =>
     transactions
       .filter((t) => t.date.startsWith(m) && !t.categoryId && t.amount < 0 && (t.source === 'manual' || t.source === 'import') && !isTransfer(t))
       .reduce((s, t) => s - t.amount, 0);
   const u = { now: uncategorised(month), before: uncategorised(previousMonth(month)) };
-  if (u.now || u.before) rows.push({ categoryId: null, name: 'No category', emoji: '•', thisMonth: u.now, lastMonth: u.before });
+  if (u.now || u.before) rows.push({ categoryId: null, name: 'No category', icon: 'inbox', thisMonth: u.now, lastMonth: u.before });
   return rows.sort((a, b) => b.thisMonth - a.thisMonth || b.lastMonth - a.lastMonth);
 }
 

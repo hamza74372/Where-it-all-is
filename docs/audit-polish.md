@@ -415,3 +415,22 @@ Category colours: 8 muted tints derived from the brand hue (used as the icon cir
 - `filled-01 … filled-41`: onboarding with data, first day, return day (away + payday), undo toast, the import flow (map, review, sort, balance check, done), did-you-mean, share made, Today, explain, focus, Log, search with no results, edit sheet, Bills, calendar, bill edit, Plan × 4, move money, Partner tab, Today with a cushion, More menu and all More pages.
 - `demo-01, demo-02`: demo Today and backup turned off.
 - `*-report.json`: the layout-check results per screenshot (all clean).
+
+---
+
+# Polish pass — done (7 Oct 2026)
+
+What changed, against the findings above. Before/after sheets: [docs/polish/](polish/) (`compare-*.png`).
+
+| Finding | Done |
+|---|---|
+| Emoji as icons, mixed icon styles | One line-icon set (Lucide, ISC licence), inlined SVG, one stroke width (`--stroke`), 20 and 24 px. Categories, goals and chips store an icon key; schema v4 and older backups map old emoji to icons. A test fails if an emoji appears in the interface. |
+| Inconsistent spacing / radius / shadow / type | One token set in `src/tokens.css`: 7 spacing steps, 6 type sizes, 4 radii, 3 shadows, colours by role (light + derived dark). Every stylesheet uses only tokens; `test/tokens.test.ts` fails on raw px or colours anywhere else. |
+| Button and link styles | Three button styles (primary, secondary, destructive) and one link style. Quiet text buttons became links; single-item deletes use the destructive style. |
+| Buttons touching cards (4 places) | Every screen is one stack with even gaps — no sibling can touch the next. |
+| Today: number half a screen down; five equal cards | The number always comes first, on every day type. Then the explanation line, a status (on track / tight), one "Next up" card, the log box, and everything else below with less weight. |
+| Blank screen while loading | Skeleton screens for Today and Log (static with reduced motion). |
+| Empty states without an action | Every list: one calm line plus one action. Insights shows one empty state instead of three. |
+| Money in monospace | System font with tabular numbers everywhere. |
+| Motion | Subtle only (sheet slide-up, toast, switches, progress); off with prefers-reduced-motion. |
+| Brand | Navy / mint / cream with a derived dark theme; mint is never text on cream (test). Logo variant B; outlined Inter wordmark on the welcome screen, landing page and PDF header; new app icon, favicons and maskable icon; placeholder icons and their generator removed. |

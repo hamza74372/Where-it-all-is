@@ -40,7 +40,7 @@ test('Log: filter by account and category; search covers every month, grouped by
   const sheet = page.getByRole('dialog');
   await sheet.getByLabel('Amount').fill('4.20');
   await sheet.getByLabel('Note').fill('Summer coffee');
-  await sheet.getByLabel('Category').selectOption({ label: '☕ Coffee' });
+  await sheet.getByLabel('Category').selectOption({ label: 'Coffee' });
   await sheet.getByLabel('Date').fill('2026-08-14');
   await sheet.getByRole('button', { name: 'Save' }).click();
   const rows = page.locator('.log-day .row');
@@ -53,7 +53,7 @@ test('Log: filter by account and category; search covers every month, grouped by
   await page.getByLabel('Show account').selectOption({ label: 'All accounts' });
 
   // Category filter.
-  await page.getByLabel('Show category').selectOption({ label: '🛒 Groceries' });
+  await page.getByLabel('Show category').selectOption({ label: 'Groceries' });
   await expect(rows).toHaveCount(2);
   await expect(page.getByText(/Money out this month \(filtered\): \$62\.95/)).toBeVisible();
   await page.getByLabel('Show category').selectOption({ label: 'All categories' });
@@ -142,7 +142,7 @@ test('Your data: erase needs ERASE typed, offers a backup first, then starts fre
   // "Back up first" goes to Backup & restore.
   await page.getByRole('button', { name: 'Back up first' }).click();
   await expect(page.getByRole('heading', { name: 'Backup & restore', level: 1 })).toBeVisible();
-  await page.getByRole('button', { name: '‹ More' }).click();
+  await page.getByRole('button', { name: 'Back to More' }).click();
   await page.getByRole('button', { name: /^Your data/ }).click();
 
   await page.getByRole('button', { name: 'Erase everything…' }).click();

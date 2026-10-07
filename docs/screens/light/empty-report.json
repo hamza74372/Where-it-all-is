@@ -1,0 +1,513 @@
+{
+  "shots": [
+    {
+      "file": "empty-01-onboarding-welcome.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-02-onboarding-restore.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-03-onboarding-1-name.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-04-onboarding-2-balance.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-05-onboarding-2-balance-error.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-06-onboarding-3-pay.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-07-onboarding-4-bills.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-08-today.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-09-today-explain.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-10-today-focus.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-11-log.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-12-log-add-sheet.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-13-import-pick.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-14-import-bad-file.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-15-bills.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-16-bills-calendar.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-17-bill-add-sheet.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-18-plan-envelopes.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-19-plan-goals.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-20-plan-debt.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-21-plan-insights.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-22-plan-goal-add-sheet.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-23-plan-debt-add-sheet.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-24-plan-envelope-add-sheet.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-25-more-menu.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-26-more-accounts.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-27-more-paychecks.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-28-more-categories.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-29-more-rules.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-30-more-notes.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-31-more-backup.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-32-more-share.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-33-more-data.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-34-more-data-erase-confirm.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-35-more-chips.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-36-more-settings.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-37-more-help.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-38-more-help-article.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    },
+    {
+      "file": "empty-39-more-about.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(247, 243, 234)"
+      }
+    }
+  ],
+  "failures": [],
+  "errors": []
+}

@@ -22,7 +22,7 @@ test('help articles open, with the right file name and Home Screen wording', asy
   await expect(article).toContainText('Install app (or Add to Home screen)');
   await expect(article).toContainText('Add to Dock (macOS 14 or later)');
   await expect(article).toContainText('7 days');
-  await page.getByRole('button', { name: '‹ All help' }).click();
+  await page.getByRole('button', { name: 'Back to all help' }).click();
 
   await list.getByRole('button', { name: /^Safe to spend, explained/ }).click();
   await expect(page.getByRole('heading', { name: 'Safe to spend, explained' })).toBeVisible();

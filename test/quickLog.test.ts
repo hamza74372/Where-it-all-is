@@ -4,7 +4,7 @@ import { DEFAULT_CATEGORIES } from '../src/data/defaults';
 import { matchCategory, parseQuickLog } from '../src/lib/quickLog';
 
 const cats: Category[] = DEFAULT_CATEGORIES.map((c, i) => ({
-  id: c.name, name: c.name, emoji: c.emoji, color: c.color, order: i, archived: false, updatedAt: 0,
+  id: c.name, name: c.name, icon: c.icon, color: c.color, order: i, archived: false, updatedAt: 0,
 }));
 const cat = (text: string) => matchCategory(text, cats)?.name;
 

@@ -8,10 +8,11 @@ import { saveWithUndo } from '../../state/actions';
 import { useData, useStore } from '../../state/store';
 import { checkMoney, MoneyInput, moneyText, Select, TextInput } from '../../ui/fields';
 import { useFmt, useToday } from '../../ui/hooks';
-import { Icon } from '../../ui/icons';
+import { Icon, IconPicker } from '../../ui/icons';
 import { Progress } from '../../ui/Progress';
 import { Sheet } from '../../ui/Sheet';
 import { toast } from '../../ui/Toast';
+import { EmptyState } from '../../ui/EmptyState';
 
 export function Envelopes() {
   const store = useStore();
@@ -55,10 +56,7 @@ export function Envelopes() {
 
       {rows.length === 0 ? (
         <div class="card">
-          <p>
-            Envelopes give each kind of spending a monthly amount, so you can see what's left at a glance. Start with one —
-            groceries is a good first.
-          </p>
+          <EmptyState line="Give a kind of spending a monthly amount — groceries is a good first." action="New envelope" onAction={() => setEditing('new')} icon="wallet" />
         </div>
       ) : (
         <ul class="card rows" aria-label="Envelopes">
@@ -69,9 +67,11 @@ export function Envelopes() {
       )}
 
       <div class="row-gap">
-        <button type="button" class="btn" onClick={() => setEditing('new')}>
-          <Icon name="plus" /> New envelope
-        </button>
+        {rows.length > 0 && (
+          <button type="button" class="btn" onClick={() => setEditing('new')}>
+            <Icon name="plus" /> New envelope
+          </button>
+        )}
         {rows.length > 1 && (
           <button type="button" class="btn" onClick={() => setMoving(true)}>
             Move money
@@ -87,7 +87,7 @@ export function Envelopes() {
           <div class="chips">
             {withoutLimit.map((c) => (
               <button key={c.id} type="button" class="chip" onClick={() => setEditing(c)}>
-                <span aria-hidden="true">{c.emoji}</span> {c.name}
+                <Icon name={c.icon} small /> {c.name}
               </button>
             ))}
           </div>
@@ -122,9 +122,9 @@ function EnvelopeItem({ row, onEdit }: { row: EnvelopeRow; onEdit: () => void })
       <button type="button" class="row-main row-button" onClick={onEdit} aria-label={`${row.category.name}: ${status}. Edit`}>
         <span class="env-head">
           <span>
-            <span aria-hidden="true">{row.category.emoji}</span> {row.category.name}
+            <Icon name={row.category.icon} small /> {row.category.name}
           </span>
-          <span class={`mono env-status env-${row.level}`}>{status}</span>
+          <span class={`money env-status env-${row.level}`}>{status}</span>
         </span>
         <Progress
           value={row.used}
@@ -150,7 +150,7 @@ function MoveForm({ rows, onMove }: { rows: EnvelopeRow[]; onMove: (from: string
   const [to, setTo] = useState((neediest?.category.id !== roomiest?.category.id ? neediest : rows[1])?.category.id ?? '');
   const [amount, setAmount] = useState('');
   const [showErrors, setShowErrors] = useState(false);
-  const options = rows.map((r) => ({ value: r.category.id, label: `${r.category.emoji} ${r.category.name} (${fmt.money(r.remaining)} left)` }));
+  const options = rows.map((r) => ({ value: r.category.id, label: `${r.category.name} (${fmt.money(r.remaining)} left)` }));
   return (
     <form
       class="form"
@@ -175,14 +175,12 @@ function MoveForm({ rows, onMove }: { rows: EnvelopeRow[]; onMove: (from: string
   );
 }
 
-const EMOJI_CHOICES = ['🛒', '🍔', '🚌', '🛍️', '🎉', '💊', '🏠', '🧾', '📺', '🎁', '🧸', '📦', '☕', '🐾', '💡', '✂️'];
-
 export function CategoryForm({ category, onDone }: { category: Category | null; onDone: () => void }) {
   const store = useStore();
   const data = useData();
   const dec = data.settings.decimalSeparator;
   const [name, setName] = useState(category?.name ?? '');
-  const [emoji, setEmoji] = useState(category?.emoji ?? '📦');
+  const [icon, setIcon] = useState(category?.icon ?? 'package');
   const [limit, setLimit] = useState(moneyText(category?.monthlyLimit, dec));
   const [showErrors, setShowErrors] = useState(false);
 
@@ -193,7 +191,7 @@ export function CategoryForm({ category, onDone }: { category: Category | null; 
     const undo = await saveWithUndo(store, 'categories', {
       id: category?.id ?? uid(),
       name: name.trim(),
-      emoji: emoji.trim() || '📦',
+      icon,
       color: category?.color ?? '#c4c4c4',
       order: category?.order ?? data.categories.length,
       archived: false,
@@ -214,16 +212,7 @@ export function CategoryForm({ category, onDone }: { category: Category | null; 
     <form class="form" onSubmit={save}>
       <TextInput label="Name" value={name} onInput={setName} placeholder="e.g. Groceries" autoFocus={!category} />
       {showErrors && !name.trim() && <p class="field-error">Give it a name.</p>}
-      <div class="field">
-        <span class="field-label">Emoji</span>
-        <div class="emoji-grid" role="radiogroup" aria-label="Emoji">
-          {EMOJI_CHOICES.map((e) => (
-            <button key={e} type="button" role="radio" aria-checked={emoji === e} aria-label={e} class="emoji-choice" onClick={() => setEmoji(e)}>
-              {e}
-            </button>
-          ))}
-        </div>
-      </div>
+      <IconPicker value={icon} onChange={setIcon} />
       <MoneyInput
         label="Monthly amount (optional)"
         value={limit}
@@ -237,7 +226,7 @@ export function CategoryForm({ category, onDone }: { category: Category | null; 
         </button>
       </div>
       {category && (
-        <button type="button" class="link-btn delete-btn" onClick={archive}>
+        <button type="button" class="btn btn-danger" onClick={archive}>
           Hide this category
         </button>
       )}

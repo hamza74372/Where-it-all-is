@@ -1,0 +1,150 @@
+/* Design tokens — the only file allowed raw px and colour values (test/tokens.test.ts checks).
+   Brand: navy #1F2A44, mint #7CC8B5, cream #F7F3EA. Mint is for fills and accents only: it is
+   never used as text on cream (it fails contrast there). Dark theme ("Midnight") is derived
+   from the same three colours. Every text/background pair below meets WCAG AA. */
+
+:root {
+  /* ----- Spacing (4 px base) ----- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* ----- Type (system UI font; 17 px body for an iOS-native feel) ----- */
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-code: ui-monospace, Menlo, Consolas, monospace; /* share codes only */
+  --text-hero: clamp(48px, 15vw, 64px); /* the Today number only */
+  --text-title: 28px; /* screen titles */
+  --text-heading: 20px; /* card and section titles */
+  --text-body: 17px; /* body, list primary line, inputs (16+ stops iOS zoom) */
+  --text-small: 15px; /* second lines, hints, captions */
+  --text-label: 14px; /* field labels, badges, section headers */
+  --leading-tight: 1.15;
+  --leading: 1.45;
+  --weight-regular: 400;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-hero: 750;
+
+  /* ----- Radius ----- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 999px;
+
+  /* ----- Sizes ----- */
+  --tap: 44px; /* smallest touch target */
+  --control: 48px; /* buttons and inputs */
+  --icon-sm: 20px;
+  --icon: 24px;
+  --stroke: 1.75; /* every line icon */
+  --line: 1px; /* borders, dividers */
+  --line-strong: 2px;
+  --focus-ring: 3px;
+  --content-max: 640px;
+  --bar: 8px; /* progress bars */
+  --dot: 8px; /* calendar dots */
+  --switch-w: 52px;
+  --switch-h: 32px;
+  --switch-knob: 24px;
+
+  /* ----- Motion (subtle; off with prefers-reduced-motion) ----- */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --fast: 120ms;
+  --medium: 200ms;
+}
+
+/* ----- Colours by role: light ("Soft") ----- */
+:root,
+[data-theme='soft'] {
+  --bg: #F7F3EA; /* cream */
+  --surface: #FFFDF8;
+  --surface-2: #EFE9DD;
+  --border: #DDD5C4;
+  --text: #1F2A44; /* navy */
+  --text-muted: #535C70; /* 6.3:1 on --bg */
+  --primary: #1F2A44; /* primary button: navy fill */
+  --on-primary: #F7F3EA;
+  --accent: #7CC8B5; /* mint: fills only */
+  --on-accent: #1F2A44;
+  --accent-soft: #E1F0EA; /* mint tint behind navy text */
+  --link: #2A6B5D; /* deep mint, text-safe: 5.6:1 on --bg */
+  --income: #2A6B5D;
+  --progress-ok: #7CC8B5;
+  --progress-warn: #E8B54A;
+  --progress-over: #E48A72;
+  --warn-text: #8A5A00; /* 5.4:1 on --bg */
+  --danger: #A8432B; /* destructive actions only */
+  --focus: #1D5FD1;
+  --logo-body: #1F2A44;
+  --logo-flap: #7CC8B5;
+  --backdrop: rgb(20 28 46 / 45%);
+  --shadow-0: none;
+  --shadow-1: 0 1px 2px rgb(31 42 68 / 8%);
+  --shadow-2: 0 8px 24px rgb(31 42 68 / 14%);
+  color-scheme: light;
+}
+
+/* ----- Colours by role: dark ("Midnight"), derived from navy / mint / cream ----- */
+[data-theme='midnight'] {
+  --bg: #141C2E;
+  --surface: #1C2539;
+  --surface-2: #26314A;
+  --border: #3A4763;
+  --text: #F7F3EA;
+  --text-muted: #B8BFCC;
+  --primary: #7CC8B5;
+  --on-primary: #1F2A44;
+  --accent: #7CC8B5;
+  --on-accent: #1F2A44;
+  --accent-soft: #1F3B3B;
+  --link: #7CC8B5; /* mint on navy is fine: 8:1 */
+  --income: #8FD6C3;
+  --progress-ok: #6BB8A5;
+  --progress-warn: #C99536;
+  --progress-over: #C46A54;
+  --warn-text: #F0C36A;
+  --danger: #F2A28D;
+  --focus: #8AB4FF;
+  --logo-body: #F7F3EA;
+  --logo-flap: #7CC8B5;
+  --backdrop: rgb(4 8 16 / 60%);
+  --shadow-0: none;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-2: 0 8px 24px rgb(0 0 0 / 40%);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme='auto'] {
+    --bg: #141C2E;
+    --surface: #1C2539;
+    --surface-2: #26314A;
+    --border: #3A4763;
+    --text: #F7F3EA;
+    --text-muted: #B8BFCC;
+    --primary: #7CC8B5;
+    --on-primary: #1F2A44;
+    --accent: #7CC8B5;
+    --on-accent: #1F2A44;
+    --accent-soft: #1F3B3B;
+    --link: #7CC8B5;
+    --income: #8FD6C3;
+    --progress-ok: #6BB8A5;
+    --progress-warn: #C99536;
+    --progress-over: #C46A54;
+    --warn-text: #F0C36A;
+    --danger: #F2A28D;
+    --focus: #8AB4FF;
+    --logo-body: #F7F3EA;
+    --logo-flap: #7CC8B5;
+    --backdrop: rgb(4 8 16 / 60%);
+    --shadow-0: none;
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 30%);
+    --shadow-2: 0 8px 24px rgb(0 0 0 / 40%);
+    color-scheme: dark;
+  }
+}

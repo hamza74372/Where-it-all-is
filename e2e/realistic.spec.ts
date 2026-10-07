@@ -28,7 +28,7 @@ test('realistic month: bills paid, pay confirmed, spends logged, then the bank s
   await page.getByLabel('Rent or mortgage day of month').fill('1');
   await page.getByLabel('Phone amount').fill('45');
   await page.getByLabel('Phone day of month').fill('15');
-  await page.getByRole('button', { name: '+ Add another bill' }).click();
+  await page.getByRole('button', { name: 'Add another bill' }).click();
   await page.getByLabel('Bill name').fill('Netflix');
   await page.getByLabel('Netflix amount').fill('15.49');
   await page.getByLabel('Netflix day of month').fill('20');
@@ -69,8 +69,8 @@ test('realistic month: bills paid, pay confirmed, spends logged, then the bank s
   // The numbers.
   await nav(page, 'More').click();
   await page.getByRole('button', { name: /^Accounts/ }).click();
-  const balance = (await page.locator('.row').filter({ hasText: 'Main account' }).locator('.mono').textContent())!.trim();
-  await page.getByRole('button', { name: '‹ More' }).click();
+  const balance = (await page.locator('.row').filter({ hasText: 'Main account' }).locator('.money').textContent())!.trim();
+  await page.getByRole('button', { name: 'Back to More' }).click();
   await nav(page, 'Today').click();
   const safe = (await page.locator('.big-number').textContent())!.trim();
   const period = (await page.locator('#safe-sub').textContent())!.trim();

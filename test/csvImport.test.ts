@@ -187,7 +187,7 @@ describe('duplicates', () => {
 });
 
 describe('rules', () => {
-  const cats: Category[] = DEFAULT_CATEGORIES.map((c, i) => ({ id: c.name, name: c.name, emoji: c.emoji, color: c.color, order: i, archived: false, updatedAt: 0 }));
+  const cats: Category[] = DEFAULT_CATEGORIES.map((c, i) => ({ id: c.name, name: c.name, icon: c.icon, color: c.color, order: i, archived: false, updatedAt: 0 }));
   let n = 0;
   const starters = buildStarterRules(cats, () => `r${n++}`).map((r) => ({ ...r, updatedAt: 0 })) as Rule[];
   const cat = (desc: string, rules = starters) => applyRules(desc, rules).categoryId;

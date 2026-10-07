@@ -1,5 +1,6 @@
 // Spec §7.6: accounts, paychecks, categories, notes, quick-log chips, settings, about & privacy.
 import type { ComponentChildren } from 'preact';
+import { EmptyState } from '../ui/EmptyState';
 
 import { useState } from 'preact/hooks';
 import { DISCLAIMER } from '../copy';
@@ -14,7 +15,7 @@ import { anchorBalance, clearExampleData, saveWithUndo } from '../state/actions'
 import { useData, useStore } from '../state/store';
 import { checkMoney, MoneyInput, moneyText, ScheduleFields, Segmented, Select, TextInput, Toggle } from '../ui/fields';
 import { useFmt, useToday } from '../ui/hooks';
-import { Icon } from '../ui/icons';
+import { Icon, IconPicker } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
 import { dismissToast, toast } from '../ui/Toast';
 import { Notes } from './Notes';
@@ -67,7 +68,7 @@ export function More() {
                 <span class="row-sub">{p.sub}</span>
               </button>
               <span aria-hidden="true" class="chev">
-                ›
+                <Icon name="forward" small />
               </span>
             </li>
           ))}
@@ -79,8 +80,8 @@ export function More() {
   const title = PAGES.find((p) => p.id === page)!.label;
   return (
     <>
-      <button type="button" class="link-btn back-btn" onClick={() => setPage('menu')}>
-        ‹ More
+      <button type="button" class="link-btn back-btn" onClick={() => setPage('menu')} aria-label="Back to More">
+        <Icon name="back" small /> More
       </button>
       <h1 class="screen-title">{title}</h1>
       {page === 'accounts' && <Accounts />}
@@ -114,7 +115,7 @@ function Categories() {
           <li key={c.id} class="row">
             <button type="button" class="row-main row-button" onClick={() => setEditing(c)}>
               <span>
-                <span aria-hidden="true">{c.emoji}</span> {c.name}
+                <Icon name={c.icon} small /> {c.name}
               </span>
               <span class="row-sub">{c.monthlyLimit != null ? `${fmt.money(c.monthlyLimit)} a month` : 'No monthly amount'}</span>
             </button>
@@ -132,7 +133,7 @@ function Categories() {
               <li key={c.id} class="row">
                 <span class="row-main">
                   <span>
-                    <span aria-hidden="true">{c.emoji}</span> {c.name}
+                    <Icon name={c.icon} small /> {c.name}
                   </span>
                 </span>
                 <UnhideButton category={c} />
@@ -199,8 +200,12 @@ function Accounts() {
   const hidden = data.accounts.filter((a) => a.archived);
   return (
     <>
-      <ul class="card rows">
-        {live.length === 0 && <li class="row">No accounts yet.</li>}
+      {live.length === 0 && (
+        <div class="card">
+          <EmptyState line="No accounts yet." action="Add account" onAction={() => setEditing('new')} icon="wallet" />
+        </div>
+      )}
+      <ul class="card rows" hidden={live.length === 0}>
         {live.map((a) => {
           const bal = accountBalance(a, data.transactions, today);
           return (
@@ -208,20 +213,22 @@ function Accounts() {
               <button type="button" class="row-main row-button" onClick={() => setEditing(a)}>
                 <span>
                   {a.name}
-                  {a.id === data.settings.defaultAccountId && <span class="badge">Quick log</span>}
+                  {a.id === data.settings.defaultAccountId && <span class="badge">Default</span>}
                 </span>
                 <span class="row-sub">
                   {TYPE_LABEL[a.type]} · {a.includeInSafeToSpend ? 'Counted in safe to spend' : 'Not counted'}
                 </span>
               </button>
-              <span class="mono">{a.type === 'credit' ? `${fmt.money(Math.max(0, -bal))} owed` : fmt.money(bal)}</span>
+              <span class="money">{a.type === 'credit' ? `${fmt.money(Math.max(0, -bal))} owed` : fmt.money(bal)}</span>
             </li>
           );
         })}
       </ul>
-      <button type="button" class="btn" onClick={() => setEditing('new')}>
-        <Icon name="plus" /> Add account
-      </button>
+      {live.length > 0 && (
+        <button type="button" class="btn" onClick={() => setEditing('new')}>
+          <Icon name="plus" /> Add account
+        </button>
+      )}
       {hidden.length > 0 && (
         <>
           <h2 class="log-day-title">Hidden accounts</h2>
@@ -331,7 +338,7 @@ function AccountForm({ account, onDone }: { account: Account | null; onDone: () 
         </button>
       </div>
       {account && (
-        <button type="button" class="link-btn delete-btn" onClick={archive}>
+        <button type="button" class="btn btn-danger" onClick={archive}>
           Hide this account
         </button>
       )}
@@ -347,8 +354,12 @@ function Paychecks() {
   const [editing, setEditing] = useState<Income | 'new' | null>(null);
   return (
     <>
-      <ul class="card rows">
-        {data.incomes.length === 0 && <li class="row">No paychecks yet — we'll plan to the end of each month.</li>}
+      {data.incomes.length === 0 && (
+        <div class="card">
+          <EmptyState line="No paychecks yet — the app plans to the end of each month." action="Add paycheck" onAction={() => setEditing('new')} icon="pay" />
+        </div>
+      )}
+      <ul class="card rows" hidden={data.incomes.length === 0}>
         {data.incomes.map((i) => (
           <li key={i.id} class="row">
             <button type="button" class="row-main row-button" onClick={() => setEditing(i)}>
@@ -361,16 +372,18 @@ function Paychecks() {
                 {i.variable ? ' · varies' : ''}
               </span>
             </button>
-            <span class="mono">
+            <span class="money">
               {i.variable ? '~' : ''}
               {fmt.money(i.amount)}
             </span>
           </li>
         ))}
       </ul>
-      <button type="button" class="btn" onClick={() => setEditing('new')}>
-        <Icon name="plus" /> Add paycheck
-      </button>
+      {data.incomes.length > 0 && (
+        <button type="button" class="btn" onClick={() => setEditing('new')}>
+          <Icon name="plus" /> Add paycheck
+        </button>
+      )}
       <Sheet open={editing != null} onClose={() => setEditing(null)} title={editing === 'new' ? 'Add paycheck' : 'Edit paycheck'}>
         {editing != null && (
           <IncomeForm key={editing === 'new' ? 'new' : editing.id} income={editing === 'new' ? null : editing} onDone={() => setEditing(null)} />
@@ -431,7 +444,7 @@ function IncomeForm({ income, onDone }: { income: Income | null; onDone: () => v
         </button>
       </div>
       {income && (
-        <button type="button" class="link-btn delete-btn" onClick={remove}>
+        <button type="button" class="btn btn-danger" onClick={remove}>
           Delete this paycheck
         </button>
       )}
@@ -451,21 +464,25 @@ function Chips() {
   return (
     <>
       <p class="muted">Tap a chip on Today to log it instantly. Up to 6.</p>
-      <ul class="card rows">
-        {presets.length === 0 && <li class="row">No chips.</li>}
+      {presets.length === 0 && (
+        <div class="card">
+          <EmptyState line="No chips yet. A chip logs a common spend in one tap." action="Add chip" onAction={() => setEditing('new')} />
+        </div>
+      )}
+      <ul class="card rows" hidden={presets.length === 0}>
         {presets.map((p) => (
           <li key={p.id} class="row">
             <button type="button" class="row-main row-button" onClick={() => setEditing(p)}>
               <span>
-                {p.emoji} {p.label}
+                <Icon name={p.icon} small /> {p.label}
               </span>
-              <span class="row-sub">{p.categoryName ?? 'No category'}</span>
+              {p.categoryName !== p.label && <span class="row-sub">{p.categoryName ?? 'No category'}</span>}
             </button>
-            <span class="mono">{fmt.money(p.amount)}</span>
+            <span class="money">{fmt.money(p.amount)}</span>
           </li>
         ))}
       </ul>
-      {presets.length < 6 && (
+      {presets.length > 0 && presets.length < 6 && (
         <button type="button" class="btn" onClick={() => setEditing('new')}>
           <Icon name="plus" /> Add chip
         </button>
@@ -495,7 +512,7 @@ function ChipForm(props: { preset: QuickPreset | null; onSave: (p: QuickPreset) 
   const data = useData();
   const dec = data.settings.decimalSeparator;
   const p = props.preset;
-  const [emoji, setEmoji] = useState(p?.emoji ?? '⭐');
+  const [icon, setIcon] = useState(p?.icon ?? 'star');
   const [label, setLabel] = useState(p?.label ?? '');
   const [amount, setAmount] = useState(moneyText(p?.amount, dec));
   const [categoryName, setCategoryName] = useState(p?.categoryName ?? '');
@@ -507,25 +524,25 @@ function ChipForm(props: { preset: QuickPreset | null; onSave: (p: QuickPreset) 
         e.preventDefault();
         const c = checkMoney(amount, dec);
         if (!label.trim() || c.state !== 'ok') return setShowErrors(true);
-        props.onSave({ id: p?.id ?? uid(), emoji: emoji.trim() || '⭐', label: label.trim(), amount: Math.abs(c.value), categoryName: categoryName || undefined });
+        props.onSave({ id: p?.id ?? uid(), icon, label: label.trim(), amount: Math.abs(c.value), categoryName: categoryName || undefined });
       }}
     >
-      <TextInput label="Emoji" value={emoji} onInput={setEmoji} />
       <TextInput label="Label" value={label} onInput={setLabel} placeholder="e.g. Coffee" />
       <MoneyInput label="Amount" value={amount} onInput={setAmount} showErrors={showErrors} />
       <Select
         label="Category"
         value={categoryName}
         onChange={setCategoryName}
-        options={[{ value: '', label: 'None' }, ...data.categories.filter((c) => !c.archived).map((c) => ({ value: c.name, label: `${c.emoji} ${c.name}` }))]}
+        options={[{ value: '', label: 'None' }, ...data.categories.filter((c) => !c.archived).map((c) => ({ value: c.name, label: c.name }))]}
       />
+      <IconPicker value={icon} onChange={setIcon} />
       <div class="form-actions">
         <button type="submit" class="btn btn-primary btn-grow">
           Save
         </button>
       </div>
       {p && (
-        <button type="button" class="link-btn delete-btn" onClick={() => props.onDelete(p)}>
+        <button type="button" class="btn btn-danger" onClick={() => props.onDelete(p)}>
           Remove this chip
         </button>
       )}

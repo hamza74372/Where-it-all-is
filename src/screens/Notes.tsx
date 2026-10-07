@@ -5,6 +5,7 @@ import { addMonthsYM } from '../lib/dates';
 import { currentMonth } from '../lib/insights';
 import { useData, useStore } from '../state/store';
 import { useFmt, useToday } from '../ui/hooks';
+import { Icon } from '../ui/icons';
 
 export function Notes() {
   const today = useToday();
@@ -19,13 +20,13 @@ export function Notes() {
     <>
       <div class="cal-head">
         <button type="button" class="icon-btn" onClick={() => shift(-1)} aria-label="Previous month">
-          ‹
+          <Icon name="back" />
         </button>
         <h2 class="card-title" aria-live="polite">
           {fmt.month(`${month}-01`)}
         </h2>
         <button type="button" class="icon-btn" onClick={() => shift(1)} aria-label="Next month">
-          ›
+          <Icon name="forward" />
         </button>
       </div>
       <NoteEditor key={month} month={month} />
