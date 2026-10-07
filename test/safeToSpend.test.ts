@@ -213,12 +213,25 @@ describe('safe to spend', () => {
     expect(r.safeToSpendToday).toBe(30000);
   });
 
-  it('21. tight until payday: negative with shortfall', () => {
+  it('21. short until payday: below zero, with the shortfall', () => {
     const r = run({ bills: [bill('rent', 130000, sched('monthly', '2026-01-07'))] });
-    expect(r.status).toBe('tight');
+    expect(r.status).toBe('short');
     expect(r.shortfall).toBe(30000);
     expect(r.safeToSpendPeriod).toBe(-30000);
     expect(r.safeToSpendToday).toBe(-10000);
+  });
+
+  it('21b. tight until payday: still above zero, but under a tenth of the money is left after bills', () => {
+    // 1,000.00 in the account; rent 950.00 leaves 50.00 (5%) → tight, no shortfall.
+    const tight = run({ bills: [bill('rent', 95000, sched('monthly', '2026-01-07'))] });
+    expect(tight.status).toBe('tight');
+    expect(tight.shortfall).toBe(0);
+    expect(tight.safeToSpendPeriod).toBe(5000);
+    expect(tight.safeToSpendToday).toBeGreaterThan(0);
+    // Exactly a tenth left (100.00) is not tight; zero left is tight, not short.
+    expect(run({ bills: [bill('rent', 90000, sched('monthly', '2026-01-07'))] }).status).toBe('ok');
+    expect(run({ bills: [bill('rent', 100000, sched('monthly', '2026-01-07'))] }).status).toBe('tight');
+    expect(run().status).toBe('ok');
   });
 
   it('22. goal set-aside: one contribution per goal when switched on', () => {

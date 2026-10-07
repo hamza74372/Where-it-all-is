@@ -102,7 +102,13 @@ export interface SafeToSpendResult {
   safeToSpendPeriod: Minor;
   /** Positive amount short for the period, when tight; otherwise 0. */
   shortfall: Minor;
-  status: 'ok' | 'tight';
+  /**
+   * ok    — fine until payday.
+   * tight — still above zero, but what's left for the period is under TIGHT_SHARE of the money
+   *         in your counted accounts (bills take almost everything).
+   * short — below zero: bills come to more than you have (see shortfall).
+   */
+  status: 'ok' | 'tight' | 'short';
   cardsToPay: Array<{ accountId: Id; name: string; amount: Minor }>;
   /** Pay due today with no income recorded for it yet — drives the "confirm your pay" card. */
   unconfirmedPaydaysToday: Array<{ incomeId: Id; name: string; amount: Minor }>;
@@ -156,6 +162,9 @@ export function nextPaydayAfter(today: ISODate, incomes: Income[]): ISODate | nu
 function isDiscretionaryOutflow(t: Transaction): boolean {
   return t.amount < 0 && (t.source === 'manual' || t.source === 'import') && !isTransfer(t);
 }
+
+/** "Tight": less than this share of the counted money is left for the period after bills. */
+export const TIGHT_SHARE = 0.1;
 
 export function computeSafeToSpend(input: SafeToSpendInput): SafeToSpendResult {
   const { today, accounts, transactions, incomes, bills, goals, settings } = input;
@@ -284,7 +293,7 @@ export function computeSafeToSpend(input: SafeToSpendInput): SafeToSpendResult {
     safeToSpendToday,
     safeToSpendPeriod,
     shortfall: safeToSpendPeriod < 0 ? -safeToSpendPeriod : 0,
-    status: safeToSpendPeriod < 0 ? 'tight' : 'ok',
+    status: safeToSpendPeriod < 0 ? 'short' : available > 0 && safeToSpendPeriod < available * TIGHT_SHARE ? 'tight' : 'ok',
     cardsToPay,
   };
 }

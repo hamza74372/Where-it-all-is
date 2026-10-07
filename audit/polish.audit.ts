@@ -106,7 +106,7 @@ test('a realistic month', async ({ page }, info) => {
   await page.getByRole('button', { name: /^Settings/ }).click();
   await page.getByLabel('Cushion').fill('9000');
   await nav(page, 'Today').click();
-  await expect(page.getByText('Tight until payday').first()).toBeVisible();
+  await expect(page.getByText('Short until payday').first()).toBeVisible();
   await shot('today-tight');
 });
 

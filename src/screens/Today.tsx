@@ -263,35 +263,39 @@ function SafeNumber({ result, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
   const UNIT = 100;
   const downToWhole = (n: number) => Math.floor(n / UNIT) * UNIT;
   const upToWhole = (n: number) => Math.ceil(n / UNIT) * UNIT;
-  const ok = result.status === 'ok';
+  const short = result.status === 'short';
+  const tight = result.status === 'tight';
+  const LABEL = { ok: 'Safe to spend today', tight: 'Tight until payday', short: 'Short until payday' } as const;
+  const STATUS = { ok: 'On track', tight: 'Not much spare after bills', short: 'Bills come to more than you have' } as const;
 
   // The number always comes first; then what it means; then a status. No card frame: it's the screen's one big thing.
   return (
     <section class="hero" aria-labelledby="safe-label">
       <h2 id="safe-label" class="hero-label">
-        {ok ? 'Safe to spend today' : 'Short until payday'}
+        {LABEL[result.status]}
       </h2>
       <button type="button" class="hero-number" onClick={() => setOpen(true)} aria-describedby="safe-what">
-        <span class={ok ? 'big-number' : 'big-number big-number-tight'}>
-          {ok ? fmt.money(downToWhole(Math.max(0, result.safeToSpendToday)), whole) : fmt.money(upToWhole(result.shortfall), whole)}
+        <span class={short ? 'big-number big-number-tight' : 'big-number'}>
+          {short ? fmt.money(upToWhole(result.shortfall), whole) : fmt.money(downToWhole(Math.max(0, result.safeToSpendToday)), whole)}
         </span>
         <span class="sr-only">. How is this worked out?</span>
       </button>
       <p id="safe-what" class="hero-what">
-        {ok
-          ? `What you can spend today and still cover your bills ${toPayday ? 'until payday' : 'until the end of the month'}.`
-          : `What's missing to cover everything ${until}.`}
+        {short
+          ? `What's missing to cover everything ${until}.`
+          : `What you can spend today and still cover your bills ${toPayday ? 'until payday' : 'until the end of the month'}.`}
       </p>
-      <p class={ok ? 'status' : 'status status-tight'}>
+      <p class={result.status === 'ok' ? 'status' : 'status status-tight'}>
         <span class="status-dot" aria-hidden="true" />
-        {ok ? 'On track' : 'Tight until payday'}
+        {STATUS[result.status]}
       </p>
-      {ok ? (
+      {!short ? (
         <p id="safe-sub" class="hero-sub">
           {result.safeToSpendToday < 0
             ? `You've gone ${fmt.money(-result.safeToSpendToday)} past today's share — that's fine, the days ahead adjust. `
             : ''}
           {capital(until)}: <span class="money">{fmt.money(result.safeToSpendPeriod)}</span>
+          {tight ? ' — a little each day keeps every bill covered.' : ''}
         </p>
       ) : result.unconfirmedPaydaysToday.length > 0 ? (
         <p class="hero-sub">Your pay isn't counted until you confirm it below — this will update then.</p>

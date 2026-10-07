@@ -388,11 +388,11 @@ test('filled data', async ({ page }, info) => {
   await h.step('tight', async () => {
     await nav(page, 'More').click();
     await page.getByRole('button', { name: /^Settings/ }).click();
-    // A cushion bigger than everything left for the period → "Tight until payday".
+    // A cushion bigger than everything left for the period → "Short until payday".
     await page.getByLabel('Cushion').fill('9000');
     await page.getByRole('button', { name: 'Back to More' }).click();
     await nav(page, 'Today').click();
-    await expect(page.getByText('Tight until payday').first()).toBeVisible();
+    await expect(page.getByText('Short until payday').first()).toBeVisible();
     await h.shot('today-tight');
     await page.getByRole('button', { name: 'How is this worked out?' }).last().click();
     await h.shot('today-tight-explain');

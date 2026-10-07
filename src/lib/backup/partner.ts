@@ -18,7 +18,8 @@ export interface PartnerSummary {
   currency: Currency;
   locale: string;
   decimal: '.' | ',';
-  safe: { today: number; period: number; nextPayday: string; untilPayday: boolean; status: 'ok' | 'tight'; shortfall: number };
+  safe: { today: number; period: number; nextPayday: string; untilPayday: boolean; /** Shares from before 'short' existed used 'tight' for below zero (shortfall > 0). */
+    status: 'ok' | 'tight' | 'short'; shortfall: number };
   bills: Array<{ name: string; date: string; amount: number; autopay: boolean }>;
   paydays: Array<{ name: string; date: string; amount: number; variable: boolean }>;
   /** icon: a key (ui/icons.tsx); shares from before icons carry an emoji instead. */

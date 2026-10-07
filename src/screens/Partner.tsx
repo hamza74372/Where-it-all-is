@@ -278,6 +278,8 @@ export function PartnerTab() {
   const today = todayISO();
   const who = s.fromName ? `${s.fromName}’s` : 'Your partner’s';
   const money = (n: number, whole = false) => formatMoney(n, s.currency, s.locale, { decimal: s.decimal, wholeIfRound: whole });
+  // Shares made before 'short' existed said 'tight' for below zero; the shortfall tells them apart.
+  const isShort = s.safe.status === 'short' || (s.safe.status === 'tight' && s.safe.shortfall > 0);
 
   return (
     <div class="partner-view" aria-label={`${who} shared budget (read only)`}>
@@ -293,9 +295,9 @@ export function PartnerTab() {
 
       <section class="card hero">
         <h2 class="hero-label">
-          {s.safe.status === 'tight' ? 'Tight until payday' : snapshotDay === today ? 'Safe to spend today' : `Safe to spend on ${fmt.day(snapshotDay)}`}
+          {isShort ? 'Short until payday' : s.safe.status === 'tight' ? 'Tight until payday' : snapshotDay === today ? 'Safe to spend today' : `Safe to spend on ${fmt.day(snapshotDay)}`}
         </h2>
-        <p class="big-number">{money(Math.floor((s.safe.status === 'tight' ? s.safe.shortfall : Math.max(0, s.safe.today)) / 100) * 100, true)}</p>
+        <p class="big-number">{money(Math.floor((isShort ? s.safe.shortfall : Math.max(0, s.safe.today)) / 100) * 100, true)}</p>
         <p class="muted">
           {s.safe.untilPayday ? `Until payday ${fmt.day(s.safe.nextPayday)}` : 'Until the end of the month'}: {money(s.safe.period)}
         </p>

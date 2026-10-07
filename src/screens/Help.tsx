@@ -97,8 +97,9 @@ export const ARTICLES: Article[] = [
             straight away.
           </li>
           <li>
-            <strong>Tight until payday</strong> means bills come to more than you have. It’s a heads-up, not a judgement — the app shows the
-            gap and one idea to help.
+            <strong>Tight until payday</strong> means every bill is covered, but less than a tenth of your money is spare until payday.{' '}
+            <strong>Short until payday</strong> means bills come to more than you have. Both are heads-ups, not judgements — when you’re
+            short, the app shows the gap and one idea to help.
           </li>
         </ul>
       </>

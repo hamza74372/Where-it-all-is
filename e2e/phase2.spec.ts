@@ -134,7 +134,7 @@ test('payday: confirm-your-pay card leads Today, rent today still set aside', as
   await expect(card).toBeVisible();
   // Before pay: 300 − 950 rent = tight by 650
   await expect(page.getByRole('heading', { name: 'Short until payday' })).toBeVisible();
-  await expect(page.locator('.status').filter({ hasText: 'Tight until payday' })).toBeVisible();
+  await expect(page.locator('.status')).toHaveText('Bills come to more than you have');
   await expect(page.locator('.big-number')).toHaveText('$650');
   await shot(page, '12-payday-before');
 
