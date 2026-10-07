@@ -8,6 +8,8 @@ Branch: `visual-codex`
 
 The new visual language combines embedded Fraunces display type with Inter interface type, the existing navy/mint/cream brand, eight calm category colours, five accent themes, layered surfaces, clearer selected states, richer rows, accessible SVG charts and responsive navigation. The generated app remains one offline HTML file with no CDN or font request.
 
+The final polish pass resolves the review issues: the hero number is fully opaque cream in every theme, the payday ring is consistent and genuinely partial at every width, single-category spending uses calm bars instead of a solid disc, the full breakdown remains visible, secondary money values use Inter, desktop Today has balanced columns, and duplicate/inconsistent summary values are removed.
+
 ## Screen-by-screen changes
 
 ### Welcome and setup
@@ -18,8 +20,14 @@ The new visual language combines embedded Fraunces display type with Inter inter
 
 ### Today
 
-- Rebuilt the safe-to-spend area as the dominant gradient hero with a payday progress ring and stronger on-track/tight/short states.
-- Kept “How this number is worked out” as a phone sheet and made the same existing breakdown persistently visible beside the hero on desktop.
+- Rebuilt the safe-to-spend area as the dominant gradient hero. The number is always solid cream and the final animation state is explicitly full opacity.
+- Added an elapsed-pay-period arc with a muted remainder and days-left label, derived from the existing schedule dates.
+- Kept “How this number is worked out” as a phone sheet and made the full breakdown persistently visible beside the hero on desktop; no line is clipped.
+- Placed Next up below the desktop hero so the two columns align without stretching the hero into empty space.
+- Made the sidebar and hero use the same cautious whole-dollar value.
+- Replaced the duplicate Until payday tile with Next pay, showing its date and expected amount.
+- Clarified Spent this month with the separate sub-line “Trend: last 7 days”.
+- Added spacing to Log a spend, restored the status dot, and renamed Focus to Focus mode with a Lucide icon.
 - Restyled the existing one-tap spend presets as quick-add chips using the same logging action.
 - Added three stat tiles, a seven-day sparkline, a 14-day upcoming timeline, spending donut, envelope mini-bars and goal rings from existing calculated data.
 - Added a 12-column desktop dashboard composition while retaining the focused phone order.
@@ -38,10 +46,11 @@ The new visual language combines embedded Fraunces display type with Inter inter
 
 ### Plan
 
-- Envelopes now use category-coloured bars plus a total ring.
+- Envelopes now use category-coloured bars plus a total ring; the total stacks safely at the 320 px stress width.
 - Goal cards now include progress rings and retain the existing per-payday guidance.
 - Debt now includes an accessible payoff line with the existing debt-free result.
-- Insights now includes an accessible spending donut and six-month in/out bars while retaining the existing category details.
+- Insights uses a thin, size-capped spending ring only for two or more categories. With zero or one category it shows an accessible bar list, avoiding a large alarming disc.
+- Six-month in/out bars and the existing category details remain available.
 
 ### More, Your data and Import
 
@@ -59,9 +68,11 @@ The new visual language combines embedded Fraunces display type with Inter inter
 ## Design system and accessibility
 
 - Embedded local Latin subsets: Fraunces variable optical-size display font and Inter 400/600/700. The four font files total 139,776 bytes and include the required currency glyphs. OFL texts are in `licenses/`.
+- Fraunces is limited to the hero number, greeting, page titles and display values at least 28 px. Other money values use Inter with tabular figures.
 - All colours, pixel sizes, radii, shadows and durations are defined in `src/tokens.css`; the raw-value token test passes.
-- Five accent themes have automated WCAG AA tests for their primary and both hero-gradient endpoints. The lowest tested pair is 4.68:1.
+- Five accent themes have automated WCAG AA tests for cream hero text against both gradient endpoints. The hero also has an end-to-end computed opacity/contrast check in Chromium and WebKit.
 - Money continues to use tabular figures.
+- The spending ring uses category-palette tones only, has a thin tokenized stroke and is capped at 220 px.
 - All charts expose an `aria-label` summary and an accompanying text list/table.
 - Touch targets remain at least 44 px, focus is visible, and navigation focus is managed between screens.
 - Ring, bar and hero-entry motion uses tokenized timing and is disabled by the existing `prefers-reduced-motion` rule.
@@ -74,51 +85,52 @@ The new visual language combines embedded Fraunces display type with Inter inter
 - The constrained fixtures now capture about `$40` left as **Tight until payday** and exactly `$85` short as **Short until payday**, replacing the old artificial `$9,000` cushion.
 - `scripts/device-shots.mjs` writes six same-data Today shots at 1440×900, 820×1180 and 390×844 in light and dark to `docs/device-shots/`.
 - `scripts/visual-shots.mjs` writes 42 shots: Welcome, Today, Log, Bills, Envelopes, Insights and Debt at 390, 820 and 1440 px in light and dark to `docs/visual/`.
-- Both scripts fail if the page or main content has horizontal overflow.
+- Both scripts wait for finite animations to finish, assert full hero opacity and a partial payday ring, and fail if the page or main content has horizontal overflow. Desktop captures also assert that sidebar and hero values match.
 
 ## Bundle size
 
 | Build | Before | After | Change |
 | --- | ---: | ---: | ---: |
-| Full app | 315,260 bytes | 537,712 bytes | +222,452 bytes |
-| Demo | 281,585 bytes | 504,037 bytes | +222,452 bytes |
+| Full app | 315,260 bytes | 540,752 bytes | +225,492 bytes |
+| Demo | 281,585 bytes | 507,077 bytes | +225,492 bytes |
 
-The final full app is 537.71 kB (250.19 kB gzip), 62,288 bytes below the 600,000-byte budget.
+The final full app is 540.75 kB (250.88 kB gzip), 59,248 bytes below the 600,000-byte budget.
 
 ## Verification
 
 - TypeScript: passed (`tsc --noEmit`).
-- Unit tests: **283/283 passed** across 19 files (baseline: 276/276 across 17 files).
-- End to end: **112/112 passed** in Chromium and WebKit.
+- Unit tests: **284/284 passed** across 19 files (baseline: 276/276 across 17 files).
+- End to end: **114/114 passed** in Chromium and WebKit.
 - Layout/accessibility audit: **23 passed, 21 intentional project-specific skips, 0 failed** across WebKit/Chromium and light/dark.
-- Post-fixture visual regeneration: **12 passed, 12 intentional cross-project skips**; the `$40` tight test also passed in both Chromium and WebKit.
+- Device screenshots: **6 generated**; visual screenshots: **42 generated**.
 - Token, icon, visual-component and five-theme contrast tests: passed.
 - Screenshot overflow checks: passed at 390, 820 and 1440 px in light and dark.
 - Offline/PWA and no-network behaviour remains covered by the passing end-to-end suite.
 
 ## Test changes
 
-- Added `test/visual.test.ts` for progress clamping and stable category-palette cycling.
-- Added `test/themeContrast.test.ts` for WCAG AA across all five accents and hero endpoints.
-- Updated `audit/checks.ts` to recognize the deliberately renamed `.app-nav` in place of the old `.bottom-nav` selector.
-- Updated the screenshot fixtures to calculate realistic `$40` tight and `$85` short states instead of hard-coding an implausible cushion.
-- Updated `e2e/tight.spec.ts` fixture values from `$50` to the requested `$40`; the status/calculation expectations are unchanged.
+- Extended `test/visual.test.ts` to verify the one-category bar fallback.
+- Extended `test/themeContrast.test.ts` to check cream hero text against both gradient endpoints for all five themes.
+- Added `e2e/hero-contrast.spec.ts` to verify final hero opacity, WCAG AA contrast and genuine partial ring progress in Chromium and WebKit.
+- Updated Focus assertions in `e2e/phase3.spec.ts` and `audit/screens.audit.ts` because the deliberately visible label changed to Focus mode.
+- Added final-state, overflow, ring and value-consistency guards to both screenshot scripts.
+- Raised only the audit runner ceiling from 120 to 180 seconds. The filled-data inventory now takes about 2.4 minutes in WebKit light; coverage and assertions were unchanged.
 - No existing test was weakened or removed, and no test assertion for budget, import, storage, backup, encryption, sharing or migration logic changed.
 
 ## Protected-code proof
 
-`git diff --shortstat main...visual-codex`:
+`git diff --shortstat main` after implementation:
 
 ```text
-308 files changed, 2522 insertions(+), 292 deletions(-)
+313 files changed, 2810 insertions(+), 313 deletions(-)
 ```
 
-The large file count is primarily regenerated PNG references (283 files in the screenshot/audit commit). Source/test/script changes are 30 files with 2,160 insertions and 171 deletions.
+The large file count is primarily regenerated PNG references: 313 changed files total, with 36 non-generated files.
 
 This protected-path check returns no files:
 
 ```powershell
-git diff --name-only main...visual-codex | Select-String -Pattern '^(src/(lib|state|db|data)/)'
+git diff --name-only main | Select-String -Pattern '^(src/(lib|state|db|data)/)'
 ```
 
 Therefore no calculation, storage, database, migration or seed-data module changed.
@@ -138,4 +150,7 @@ If those three behaviours are desired later, they should be specified as a small
 3. `1b0428f` — accessible visual components and charts
 4. `09bf217` — redesigned core budget screens
 5. `abe2e64` — realistic audits and regenerated device/visual screenshots
-6. Final documentation commit — this report
+6. `324ba9a` — initial visual redesign report
+7. `a352f12` — final dashboard clarity and visual-state fixes
+8. `ff8bee1` — refreshed final visual screenshots
+9. Final documentation commit — this updated report
