@@ -13,6 +13,7 @@ import { Icon } from '../../ui/icons';
 import { Sheet } from '../../ui/Sheet';
 import { toast } from '../../ui/Toast';
 import { EmptyState } from '../../ui/EmptyState';
+import { DebtLine } from '../../ui/Visual';
 
 export function DebtPlan() {
   const data = useData();
@@ -92,6 +93,14 @@ export function DebtPlan() {
               </div>
               {cmp.snowball.months != null && cmp.avalanche.months != null && <Verdict snowball={cmp.snowball} avalanche={cmp.avalanche} diff={cmp.interestDifference} fmt={fmt} />}
             </>
+          )}
+          {cmp.avalanche.months != null && (
+            <DebtLine
+              start={total}
+              months={cmp.avalanche.months}
+              startText={fmt.money(total)}
+              endLabel={fmt.month(debtFreeDate(today, cmp.avalanche.months))}
+            />
           )}
           <details class="assumptions">
             <summary>How this is estimated</summary>

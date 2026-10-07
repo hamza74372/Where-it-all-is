@@ -17,6 +17,7 @@ import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
 import { Import } from './Import';
 import { EmptyState } from '../ui/EmptyState';
+import { CategoryChip } from '../ui/Visual';
 
 const SOURCE_LABEL: Record<Transaction['source'], string> = {
   manual: '',
@@ -150,9 +151,14 @@ export function Log() {
                   return (
                     <li key={tx.id} class="row">
                       <button type="button" class="row-main row-button" onClick={() => setEditing(tx)}>
-                        <span>
-                          <Icon name={cat?.icon ?? 'inbox'} small />{' '}
-                          {tx.note || cat?.name || 'Spend'}
+                        <span class="transaction-title">
+                          <CategoryChip
+                            name={cat?.name ?? 'Uncategorised'}
+                            icon={cat?.icon ?? 'inbox'}
+                            index={cat?.order ?? 5}
+                            compact
+                          />
+                          <span>{tx.note || cat?.name || 'Spend'}</span>
                         </span>
                         <span class="row-sub">
                           {[searching ? fmt.day(tx.date) : '', cat?.name, acc?.name, tag, isBeforeStart(acc, tx) ? 'Before you started' : '']

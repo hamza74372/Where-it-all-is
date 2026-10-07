@@ -114,10 +114,11 @@ export function Onboarding() {
   if (step === 'welcome') {
     return (
       <main class="screen onboarding" id="main">
-        <div class="welcome">
+        <div class="welcome welcome-grid">
           <h1>
             <Wordmark />
           </h1>
+          <p class="welcome-headline">Money clarity, without the spreadsheet.</p>
           <p class="lead">A calm budget that answers one question: how much is safe to spend today?</p>
           <ul class="plain-list muted">
             <li>No account, no bank login, no subscription.</li>
@@ -143,6 +144,7 @@ export function Onboarding() {
               Moving from another device? Restore a backup
             </button>
           </div>
+          <WelcomePreview />
         </div>
       </main>
     );
@@ -161,6 +163,13 @@ export function Onboarding() {
       <div class="progress" aria-hidden="true">
         <span style={{ width: `${(Number(step) / 4) * 100}%` }} />
       </div>
+      <ol class="setup-dots" aria-label={`Setup step ${step} of 4`}>
+        {['You', 'Balance', 'Payday', 'Bills'].map((label, index) => (
+          <li key={label} class={index + 1 <= Number(step) ? 'is-active' : ''} aria-current={index + 1 === Number(step) ? 'step' : undefined}>
+            <i aria-hidden="true" /><span>{label}</span>
+          </li>
+        ))}
+      </ol>
 
       {step === 1 && (
         <section class="onb-step">
@@ -276,6 +285,26 @@ export function Onboarding() {
         </button>
       </div>
     </main>
+  );
+}
+
+function WelcomePreview() {
+  return (
+    <div class="welcome-preview" aria-label="Preview of the Today dashboard">
+      <div class="preview-window">
+        <div class="preview-top"><i /><i /><i /><span>Today</span></div>
+        <div class="preview-content">
+          <p class="preview-greeting">Good morning, Sam</p>
+          <section class="preview-hero">
+            <span>Safe to spend today</span>
+            <strong class="money">$248</strong>
+            <small>Until payday Friday</small>
+          </section>
+          <div class="preview-stats"><i /><i /><i /></div>
+          <div class="preview-bars"><i /><i /><i /></div>
+        </div>
+      </div>
+    </div>
   );
 }
 

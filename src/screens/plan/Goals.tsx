@@ -13,6 +13,7 @@ import { Progress } from '../../ui/Progress';
 import { Sheet } from '../../ui/Sheet';
 import { toast } from '../../ui/Toast';
 import { EmptyState } from '../../ui/EmptyState';
+import { ProgressRing } from '../../ui/Visual';
 
 export function Goals() {
   const store = useStore();
@@ -35,6 +36,7 @@ export function Goals() {
             const reached = g.saved >= g.target;
             return (
               <li key={g.id} class="row row-envelope">
+                <ProgressRing value={g.target ? g.saved / g.target : 0} label={g.name} valueText={`${fmt.money(g.saved)} of ${fmt.money(g.target)}`} />
                 <div class="row-main">
                   <button type="button" class="row-button env-head" onClick={() => setEditing(g)} aria-label={`Edit ${g.name}`}>
                     <span>

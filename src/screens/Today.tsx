@@ -8,6 +8,7 @@ import { lastBackupText } from './Backup';
 import { addDays } from '../lib/dates';
 import { nextBills, overdueOccurrences } from '../lib/bills';
 import { parseQuickLog } from '../lib/quickLog';
+import { envelopeRows, monthOf } from '../lib/envelopes';
 import { computeSafeToSpend, type SafeToSpendResult } from '../lib/safeToSpend';
 import {
   billPaymentAmount, categoryByName, clearExampleData, confirmPay, logTransaction, markBillPaid, type Undo,
@@ -21,6 +22,8 @@ import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
 import { EmptyState } from '../ui/EmptyState';
 import { Icon } from '../ui/icons';
+import { DonutChart, MiniSparkline, ProgressRing, StatTile } from '../ui/Visual';
+import { Progress } from '../ui/Progress';
 
 export function useSafeToSpend(data: AppData, today: string): SafeToSpendResult {
   return useMemo(
@@ -65,17 +68,29 @@ export function Today() {
   return (
     <>
       <div class="title-row">
-        <h1 class="screen-title">{greeting}</h1>
+        <div class="greeting-block">
+          <h1 class="screen-title">{greeting}</h1>
+          <p class="greeting-date">{fmt.dayLong(today)}</p>
+        </div>
         <button type="button" class="btn btn-small focus-btn" aria-pressed={focus} onClick={toggleFocus}>
           {focus ? 'Show everything' : 'Focus'}
         </button>
       </div>
-      <SafeNumber result={result} fmt={fmt} />
+      <div class="dashboard-hero-grid">
+        <SafeNumber result={result} fmt={fmt} />
+        <section class="card desktop-breakdown" aria-labelledby="desktop-breakdown-title">
+          <h2 id="desktop-breakdown-title" class="card-title">How this number is made</h2>
+          <Explain result={result} fmt={fmt} />
+        </section>
+      </div>
       {/* On payday, confirming the pay is what's next (it stays in focus mode: the number depends on it). */}
       {paydayCards.some(Boolean) ? paydayCards : !focus && <NextUp result={result} />}
       <QuickLog inputRef={logRef} />
       {!focus && (
         <>
+          <TodayStats result={result} />
+          <TodayOverview today={today} />
+          <TodayPlanPreview today={today} />
           {data.settings.exampleData && <ExampleBanner />}
           {showAway && <AwayCard away={away!} today={today} onDismiss={() => setAwayDismissed(true)} />}
           <RightNow today={today} skipOverdue={showAway} onLogFocus={() => logRef.current?.focus()} />
@@ -274,12 +289,21 @@ function SafeNumber({ result, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
       <h2 id="safe-label" class="hero-label">
         {LABEL[result.status]}
       </h2>
-      <button type="button" class="hero-number" onClick={() => setOpen(true)} aria-describedby="safe-what">
-        <span class={short ? 'big-number big-number-tight' : 'big-number'}>
-          {short ? fmt.money(upToWhole(result.shortfall), whole) : fmt.money(downToWhole(Math.max(0, result.safeToSpendToday)), whole)}
-        </span>
-        <span class="sr-only">. How is this worked out?</span>
-      </button>
+      <div class="hero-amount-row">
+        <button type="button" class="hero-number" onClick={() => setOpen(true)} aria-describedby="safe-what">
+          <span class={short ? 'big-number big-number-tight' : 'big-number'}>
+            {short ? fmt.money(upToWhole(result.shortfall), whole) : fmt.money(downToWhole(Math.max(0, result.safeToSpendToday)), whole)}
+          </span>
+          <span class="sr-only">. How is this worked out?</span>
+        </button>
+        <ProgressRing
+          value={Math.max(0, Math.min(1, (15 - result.daysLeft) / 14))}
+          label="Days until payday"
+          valueText={`${result.daysLeft} ${result.daysLeft === 1 ? 'day' : 'days'} left`}
+        >
+          <strong>{result.daysLeft}</strong><span>{result.daysLeft === 1 ? 'day' : 'days'}</span>
+        </ProgressRing>
+      </div>
       <p id="safe-what" class="hero-what">
         {short
           ? `What's missing to cover everything ${until}.`
@@ -314,6 +338,114 @@ function SafeNumber({ result, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
         <Explain result={result} fmt={fmt} />
       </Sheet>
     </section>
+  );
+}
+
+function TodayStats({ result }: { result: SafeToSpendResult }) {
+  const data = useData();
+  const store = useStore();
+  const fmt = useFmt();
+  const today = useToday();
+  const month = today.slice(0, 7);
+  const spends = data.transactions.filter((t) => t.date.startsWith(month) && t.amount < 0 && t.source !== 'transfer' && t.source !== 'adjustment');
+  const spent = spends.reduce((sum, tx) => sum - tx.amount, 0);
+  const upcoming = nextBills(data.bills, today, data.transactions, 40).filter((item) => item.date.slice(0, 7) === month);
+  const billTotal = upcoming.reduce((sum, item) => sum + billPaymentAmount(store, item.bill, today), 0);
+  const daily = Array.from({ length: 7 }, (_, offset) =>
+    spends.filter((tx) => tx.date === addDays(today, offset - 6)).reduce((sum, tx) => sum - tx.amount, 0),
+  );
+  return (
+    <div class="stat-grid" aria-label="This month at a glance">
+      <StatTile label="Until payday" value={fmt.money(result.safeToSpendPeriod)} sub={fmt.day(result.nextPayday)} />
+      <StatTile label="Spent this month" value={fmt.money(spent)} sub="Last 7 days">
+        <MiniSparkline values={daily} label="Spending over the last seven days" />
+      </StatTile>
+      <StatTile label="Bills left this month" value={fmt.money(billTotal)} sub={`${upcoming.length} ${upcoming.length === 1 ? 'bill' : 'bills'}`} />
+    </div>
+  );
+}
+
+function TodayOverview({ today }: { today: string }) {
+  const data = useData();
+  const fmt = useFmt();
+  const store = useStore();
+  const upcoming = nextBills(data.bills, today, data.transactions, 8).filter((item) => item.date <= addDays(today, 14));
+  const month = today.slice(0, 7);
+  const spentByCategory = data.categories
+    .map((category) => ({
+      label: category.name,
+      value: data.transactions
+        .filter((tx) => tx.date.startsWith(month) && tx.categoryId === category.id && tx.amount < 0 && tx.source !== 'transfer')
+        .reduce((sum, tx) => sum - tx.amount, 0),
+    }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+  const total = spentByCategory.reduce((sum, item) => sum + item.value, 0);
+  return (
+    <div class="overview-grid">
+      <section class="card timeline-card" aria-labelledby="timeline-title">
+        <h2 id="timeline-title" class="card-title">Upcoming</h2>
+        {upcoming.length ? (
+          <ol class="timeline">
+            {upcoming.map((item, index) => (
+              <li key={`${item.bill.id}-${item.date}`} class={`tone-${index % 8}`}>
+                <i aria-hidden="true" />
+                <span><strong>{item.bill.name}</strong><small>{fmt.relative(item.date, today)} · {fmt.day(item.date)}</small></span>
+                <strong class="money">{fmt.money(billPaymentAmount(store, item.bill, today))}</strong>
+              </li>
+            ))}
+          </ol>
+        ) : <p class="muted">Nothing due in the next 14 days.</p>}
+      </section>
+      <section class="card spending-card" aria-labelledby="spending-title">
+        <h2 id="spending-title" class="card-title">Spending this month</h2>
+        {spentByCategory.length ? (
+          <DonutChart
+            title="Spending by category"
+            total={fmt.money(total, { wholeIfRound: true })}
+            data={spentByCategory.map((item) => ({ ...item, display: fmt.money(item.value, { wholeIfRound: true }) }))}
+          />
+        ) : <p class="muted">Your spending mix will appear here.</p>}
+      </section>
+    </div>
+  );
+}
+
+function TodayPlanPreview({ today }: { today: string }) {
+  const data = useData();
+  const fmt = useFmt();
+  const envelopes = envelopeRows(data.categories, data.transactions, data.envelopeMoves, monthOf(today)).slice(0, 3);
+  const goals = data.goals.slice(0, 3);
+  if (!envelopes.length && !goals.length) return null;
+  return (
+    <div class="plan-preview-grid">
+      {envelopes.length > 0 && (
+        <section class="card" aria-labelledby="today-envelopes-title">
+          <h2 id="today-envelopes-title" class="card-title">Envelopes</h2>
+          <ul class="mini-progress-list">
+            {envelopes.map((row) => (
+              <li key={row.category.id} class={`tone-${row.category.order % 8}`}>
+                <span><strong>{row.category.name}</strong><small class="money">{fmt.money(row.remaining)} left</small></span>
+                <Progress value={row.used} level={row.level} label={row.category.name} valueText={`${fmt.money(row.spent)} of ${fmt.money(row.limit)}`} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {goals.length > 0 && (
+        <section class="card" aria-labelledby="today-goals-title">
+          <h2 id="today-goals-title" class="card-title">Goals</h2>
+          <div class="mini-rings">
+            {goals.map((goal) => (
+              <div key={goal.id}>
+                <ProgressRing value={goal.target ? goal.saved / goal.target : 0} label={goal.name} valueText={`${fmt.money(goal.saved)} of ${fmt.money(goal.target)}`} />
+                <strong>{goal.name}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
 

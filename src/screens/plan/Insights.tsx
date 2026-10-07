@@ -7,6 +7,7 @@ import { useFmt, useToday, type Fmt } from '../../ui/hooks';
 import { useNav } from '../../state/nav';
 import { EmptyState } from '../../ui/EmptyState';
 import { Icon } from '../../ui/icons';
+import { DonutChart, InOutBars } from '../../ui/Visual';
 
 export function Insights() {
   const data = useData();
@@ -24,6 +25,20 @@ export function Insights() {
     const [y, m] = month.split('-').map(Number);
     return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
   })();
+  const donutRows = rows.filter((row) => row.thisMonth > 0).map((row) => ({
+    label: row.name,
+    value: row.thisMonth,
+    display: fmt.money(row.thisMonth, { wholeIfRound: true }),
+  }));
+  const donutTotal = donutRows.reduce((sum, row) => sum + row.value, 0);
+  const sixMonths = Array.from({ length: 6 }, (_, index) => {
+    let key = month;
+    for (let step = index; step < 5; step++) key = previousMonth(key);
+    const txs = data.transactions.filter((tx) => tx.date.startsWith(key) && tx.source !== 'transfer' && tx.source !== 'adjustment');
+    const incoming = txs.filter((tx) => tx.amount > 0).reduce((sum, tx) => sum + tx.amount, 0);
+    const outgoing = txs.filter((tx) => tx.amount < 0).reduce((sum, tx) => sum - tx.amount, 0);
+    return { label: fmt.month(`${key}-01`).slice(0, 3), incoming, outgoing, inText: fmt.money(incoming), outText: fmt.money(outgoing) };
+  });
 
   return (
     <>
@@ -45,6 +60,17 @@ export function Insights() {
         </div>
       ) : (
       <>
+      <div class="insight-chart-grid">
+        <section class="card" aria-labelledby="insight-donut-title">
+          <h2 id="insight-donut-title" class="card-title">Spending by category</h2>
+          {donutRows.length ? <DonutChart title="Spending by category" total={fmt.money(donutTotal, { wholeIfRound: true })} data={donutRows} /> : <p class="muted">Nothing spent this month yet.</p>}
+        </section>
+        <section class="card" aria-labelledby="inout-title">
+          <h2 id="inout-title" class="card-title">Six-month flow</h2>
+          <p class="bar-legend muted"><i class="swatch swatch-in" /> Money in <i class="swatch swatch-out" /> Money out</p>
+          <InOutBars rows={sixMonths} />
+        </section>
+      </div>
       <section class="card" aria-labelledby="cmp-title">
         <h2 id="cmp-title" class="card-title">
           This month vs last month

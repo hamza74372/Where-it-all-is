@@ -28,6 +28,7 @@ import { ShareWithPartner } from './Partner';
 import { CategoryForm } from './plan/Envelopes';
 
 type Page = 'menu' | 'accounts' | 'paychecks' | 'categories' | 'rules' | 'notes' | 'backup' | 'share' | 'data' | 'chips' | 'settings' | 'help' | 'about';
+type AccentTheme = 'navy' | 'sage' | 'plum' | 'ocean' | 'sand';
 
 const PAGES: Array<{ id: Exclude<Page, 'menu'>; label: string; sub: string }> = [
   { id: 'accounts', label: 'Accounts', sub: 'Bank accounts, cash, savings, cards' },
@@ -42,6 +43,16 @@ const PAGES: Array<{ id: Exclude<Page, 'menu'>; label: string; sub: string }> = 
   { id: 'settings', label: 'Settings', sub: 'Theme, currency, cushion, how you type amounts' },
   { id: 'help', label: 'Help', sub: 'Short guides: setup, safe to spend, importing, backups…' },
   { id: 'about', label: 'About & privacy', sub: 'Where your data lives' },
+];
+
+const PAGE_ICONS: Record<Exclude<Page, 'menu'>, string> = {
+  accounts: 'wallet', paychecks: 'pay', categories: 'shopping-bag', rules: 'sparkles', notes: 'book',
+  backup: 'life-buoy', share: 'partner', data: 'inbox', chips: 'coffee', settings: 'sun', help: 'info', about: 'package',
+};
+const PAGE_GROUPS: Array<{ label: string; pages: Array<Exclude<Page, 'menu'>> }> = [
+  { label: 'Your money', pages: ['accounts', 'paychecks', 'categories', 'chips', 'rules', 'notes'] },
+  { label: 'Keep it safe', pages: ['backup', 'share', 'data'] },
+  { label: 'App', pages: ['settings', 'help', 'about'] },
 ];
 
 export function More() {
@@ -60,19 +71,28 @@ export function More() {
     return (
       <>
         <h1 class="screen-title">More</h1>
-        <ul class="card rows">
-          {PAGES.map((p) => (
-            <li key={p.id} class="row">
-              <button type="button" class="row-main row-button" onClick={() => setPage(p.id)}>
-                <span>{p.label}</span>
-                <span class="row-sub">{p.sub}</span>
-              </button>
-              <span aria-hidden="true" class="chev">
-                <Icon name="forward" small />
-              </span>
-            </li>
+        <div class="more-groups">
+          {PAGE_GROUPS.map((group) => (
+            <section key={group.label} class="more-group" aria-labelledby={`more-${group.label.replaceAll(' ', '-').toLowerCase()}`}>
+              <h2 id={`more-${group.label.replaceAll(' ', '-').toLowerCase()}`} class="section-label">{group.label}</h2>
+              <ul class="card rows">
+                {group.pages.map((id, index) => {
+                  const p = PAGES.find((item) => item.id === id)!;
+                  return (
+                    <li key={p.id} class="row">
+                      <span class={`row-icon tone-${index % 8}`}><Icon name={PAGE_ICONS[p.id]} small /></span>
+                      <button type="button" class="row-main row-button" onClick={() => setPage(p.id)}>
+                        <span>{p.label}</span>
+                        <span class="row-sub">{p.sub}</span>
+                      </button>
+                      <span aria-hidden="true" class="chev"><Icon name="forward" small /></span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
         <p class="footer-note">{DISCLAIMER}</p>
       </>
     );
@@ -559,9 +579,16 @@ function SettingsPage() {
   const dec = settings.decimalSeparator;
   const [cushion, setCushion] = useState(moneyText(settings.buffer || null, dec));
   const [name, setName] = useState(settings.name);
+  const [accentTheme, setAccentTheme] = useState<AccentTheme>(() => getPref<AccentTheme>('accentTheme', 'navy'));
+  const chooseAccent = (accent: AccentTheme) => {
+    setAccentTheme(accent);
+    setPref('accentTheme', accent);
+    document.documentElement.dataset.accent = accent;
+  };
 
   return (
     <div class="form">
+      <h2 class="section-label">Appearance</h2>
       <TextInput label="Your name" value={name} onInput={(v) => (setName(v), set({ name: v.trim() }))} />
       <Field2 label="Theme">
         <Segmented
@@ -569,12 +596,30 @@ function SettingsPage() {
           value={settings.theme}
           onChange={(theme) => set({ theme })}
           options={[
-            { value: 'auto', label: 'Match device' },
-            { value: 'soft', label: 'Soft' },
-            { value: 'midnight', label: 'Midnight' },
+            { value: 'auto', label: 'Auto' },
+            { value: 'soft', label: 'Light' },
+            { value: 'midnight', label: 'Dark' },
           ]}
         />
       </Field2>
+      <Field2 label="Accent">
+        <div class="theme-picker" role="radiogroup" aria-label="Accent theme">
+          {(['navy', 'sage', 'plum', 'ocean', 'sand'] as AccentTheme[]).map((accent) => (
+            <button
+              key={accent}
+              type="button"
+              role="radio"
+              aria-checked={accentTheme === accent}
+              class={`theme-choice theme-${accent}`}
+              onClick={() => chooseAccent(accent)}
+            >
+              <i aria-hidden="true" />
+              <span>{accent[0].toUpperCase() + accent.slice(1)}</span>
+            </button>
+          ))}
+        </div>
+      </Field2>
+      <h2 class="section-label">Money</h2>
       <Select
         label="Currency"
         value={settings.currency}
@@ -606,6 +651,7 @@ function SettingsPage() {
         }}
         hint="Kept back from safe to spend, just in case. Leave blank for none."
       />
+      <h2 class="section-label">Safe to spend</h2>
       <Toggle
         label="Some bills come out before my pay arrives on payday"
         checked={settings.billsBeforePayOnPayday}
