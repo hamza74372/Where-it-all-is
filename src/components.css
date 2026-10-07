@@ -195,8 +195,13 @@
   text-align: left;
   animation: hero-arrive var(--medium) var(--ease) both;
 }
+.hero-number .big-number {
+  color: var(--hero-text);
+  opacity: 1;
+}
 @keyframes hero-arrive {
   from { opacity: 0; transform: translateY(var(--space-2)) scale(0.97); }
+  to { opacity: 1; transform: none; }
 }
 .big-number-tight {
   color: var(--hero-text);
@@ -221,7 +226,7 @@
   width: var(--dot);
   height: var(--dot);
   border-radius: var(--radius-full);
-  background: var(--accent);
+  background: var(--on-accent);
 }
 .status-tight .status-dot {
   background: var(--progress-warn);
@@ -451,6 +456,10 @@ select.input {
   display: flex;
   gap: var(--space-2);
 }
+.quick-log-form {
+  display: grid;
+  gap: var(--space-3);
+}
 .ql-preview {
   font-size: var(--text-small);
   color: var(--text-muted);
@@ -568,6 +577,11 @@ select.input {
   display: grid;
   gap: var(--space-4);
 }
+.dashboard-hero-primary {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-4);
+}
 .desktop-breakdown {
   display: none;
 }
@@ -594,7 +608,8 @@ select.input {
 .stat-value {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: var(--font-display);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
   font-size: var(--text-heading);
   line-height: var(--leading-tight);
 }
@@ -644,8 +659,9 @@ select.input {
   line-height: var(--leading-tight);
 }
 .ring-content strong {
-  font-family: var(--font-display);
+  font-family: var(--font);
   font-size: var(--text-heading);
+  font-variant-numeric: tabular-nums;
 }
 @keyframes ring-in {
   from { stroke-dasharray: 0 100; }
@@ -656,7 +672,7 @@ select.input {
   gap: var(--space-4);
 }
 .donut-chart {
-  width: min(100%, calc(var(--space-7) * 4));
+  width: min(100%, var(--donut-max));
   aspect-ratio: 1;
   margin-inline: auto;
   display: grid;
@@ -669,7 +685,7 @@ select.input {
 .donut-track,
 .donut-segment {
   fill: none;
-  stroke-width: var(--bar-lg);
+  stroke-width: var(--donut-stroke);
 }
 .donut-track { stroke: var(--surface-2); }
 .donut-segment {
@@ -684,8 +700,9 @@ select.input {
   line-height: var(--leading-tight);
 }
 .donut-centre strong {
-  font-family: var(--font-display);
+  font-family: var(--font);
   font-size: var(--text-heading);
+  font-variant-numeric: tabular-nums;
 }
 .donut-centre span {
   color: var(--text-muted);
@@ -709,6 +726,52 @@ select.input {
   width: var(--space-3);
   height: var(--space-3);
   border-radius: var(--radius-full);
+  background: var(--tone);
+}
+.chart-tone-0 { --tone: var(--cat-sage); }
+.chart-tone-1 { --tone: var(--cat-ocean); }
+.chart-tone-2 { --tone: var(--cat-plum); }
+.chart-tone-3 { --tone: var(--cat-sand); }
+.chart-tone-4 { --tone: var(--cat-teal); }
+.chart-tone-5 { --tone: var(--cat-amber); }
+.category-bars ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.category-bars li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.category-bars li > span:first-child {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.category-bars li > span:first-child i {
+  width: var(--space-3);
+  height: var(--space-3);
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--tone);
+}
+.category-bar-track {
+  grid-column: 1 / -1;
+  height: var(--bar);
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+}
+.category-bar-track i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
   background: var(--tone);
 }
 .timeline {
@@ -815,18 +878,11 @@ select.input {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
     align-items: stretch;
   }
-  .dashboard-hero-grid .hero {
-    min-height: 100%;
+  .dashboard-hero-primary {
+    grid-template-rows: auto 1fr;
   }
   .desktop-breakdown {
     display: flex;
-  }
-  .desktop-breakdown .explain {
-    max-height: calc(var(--space-7) * 8);
-    overflow: auto;
-  }
-  .screen-today > .next-up {
-    display: none;
   }
 }
 .row-main {

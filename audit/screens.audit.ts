@@ -132,9 +132,9 @@ test('empty data', async ({ page }, info) => {
     await closeSheet(page);
   });
   await h.step('today-focus', async () => {
-    await page.getByRole('button', { name: 'Focus' }).click();
+    await page.getByRole('button', { name: 'Focus mode' }).click();
     await h.shot('today-focus');
-    await page.getByRole('button', { name: 'Show everything' }).click();
+    await page.getByRole('button', { name: 'Exit focus mode' }).click();
   });
   await nav(page, 'Log').click();
   await h.shot('log');
@@ -340,9 +340,9 @@ test('filled data', async ({ page }, info) => {
     await closeSheet(page);
   });
   await h.step('today-focus', async () => {
-    await page.getByRole('button', { name: 'Focus' }).click();
+    await page.getByRole('button', { name: 'Focus mode' }).click();
     await h.shot('today-focus');
-    await page.getByRole('button', { name: 'Show everything' }).click();
+    await page.getByRole('button', { name: 'Exit focus mode' }).click();
   });
   await nav(page, 'Log').click();
   await h.shot('log');

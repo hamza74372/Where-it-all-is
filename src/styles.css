@@ -163,12 +163,12 @@ main.screen > * {
 /* Money: same width digits everywhere, so columns line up and numbers don't jump. */
 .money,
 .big-number {
-  font-family: var(--font-display);
-  font-variation-settings: 'opsz' 72;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .big-number {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 72;
   font-size: var(--text-hero);
   font-weight: var(--weight-hero);
   letter-spacing: -0.02em;
@@ -349,7 +349,7 @@ nav.bottom-nav {
     border-radius: var(--radius-md);
   }
   .app-nav button[aria-current='page'] {
-    background: var(--accent-soft);
+    background: var(--nav-active);
     color: var(--text);
   }
   .app-nav button[aria-current='page']::before {
@@ -435,8 +435,9 @@ nav.bottom-nav {
     color: var(--hero-muted);
   }
   .nav-summary > strong {
-    font-family: var(--font-display);
+    font-family: var(--font);
     font-size: var(--text-heading);
+    font-variant-numeric: tabular-nums;
   }
   .nav-summary .nav-backup {
     min-height: var(--tap);

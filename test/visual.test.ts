@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { progressPercent, toneClass } from '../src/ui/Visual';
+import { progressPercent, shouldUseDonut, toneClass } from '../src/ui/Visual';
 
 describe('visual components', () => {
   it('keeps progress drawings inside their accessible 0–100 range', () => {
@@ -13,5 +13,11 @@ describe('visual components', () => {
       'tone-0', 'tone-1', 'tone-2', 'tone-3', 'tone-4', 'tone-5', 'tone-6', 'tone-7',
     ]);
     expect(toneClass(8)).toBe('tone-0');
+  });
+
+  it('uses calm bars instead of a donut for fewer than two categories', () => {
+    expect(shouldUseDonut(0)).toBe(false);
+    expect(shouldUseDonut(1)).toBe(false);
+    expect(shouldUseDonut(2)).toBe(true);
   });
 });

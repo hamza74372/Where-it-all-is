@@ -5,8 +5,9 @@ import type { Bill, Income } from '../db/types';
 import { catchUp, type CatchUp } from '../lib/away';
 import { getPref, setPref } from '../lib/prefs';
 import { lastBackupText } from './Backup';
-import { addDays } from '../lib/dates';
+import { addDays, daysBetween } from '../lib/dates';
 import { nextBills, overdueOccurrences } from '../lib/bills';
+import { occurrences } from '../lib/schedule';
 import { parseQuickLog } from '../lib/quickLog';
 import { envelopeRows, monthOf } from '../lib/envelopes';
 import { computeSafeToSpend, type SafeToSpendResult } from '../lib/safeToSpend';
@@ -41,6 +42,46 @@ export function useSafeToSpend(data: AppData, today: string): SafeToSpendResult 
   );
 }
 
+/** The cautious whole-unit figure used by both the hero and desktop sidebar. */
+export function roundedHeroAmount(result: SafeToSpendResult): number {
+  const unit = 100;
+  return result.status === 'short'
+    ? -Math.ceil(result.shortfall / unit) * unit
+    : Math.floor(Math.max(0, result.safeToSpendToday) / unit) * unit;
+}
+
+function incomesOnPayday(data: AppData, result: SafeToSpendResult) {
+  if (result.nextPaydaySource !== 'income') return [];
+  return data.incomes.filter(
+    (income) => income.active && occurrences(income.schedule, result.nextPayday, result.nextPayday).length > 0,
+  );
+}
+
+function payPeriodProgress(data: AppData, today: string, result: SafeToSpendResult): number {
+  const income = incomesOnPayday(data, result)[0];
+  const foundPrevious = income
+    ? occurrences(income.schedule, addDays(result.nextPayday, -370), addDays(result.nextPayday, -1)).at(-1)
+    : `${today.slice(0, 8)}01`;
+  const fallbackDays = income
+    ? income.schedule.kind === 'weekly'
+      ? 7
+      : income.schedule.kind === 'biweekly'
+        ? 14
+        : income.schedule.kind === 'semimonthly'
+          ? 15
+          : income.schedule.kind === 'yearly'
+            ? 365
+            : income.schedule.kind === 'everyNMonths'
+              ? 30 * Math.max(1, income.schedule.n ?? 1)
+              : income.schedule.kind === 'monthly'
+                ? 30
+                : Math.max(1, result.daysLeft)
+    : Math.max(1, result.daysLeft);
+  const previous = foundPrevious ?? addDays(result.nextPayday, -fallbackDays);
+  const total = Math.max(1, daysBetween(previous, result.nextPayday));
+  return Math.max(0, Math.min(1, daysBetween(previous, today) / total));
+}
+
 export function Today() {
   const data = useData();
   const today = useToday();
@@ -53,6 +94,7 @@ export function Today() {
   const [awayDismissed, setAwayDismissed] = useState(false);
   const away = awayDismissed ? null : catchUp(store.previousOpenedAt, today, data.bills, data.incomes, data.transactions);
   const showAway = !!away && away.bills.length + away.paydays.length > 0;
+  const periodProgress = payPeriodProgress(data, today, result);
   const toggleFocus = () => {
     setFocus(!focus);
     setPref('focus', !focus);
@@ -73,18 +115,19 @@ export function Today() {
           <p class="greeting-date">{fmt.dayLong(today)}</p>
         </div>
         <button type="button" class="btn btn-small focus-btn" aria-pressed={focus} onClick={toggleFocus}>
-          {focus ? 'Show everything' : 'Focus'}
+          <Icon name="focus" small /> {focus ? 'Exit focus mode' : 'Focus mode'}
         </button>
       </div>
       <div class="dashboard-hero-grid">
-        <SafeNumber result={result} fmt={fmt} />
+        <div class="dashboard-hero-primary">
+          <SafeNumber result={result} fmt={fmt} periodProgress={periodProgress} />
+          {paydayCards.some(Boolean) ? paydayCards : !focus && <NextUp result={result} />}
+        </div>
         <section class="card desktop-breakdown" aria-labelledby="desktop-breakdown-title">
           <h2 id="desktop-breakdown-title" class="card-title">How this number is made</h2>
           <Explain result={result} fmt={fmt} />
         </section>
       </div>
-      {/* On payday, confirming the pay is what's next (it stays in focus mode: the number depends on it). */}
-      {paydayCards.some(Boolean) ? paydayCards : !focus && <NextUp result={result} />}
       <QuickLog inputRef={logRef} />
       {!focus && (
         <>
@@ -267,7 +310,7 @@ function PaydayCard({ income, today }: { income: Income; today: string }) {
   );
 }
 
-function SafeNumber({ result, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
+function SafeNumber({ result, fmt, periodProgress }: { result: SafeToSpendResult; fmt: Fmt; periodProgress: number }) {
   const [open, setOpen] = useState(false);
   const nav = useNav();
   const toPayday = result.nextPaydaySource === 'income';
@@ -275,9 +318,6 @@ function SafeNumber({ result, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
   // The big number is whole units: safe-to-spend rounds down, a shortfall rounds up — both
   // err on the careful side. Everything else keeps its cents.
   const whole = { wholeIfRound: true };
-  const UNIT = 100;
-  const downToWhole = (n: number) => Math.floor(n / UNIT) * UNIT;
-  const upToWhole = (n: number) => Math.ceil(n / UNIT) * UNIT;
   const short = result.status === 'short';
   const tight = result.status === 'tight';
   const LABEL = { ok: 'Safe to spend today', tight: 'Tight until payday', short: 'Short until payday' } as const;
@@ -292,12 +332,12 @@ function SafeNumber({ result, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
       <div class="hero-amount-row">
         <button type="button" class="hero-number" onClick={() => setOpen(true)} aria-describedby="safe-what">
           <span class={short ? 'big-number big-number-tight' : 'big-number'}>
-            {short ? fmt.money(upToWhole(result.shortfall), whole) : fmt.money(downToWhole(Math.max(0, result.safeToSpendToday)), whole)}
+            {fmt.money(Math.abs(roundedHeroAmount(result)), whole)}
           </span>
           <span class="sr-only">. How is this worked out?</span>
         </button>
         <ProgressRing
-          value={Math.max(0, Math.min(1, (15 - result.daysLeft) / 14))}
+          value={periodProgress}
           label="Days until payday"
           valueText={`${result.daysLeft} ${result.daysLeft === 1 ? 'day' : 'days'} left`}
         >
@@ -351,13 +391,18 @@ function TodayStats({ result }: { result: SafeToSpendResult }) {
   const spent = spends.reduce((sum, tx) => sum - tx.amount, 0);
   const upcoming = nextBills(data.bills, today, data.transactions, 40).filter((item) => item.date.slice(0, 7) === month);
   const billTotal = upcoming.reduce((sum, item) => sum + billPaymentAmount(store, item.bill, today), 0);
+  const nextPay = incomesOnPayday(data, result).reduce((sum, income) => sum + income.amount, 0);
   const daily = Array.from({ length: 7 }, (_, offset) =>
     spends.filter((tx) => tx.date === addDays(today, offset - 6)).reduce((sum, tx) => sum - tx.amount, 0),
   );
   return (
     <div class="stat-grid" aria-label="This month at a glance">
-      <StatTile label="Until payday" value={fmt.money(result.safeToSpendPeriod)} sub={fmt.day(result.nextPayday)} />
-      <StatTile label="Spent this month" value={fmt.money(spent)} sub="Last 7 days">
+      <StatTile
+        label="Next pay"
+        value={result.nextPaydaySource === 'income' ? fmt.money(nextPay) : 'Not set'}
+        sub={result.nextPaydaySource === 'income' ? fmt.day(result.nextPayday) : 'Add a payday in More'}
+      />
+      <StatTile label="Spent this month" value={fmt.money(spent)} sub="Trend: last 7 days">
         <MiniSparkline values={daily} label="Spending over the last seven days" />
       </StatTile>
       <StatTile label="Bills left this month" value={fmt.money(billTotal)} sub={`${upcoming.length} ${upcoming.length === 1 ? 'bill' : 'bills'}`} />
@@ -502,7 +547,7 @@ function Explain({ result: r, fmt }: { result: SafeToSpendResult; fmt: Fmt }) {
         {sub && <span class="explain-sub">{sub}</span>}
       </span>
       <span class="money">
-        {sign && sign !== '=' ? `${sign} ` : ''}
+        {sign && sign !== '=' ? sign : ''}
         {fmt.money(amount)}
       </span>
     </li>
@@ -580,6 +625,7 @@ function QuickLog({ inputRef }: { inputRef: { current: HTMLInputElement | null }
   return (
     <section class="card" aria-labelledby="ql-label">
       <form
+        class="quick-log-form"
         onSubmit={(e) => {
           e.preventDefault();
           if (parsed.kind === 'ok' && !parsed.confirm) save(parsed.amount);

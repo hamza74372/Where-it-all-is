@@ -11,7 +11,13 @@ const WIDTHS = [
 ];
 const THEMES = ['light', 'dark'];
 const nav = (page, name) => page.locator('.app-nav button').filter({ hasText: name }).first();
-const settle = (page) => page.waitForTimeout(300);
+const settle = async (page) => {
+  await page.waitForTimeout(50);
+  await page.evaluate(async () => {
+    const finite = document.getAnimations().filter((animation) => animation.effect?.getTiming().iterations !== Infinity);
+    await Promise.all(finite.map((animation) => animation.finished.catch(() => undefined)));
+  });
+};
 
 const browser = await chromium.launch({ channel: 'chrome' });
 
@@ -31,6 +37,17 @@ for (const theme of THEMES) {
     const shot = async (name) => {
       await page.evaluate(() => document.getElementById('main')?.scrollTo(0, 0));
       await settle(page);
+      if (name === 'today') {
+        const heroOpacity = await page.locator('.hero-number').evaluate((element) => Number(getComputedStyle(element).opacity));
+        if (heroOpacity !== 1) throw new Error(`Hero number did not finish at full opacity (${heroOpacity})`);
+        const ringValue = Number(await page.locator('.hero .progress-ring').getAttribute('aria-valuenow'));
+        if (ringValue <= 0 || ringValue >= 100) throw new Error(`Payday ring is not a partial arc (${ringValue}%)`);
+        if (viewport.width >= 1100) {
+          const hero = (await page.locator('.big-number').textContent())?.trim();
+          const sidebar = (await page.locator('.nav-summary > strong').textContent())?.trim();
+          if (hero !== sidebar) throw new Error(`Sidebar value ${sidebar} does not match hero ${hero}`);
+        }
+      }
       const overflow = await page.evaluate(() => ({
         page: document.documentElement.scrollWidth > window.innerWidth + 1,
         main: (() => {

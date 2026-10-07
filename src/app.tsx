@@ -12,7 +12,7 @@ import { More } from './screens/More';
 import { Onboarding } from './screens/Onboarding';
 import { PartnerTab } from './screens/Partner';
 import { Plan } from './screens/Plan';
-import { Today, useSafeToSpend } from './screens/Today';
+import { roundedHeroAmount, Today, useSafeToSpend } from './screens/Today';
 import { NavContext, type Tab } from './state/nav';
 import { Store, StoreContext, useData, useStore } from './state/store';
 import { useFmt, useToday } from './ui/hooks';
@@ -189,7 +189,7 @@ function AppNav({ tabs, tab, go }: { tabs: typeof TABS; tab: Tab; go: (tab: Tab)
   const fmt = useFmt();
   const today = useToday();
   const safe = useSafeToSpend(data, today);
-  const safeAmount = safe.status === 'short' ? -safe.shortfall : safe.safeToSpendToday;
+  const safeAmount = roundedHeroAmount(safe);
 
   return (
     <nav class="app-nav" aria-label="Main">
@@ -218,7 +218,7 @@ function AppNav({ tabs, tab, go }: { tabs: typeof TABS; tab: Tab; go: (tab: Tab)
       </ul>
       <div class="nav-summary">
         <span class="nav-summary-label">Safe today</span>
-        <strong class="money">{fmt.money(safeAmount, { wholeIfRound: true })}</strong>
+        <strong class="money">{fmt.money(Math.abs(safeAmount), { wholeIfRound: true })}</strong>
         <button
           type="button"
           class="nav-backup"

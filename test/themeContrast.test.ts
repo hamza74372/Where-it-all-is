@@ -18,6 +18,7 @@ function contrast(first: string, second: string): number {
 }
 
 describe('accent theme contrast', () => {
+  const heroText = tokens.match(/--hero-text:\s*(#[0-9A-F]{6})/i)?.[1] ?? '';
   for (const name of ['navy', 'sage', 'plum', 'ocean', 'sand']) {
     it(`${name} accent and hero colours meet WCAG AA`, () => {
       const block = tokens.match(new RegExp(`\\[data-accent='${name}'\\] \\{([\\s\\S]*?)\\}`))?.[1];
@@ -26,6 +27,9 @@ describe('accent theme contrast', () => {
       const text = value('theme-on-accent');
       for (const token of ['theme-accent', 'theme-hero-start', 'theme-hero-end']) {
         expect(contrast(value(token), text), `${name} ${token}`).toBeGreaterThanOrEqual(4.5);
+      }
+      for (const token of ['theme-hero-start', 'theme-hero-end']) {
+        expect(contrast(value(token), heroText), `${name} hero number on ${token}`).toBeGreaterThanOrEqual(4.5);
       }
     });
   }

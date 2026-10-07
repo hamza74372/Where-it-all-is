@@ -3,6 +3,7 @@ import { Icon } from './icons';
 
 export const toneClass = (index: number) => `tone-${Math.abs(index) % 8}`;
 export const progressPercent = (value: number) => Math.max(0, Math.min(1, value)) * 100;
+export const shouldUseDonut = (categoryCount: number) => categoryCount >= 2;
 
 export function CategoryChip(props: { name: string; icon?: string; index?: number; compact?: boolean }) {
   return (
@@ -21,8 +22,8 @@ export function StatTile(props: { label: string; value: string; sub?: string; ch
     <section class="stat-tile">
       <span class="stat-label">{props.label}</span>
       <strong class="stat-value money">{props.value}</strong>
-      {props.sub && <span class="stat-sub">{props.sub}</span>}
       {props.children}
+      {props.sub && <span class="stat-sub">{props.sub}</span>}
     </section>
   );
 }
@@ -56,6 +57,21 @@ export interface ChartDatum {
 
 export function DonutChart(props: { title: string; total: string; data: ChartDatum[] }) {
   const total = Math.max(1, props.data.reduce((sum, item) => sum + Math.max(0, item.value), 0));
+  if (!shouldUseDonut(props.data.length)) {
+    return (
+      <div class="category-bars" aria-label={`${props.title}. Total ${props.total}.`}>
+        <ul aria-label={`${props.title} data`}>
+          {props.data.map((item, index) => (
+            <li key={item.label} class={`chart-tone-${index}`}>
+              <span><i aria-hidden="true" />{item.label}</span>
+              <strong class="money">{item.display}</strong>
+              <span class="category-bar-track" aria-hidden="true"><i /></span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
   let offset = 0;
   return (
     <div class="donut-wrap">
@@ -69,7 +85,7 @@ export function DonutChart(props: { title: string; total: string; data: ChartDat
             return (
               <circle
                 key={item.label}
-                class={`donut-segment ${toneClass(index)}`}
+                class={`donut-segment chart-tone-${index % 6}`}
                 cx="22"
                 cy="22"
                 r="16"
@@ -87,7 +103,7 @@ export function DonutChart(props: { title: string; total: string; data: ChartDat
       </div>
       <ul class="chart-legend" aria-label={`${props.title} data`}>
         {props.data.slice(0, 6).map((item, index) => (
-          <li key={item.label}><i class={toneClass(index)} /> <span>{item.label}</span><strong class="money">{item.display}</strong></li>
+          <li key={item.label}><i class={`chart-tone-${index % 6}`} /> <span>{item.label}</span><strong class="money">{item.display}</strong></li>
         ))}
       </ul>
     </div>
