@@ -257,18 +257,7 @@
         "smallTargets": [],
         "clipped": [],
         "overlaps": [],
-        "lowContrast": [
-          {
-            "text": "Envelopes",
-            "ratio": 2.3,
-            "need": 4.5
-          },
-          {
-            "text": "Goals",
-            "ratio": 1.1,
-            "need": 4.5
-          }
-        ],
+        "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
         "bg": "rgb(247, 243, 234)"
