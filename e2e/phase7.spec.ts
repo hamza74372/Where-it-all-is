@@ -166,7 +166,6 @@ test('import: 10 preview rows; the final screen repeats the skipped and needs-so
   await page.clock.install({ time: new Date(2026, 9, 16, 10, 0) });
   await page.goto(APP);
   await page.getByRole('button', { name: /Set up mine/ }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('2000');
   await page.getByRole('button', { name: 'Skip setup' }).click();
   const lines = Array.from({ length: 12 }, (_, i) => `10/${String(i + 1).padStart(2, '0')}/2026,SHOP ${i + 1},-${i + 1}.00`);

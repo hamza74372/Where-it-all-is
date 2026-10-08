@@ -29,7 +29,6 @@ async function samsMonth(page: Page) {
   await page.goto(APP);
   await page.getByRole('button', { name: /Set up mine/ }).click();
   await page.getByLabel('What should we call you? (optional)').fill('Sam');
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('1200');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('How much lands in your account?').fill('1500');
@@ -38,12 +37,16 @@ async function samsMonth(page: Page) {
   await page.getByLabel('Rent or mortgage day of month').fill('1');
   await page.getByLabel('Phone amount').fill('45');
   await page.getByLabel('Phone day of month').fill('15');
+  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page.getByRole('button', { name: 'Finish' })).toHaveCount(0); // saved
   await expect(page.locator('.big-number')).toBeVisible();
   // Back on 13 Oct (not a payday): the catch-up is confirmed, a few spends logged.
   await page.clock.setSystemTime(new Date(2026, 9, 13, 10, 0));
   await page.reload();
+  await page.getByRole('region', { name: 'While you were away' }).getByRole('button', { name: 'Skip' }).click();
   await page.getByRole('button', { name: 'They all happened' }).click();
+  await page.getByRole('region', { name: 'While you were away' }).getByRole('button', { name: 'Done' }).click();
   const box = page.getByRole('textbox', { name: 'Log a spend' });
   for (const t of ['4.50 coffee', '32.10 groceries', '12 lunch']) {
     await box.fill(t);
@@ -60,7 +63,6 @@ test('welcome and empty Today', async ({ page }, info) => {
   await expect(page.getByRole('button', { name: /Set up mine/ })).toBeVisible();
   await shot('welcome');
   await page.getByRole('button', { name: /Set up mine/ }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('1200');
   await page.getByRole('button', { name: 'Skip setup' }).click();
   await expect(page.locator('.big-number')).toBeVisible();

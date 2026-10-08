@@ -304,7 +304,7 @@ function AccountForm({ account, onDone }: { account: Account | null; onDone: () 
     const balanceChanged = !account || current !== signed || account.type !== type;
     const anchor = balanceChanged
       ? anchorBalance({ id }, signed, store, today)
-      : { openingBalance: account.openingBalance, openingDate: account.openingDate };
+      : { openingBalance: account.openingBalance, openingDate: account.openingDate, balanceCheckedAt: today }; // seen and saved = checked
     const undo = await saveWithUndo(store, 'accounts', {
         id,
         name: name.trim(),

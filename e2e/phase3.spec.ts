@@ -17,14 +17,15 @@ const nav = (page: Page, label: string) => page.getByRole('navigation', { name: 
 
 async function quickSetup(page: Page) {
   await page.getByRole('button', { name: /Set up mine/ }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('1200');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('How much lands in your account?').fill('1500');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Rent or mortgage amount').fill('800');
   await page.getByLabel('Rent or mortgage day of month').fill('1');
+  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page.getByRole('button', { name: 'Finish' })).toHaveCount(0); // saved
   await expect(page.locator('.big-number')).toBeVisible();
 }
 
@@ -96,7 +97,7 @@ test('envelopes: overspend → suggestion → move money → undo; goals; insigh
   expect(problems).toEqual([]);
 });
 
-test('while you were away: catch up in one tap, undo restores', async ({ page }) => {
+test('while you were away: balance first, then what passed, then the number; undo restores', async ({ page }) => {
   const problems = guard(page);
   await page.goto(APP);
   await quickSetup(page); // pay every 2nd Friday from 9 Oct, rent on the 1st (next: 1 Nov)
@@ -106,12 +107,21 @@ test('while you were away: catch up in one tap, undo restores', async ({ page })
   await page.reload();
   const card = page.getByRole('region', { name: 'While you were away' });
   await expect(card).toBeVisible();
-  await expect(card).toContainText('Paycheck');
+  await expect(card.locator('p').first()).toHaveText("Welcome back. What's your balance today?");
   await shot(page, 'away');
+  await card.getByRole('button', { name: 'Skip' }).click();
+  await expect(card).toContainText('Paycheck');
+  const before = await page.locator('.big-number').textContent();
   await card.getByRole('button', { name: 'It arrived' }).click();
-  await expect(card).toBeHidden();
+  // Nothing left to confirm: the card shows the new number and offers an optional import.
+  await expect(card.locator('.away-number')).toContainText(/Safe to spend today: \$\d/);
+  await expect(card).toContainText("It's optional.");
+  const after = await page.locator('.big-number').textContent();
+  expect(after).not.toBe(before);
   await page.getByRole('button', { name: 'Undo' }).click();
-  await expect(page.getByRole('region', { name: 'While you were away' })).toBeVisible();
+  await expect(page.locator('.big-number')).toHaveText(before!);
+  await card.getByRole('button', { name: 'Done' }).click();
+  await expect(card).toBeHidden();
   expect(problems).toEqual([]);
 });
 

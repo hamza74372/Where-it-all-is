@@ -69,7 +69,6 @@ test('demo: banner, 30-entry limit, export off — and it never touches the real
   // Real app on the same site first: set up with a known balance.
   await page.goto(`${base}/${cfg.appPath}/`);
   await page.getByRole('button', { name: /Set up mine/ }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('777');
   await page.getByRole('button', { name: 'Skip setup' }).click();
   const realNumber = await page.locator('.big-number').textContent();

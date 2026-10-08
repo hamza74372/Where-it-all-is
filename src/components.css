@@ -203,6 +203,13 @@
   from { opacity: 0; transform: translateY(var(--space-2)) scale(0.97); }
   to { opacity: 1; transform: none; }
 }
+/* "About": the balance hasn't been checked for a few days (the number is the same). */
+.hero-about {
+  font-size: var(--text-heading);
+  font-weight: var(--weight-semibold);
+  color: var(--hero-muted);
+  letter-spacing: 0;
+}
 .big-number-tight {
   color: var(--hero-text);
 }

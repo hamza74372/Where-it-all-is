@@ -28,7 +28,7 @@ Sold on Etsy as a digital download (PDF with links + backup HTML file). Free dem
 2. **Max 3 taps** to log a spend from home.
 3. **No shame:** no red "FAILED", no streaks that break. Overspend message: neutral ("You're 12 over in Groceries — want to move money from Fun?").
 4. **Show the maths on demand:** tapping any number opens "How is this worked out?".
-5. **Gentle return:** after a gap, a "While you were away" catch-up card (bills that passed, paydays that passed — confirm in one tap).
+5. **Gentle return:** after a gap, a "While you were away" catch-up card: balance today first, then bills and paydays that passed (confirm in one tap), then the new number. Never the words "behind" or "missed" (a unit test scans the app and the PDF copy).
 6. **Undo everywhere** (toast with Undo for 8s).
 7. **Calm visuals:** two themes (light "Soft" / dark "Midnight"), large type, WCAG AA contrast, reduced-motion respected.
 8. **Plain language:** no finance jargon without a one-line explanation.
@@ -91,19 +91,23 @@ safeToSpendToday = floor(safeToSpendPeriod / daysLeft) − spentToday(discretion
 
 ## 7. Screens (bottom nav: Today · Log · Bills · Plan · More)
 
-### 7.1 Onboarding (≤ 4 steps, skippable, "Try with example numbers" button)
-1. Name + currency.
-2. Main account balance.
-3. Paychecks (amount + schedule; "my pay varies" toggle → use average).
-4. Top bills (quick-add list of common ones: rent, phone, electric, internet, car, subscriptions; each 2 fields).
+### 7.1 Onboarding (4 steps, skippable, "Try with example numbers" button)
+Progress dots: **Balance → Payday → Bills → Your number**. Every field shows an example ("e.g. 1,250.00", in the chosen decimal style) and every step has a one-line "Why we ask".
+1. **Balance** — main account balance (cursor starts here), plus currency (default from the device locale), decimal style and an optional name.
+2. **Payday** — amount + schedule; "my pay varies" toggle → use average; "I don't have regular pay" plans to month end.
+3. **Bills** — quick-add list of common ones (2 fields each). Only bills due before the next payday are needed now; rows due after it say "this one can wait". Nothing is mandatory.
+4. **Your number** — a preview of safe to spend, from the real calculation on exactly what setup will save. "Finish" saves.
 → Lands on Today. Example-data mode clearly labelled; "Clear examples" one tap.
+Acceptance: an e2e test completes setup with a time model (8 s per step read, 2 s per tap, 7 s per field) under 2 minutes.
 
 ### 7.2 Today
 - Big **Safe to spend today**, sub-line "until payday Fri 10 Oct: 214".
-- Quick log box: type `25 groceries` or `12.50 coffee` → parses amount + fuzzy-matches category; Enter to save. Plus 4–6 one-tap preset chips (user-editable).
+- **Balance freshness:** each account stores `balanceCheckedAt` (set by setup, account edits, "Update balance", and a matching or adjusted statement balance check). The hero says "Updated today" or "Balance last checked N days ago" (oldest included account). From 3 days (`STALE_AFTER_DAYS`), the hero reads "About $X" with a one-tap **Update balance** button (sheet: "What's your balance today?"). The calculation never changes with age — only the wording and the button.
+- Quick log box: type `25 groceries` or `12.50 coffee` → parses amount; the category is suggested from the merchant text (saved rules first, then category names/keywords). Category is optional ("No category — that's fine"). Enter or Save logs it (≤ 3 taps; a chip is 1 tap). Every save shows an Undo toast. Plus 4–6 one-tap preset chips (user-editable).
 - "Next 3 bills" card with due dates.
 - "Right now — one thing" card (single suggested action: confirm a bill paid / log yesterday / import statement / back up).
-- "While you were away" card when lastOpenedAt > 2 days.
+- "While you were away" card when bills or paydays passed since the last visit. Steps: (1) "Welcome back. What's your balance today?" (save sets each balance as of today, or Skip); (2) confirm the bills and pay that passed (each, or "They all happened"); (3) the new number, with an optional "Import a statement". "Later" closes it. Confirming the last item moves straight to the number.
+- First-backup prompt after setup ("Make your first backup"), until a backup exists or "Later".
 - Focus mode toggle (hides everything except the number + log box).
 
 ### 7.3 Log (transactions)
@@ -122,7 +126,8 @@ safeToSpendToday = floor(safeToSpendPeriod / daysLeft) − spentToday(discretion
 - **Debt:** list, total, **snowball vs avalanche comparison** (months to debt-free, total interest), extra payment slider, debt-free date. Show assumptions; label "estimate".
 
 ### 7.6 More
-- Accounts, Categories, Rules, Notes (brain dump per month), Household sharing, Backup & Restore, Settings (theme, currency, buffer, week start), Help (in-app guide), About & privacy, Disclaimer.
+- Accounts, Categories, Rules, Notes (brain dump per month), Household sharing, Backup & Restore, Your data (last backup date, import history, erase), Settings (theme, currency, buffer, week start), Help (in-app guide), About & privacy, Disclaimer.
+- **Currency:** USD, GBP, EUR, CAD, AUD; the default comes from the device locale (en-GB → GBP, en-AU → AUD…). Amounts are always stored as whole cents; changing currency changes only the symbol. The symbol follows the setting everywhere: the app, backups (settings travel with them; restore warns on a different currency), partner shares (carry their own currency), and the Start-Here PDF screenshots (Letter in USD, A4 in GBP).
 
 ### 7.7 Insights (inside More or Plan)
 - This month vs last month by category (simple bar list, no complex charts).
@@ -136,6 +141,7 @@ safeToSpendToday = floor(safeToSpendPeriod / daysLeft) − spentToday(discretion
 4. **Duplicate detection:** same date + amount + normalised description within account, and against previous batches → skip by default, show count.
 5. **Rules engine:** apply rules in priority order to set category/rename; uncategorised rows shown in a fast "sort these" screen (one row at a time, big category buttons, "always do this" checkbox creates a rule).
 6. Summary: imported N, skipped M duplicates, K need sorting. Undo whole batch.
+- The preview and "Ready to import" screens say "Nothing changes until you confirm."
 - Ship **preset mappings** for common export formats (generic, plus test with sample CSVs styled like major US/UK banks — do not claim official bank support).
 - Ship **20 starter rules** (e.g. contains "UBER" → Transport, "TESCO|WALMART|ALDI" → Groceries, "NETFLIX|SPOTIFY" → Subscriptions).
 
@@ -146,8 +152,9 @@ safeToSpendToday = floor(safeToSpendPeriod / daysLeft) − spentToday(discretion
 - Clear copy: "No account, no cloud. You send the file however you like (AirDrop, WhatsApp, email)."
 
 ### 7.10 Backup & restore (data-loss protection)
-- One-tap **Export backup** (JSON, optionally encrypted).
-- Reminder banner every N days (default 7) if no backup.
+- One-tap **Export backup** (JSON, optionally encrypted). After saving, the file is read back as a restore would (decrypt with the passphrase, checksum, record counts) and the app says "Backup checked"; if that fails, it says so.
+- Your data shows the last backup date. First-backup prompt after setup; reminder banner every N days (default 7) after that.
+- Copy on Backup, Your data and the first-backup prompt: "Your information stays on this device. Clearing browser data deletes it, so back up occasionally."
 - On iOS, explain that clearing Safari data deletes app data; recommend weekly backup.
 - Restore with preview ("This backup has 214 transactions from 1 Sep to 5 Oct").
 - CSV export of transactions.
@@ -161,10 +168,11 @@ safeToSpendToday = floor(safeToSpendPeriod / daysLeft) − spentToday(discretion
 
 ## 9. Deliverables to customers (Etsy files)
 
-1. `Start-Here.pdf` — 2 pages: open link / add to home screen (iPhone, Android, Windows, Mac) with screenshots; where data lives; backups; support contact via Etsy messages.
-2. `WhereItAllIs-Budget-App.html` — offline single file.
-3. Hosted link (GitHub Pages, unlisted path) for phone install.
-4. Note in listing + PDF: "Etsy's mobile app can't download digital files — use a browser."
+The Etsy download is one file, **`Where-It-All-Is.zip`** (`npm run package`), containing:
+1. `Start-Here-Letter.pdf` and `Start-Here-A4.pdf` — 2 pages: open link / add to home screen (iPhone, Android, Windows, Mac) with screenshots; where data lives; backups; support contact via Etsy messages.
+2. `Where-It-All-Is-Budget-App.html` — offline single file.
+Plus: hosted link (unlisted path) for phone install.
+Note in listing + PDF: "Download on Etsy.com in a web browser, not the Etsy app."
 
 Licensing: personal/household use; no resale (in PDF + About screen).
 

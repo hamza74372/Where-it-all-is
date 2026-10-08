@@ -81,7 +81,7 @@ export function nextDayOfMonth(from: ISODate, day: number): ISODate {
 export function buildExampleData(today: ISODate, categories: Category[]) {
   const cat = (name: string) => categories.find((c) => c.name === name)?.id;
   const now = Date.now();
-  const checking: Account = { id: uid(), name: 'Everyday account', type: 'checking', openingBalance: 132000, includeInSafeToSpend: true, archived: false, updatedAt: now };
+  const checking: Account = { id: uid(), name: 'Everyday account', type: 'checking', openingBalance: 132000, includeInSafeToSpend: true, archived: false, balanceCheckedAt: today, updatedAt: now };
   const card: Account = { id: uid(), name: 'Credit card', type: 'credit', openingBalance: -6400, includeInSafeToSpend: false, archived: false, updatedAt: now };
   const savings: Account = { id: uid(), name: 'Savings', type: 'savings', openingBalance: 85000, includeInSafeToSpend: false, archived: false, updatedAt: now };
 

@@ -1,10 +1,10 @@
 // Spec §7.2 — one big number, a 3-second log box, and one gentle next action.
 
-import { useMemo, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { Bill, Income } from '../db/types';
 import { catchUp, type CatchUp } from '../lib/away';
 import { getPref, setPref } from '../lib/prefs';
-import { lastBackupText } from './Backup';
+import { lastBackupText, STAYS_ON_DEVICE } from './Backup';
 import { addDays, daysBetween } from '../lib/dates';
 import { nextBills, overdueOccurrences } from '../lib/bills';
 import { occurrences } from '../lib/schedule';
@@ -25,6 +25,8 @@ import { EmptyState } from '../ui/EmptyState';
 import { Icon } from '../ui/icons';
 import { DonutChart, MiniSparkline, ProgressRing, StatTile } from '../ui/Visual';
 import { Progress } from '../ui/Progress';
+import { balanceFreshness, freshnessText } from '../lib/freshness';
+import { UpdateBalanceForm } from './UpdateBalance';
 
 export function useSafeToSpend(data: AppData, today: string): SafeToSpendResult {
   return useMemo(
@@ -93,7 +95,10 @@ export function Today() {
   const [focus, setFocus] = useState(() => getPref('focus', false));
   const [awayDismissed, setAwayDismissed] = useState(false);
   const away = awayDismissed ? null : catchUp(store.previousOpenedAt, today, data.bills, data.incomes, data.transactions);
-  const showAway = !!away && away.bills.length + away.paydays.length > 0;
+  // Once open, the card stays until it's closed, so confirming the last item still shows the new number.
+  const awayOpen = useRef(false);
+  if (away && away.bills.length + away.paydays.length > 0) awayOpen.current = true;
+  const showAway = !!away && awayOpen.current;
   const periodProgress = payPeriodProgress(data, today, result);
   const toggleFocus = () => {
     setFocus(!focus);
@@ -121,8 +126,11 @@ export function Today() {
       <div class="dashboard-hero-grid">
         <div class="dashboard-hero-primary">
           <SafeNumber result={result} fmt={fmt} periodProgress={periodProgress} />
-          {paydayCards.some(Boolean) ? paydayCards : !focus && <NextUp result={result} />}
+          {/* Back after a few days: catch up right under the number. */}
+          {!focus && showAway && <AwayCard away={away!} today={today} result={result} onDismiss={() => setAwayDismissed(true)} />}
+          {paydayCards.some(Boolean) ? paydayCards : !focus && !showAway && <NextUp result={result} />}
           <QuickLog inputRef={logRef} />
+          {!focus && <FirstBackupPrompt />}
         </div>
         <section class="card desktop-breakdown" aria-labelledby="desktop-breakdown-title">
           <h2 id="desktop-breakdown-title" class="card-title">How this number is made</h2>
@@ -135,7 +143,6 @@ export function Today() {
           <TodayOverview today={today} />
           <TodayPlanPreview today={today} />
           {data.settings.exampleData && <ExampleBanner />}
-          {showAway && <AwayCard away={away!} today={today} onDismiss={() => setAwayDismissed(true)} />}
           <RightNow today={today} skipOverdue={showAway} onLogFocus={() => logRef.current?.focus()} />
           <NextBillsCard today={today} />
           {!data.settings.exampleData && <StorageNote />}
@@ -146,9 +153,18 @@ export function Today() {
   );
 }
 
-function AwayCard({ away, today, onDismiss }: { away: CatchUp; today: string; onDismiss: () => void }) {
+function AwayCard({ away, today, result, onDismiss }: { away: CatchUp; today: string; result: SafeToSpendResult; onDismiss: () => void }) {
   const store = useStore();
   const fmt = useFmt();
+  const nav = useNav();
+  // One thing at a time: the balance, then what passed, then an optional import and the new number.
+  const [step, setStep] = useState<'balance' | 'confirm' | 'done'>('balance');
+  const [balanceSaved, setBalanceSaved] = useState(false);
+  // Everything confirmed one by one: straight on to the new number.
+  const nothingLeft = away.bills.length + away.paydays.length === 0;
+  useEffect(() => {
+    if (step === 'confirm' && nothingLeft) setStep('done');
+  }, [step, nothingLeft]);
   const confirmable = away.paydays.filter((p) => !p.income.variable);
   const variable = away.paydays.filter((p) => p.income.variable);
 
@@ -157,69 +173,117 @@ function AwayCard({ away, today, onDismiss }: { away: CatchUp; today: string; on
     const undos: Undo[] = [];
     for (const b of away.bills) undos.push(await payBill(b.bill, b.date));
     for (const p of confirmable) undos.push(await confirmPay(store, p.income, p.date, p.income.amount));
-    toast(`Caught up: ${undos.length} ${undos.length === 1 ? 'item' : 'items'} confirmed`, async () => {
+    setStep('done');
+    toast(`All confirmed: ${undos.length} ${undos.length === 1 ? 'item' : 'items'}`, async () => {
       for (const u of undos.reverse()) await u();
     });
   };
+  const amount = fmt.money(Math.abs(roundedHeroAmount(result)), { wholeIfRound: true });
 
   return (
-    <section class="card card-quiet" aria-labelledby="away-title">
+    <section class="card card-accent" aria-labelledby="away-title">
       <h2 id="away-title" class="card-title">
         While you were away
       </h2>
-      <p class="muted">Welcome back. Since {fmt.day(away.since)}, these were due. Confirm what happened and your number catches up.</p>
-      <ul class="rows">
-        {away.paydays.map((p) => (
-          <li key={`p-${p.income.id}-${p.date}`} class="row">
-            <span class="row-main">
-              <span>
-                <Icon name="pay" small /> {p.income.name}
-              </span>
-              <span class="row-sub">
-                {fmt.day(p.date)} · {p.income.variable ? 'amount varies' : fmt.money(p.income.amount)}
-              </span>
-            </span>
-            {p.income.variable ? (
-              <span class="row-sub">Confirm on its own below</span>
-            ) : (
-              <button
-                type="button"
-                class="btn btn-small"
-                onClick={async () => toast(`${p.income.name} confirmed`, await confirmPay(store, p.income, p.date, p.income.amount))}
-              >
-                It arrived
+      {step === 'balance' && (
+        <>
+          <p>Welcome back. What's your balance today?</p>
+          <UpdateBalanceForm
+            onSaved={() => {
+              setBalanceSaved(true);
+              setStep('confirm');
+            }}
+            onSkip={() => setStep('confirm')}
+          />
+        </>
+      )}
+      {step === 'confirm' && (
+        <>
+          {balanceSaved && <p class="muted">Balance saved for today.</p>}
+          <p>Since {fmt.day(away.since)}, these were due. Confirm what happened.</p>
+          <ul class="rows">
+            {away.paydays.map((p) => (
+              <li key={`p-${p.income.id}-${p.date}`} class="row">
+                <span class="row-main">
+                  <span>
+                    <Icon name="pay" small /> {p.income.name}
+                  </span>
+                  <span class="row-sub">
+                    {fmt.day(p.date)} · {p.income.variable ? 'amount varies' : fmt.money(p.income.amount)}
+                  </span>
+                </span>
+                {p.income.variable ? (
+                  <span class="row-sub">Confirm on its own below</span>
+                ) : (
+                  <button
+                    type="button"
+                    class="btn btn-small"
+                    onClick={async () => toast(`${p.income.name} confirmed`, await confirmPay(store, p.income, p.date, p.income.amount))}
+                  >
+                    It arrived
+                  </button>
+                )}
+              </li>
+            ))}
+            {away.bills.map((b) => (
+              <li key={`b-${b.bill.id}-${b.date}`} class="row">
+                <span class="row-main">
+                  <span>{b.bill.name}</span>
+                  <span class="row-sub">
+                    {fmt.day(b.date)} · {fmt.money(billPaymentAmount(store, b.bill, today))}
+                    {b.bill.autopay ? ' · autopay' : ''}
+                  </span>
+                </span>
+                <button type="button" class="btn btn-small" onClick={async () => toast(`${b.bill.name} marked paid`, await payBill(b.bill, b.date))}>
+                  Paid
+                </button>
+              </li>
+            ))}
+          </ul>
+          {variable.map((p) => (
+            <PaydayCard key={`v-${p.income.id}-${p.date}`} income={p.income} today={p.date} />
+          ))}
+          <div class="row-gap">
+            {away.bills.length + confirmable.length > 1 && (
+              <button type="button" class="btn btn-primary" onClick={confirmAll}>
+                They all happened
               </button>
             )}
-          </li>
-        ))}
-        {away.bills.map((b) => (
-          <li key={`b-${b.bill.id}-${b.date}`} class="row">
-            <span class="row-main">
-              <span>{b.bill.name}</span>
-              <span class="row-sub">
-                {fmt.day(b.date)} · {fmt.money(billPaymentAmount(store, b.bill, today))}
-                {b.bill.autopay ? ' · autopay' : ''}
-              </span>
-            </span>
-            <button type="button" class="btn btn-small" onClick={async () => toast(`${b.bill.name} marked paid`, await payBill(b.bill, b.date))}>
-              Paid
+            <button type="button" class="link-btn" onClick={() => setStep('done')}>
+              Next
             </button>
-          </li>
-        ))}
-      </ul>
-      {variable.map((p) => (
-        <PaydayCard key={`v-${p.income.id}-${p.date}`} income={p.income} today={p.date} />
-      ))}
-      <div class="row-gap">
-        {away.bills.length + confirmable.length > 1 && (
-          <button type="button" class="btn btn-primary" onClick={confirmAll}>
-            They all happened
-          </button>
-        )}
+          </div>
+        </>
+      )}
+      {step === 'done' && (
+        <>
+          <p class="away-number">
+            {result.status === 'short' ? 'Short until payday' : 'Safe to spend today'}: <strong class="money">{amount}</strong>
+          </p>
+          <p class="muted">Have a bank statement? Importing it fills in anything you didn't log. It's optional.</p>
+          <div class="row-gap">
+            <button type="button" class="btn btn-primary" onClick={onDismiss}>
+              Done
+            </button>
+            <button
+              type="button"
+              class="btn"
+              onClick={() => {
+                setPref('openImport', true);
+                onDismiss();
+                nav('log');
+              }}
+            >
+              Import a statement
+            </button>
+          </div>
+        </>
+      )}
+      {step !== 'done' && (
         <button type="button" class="link-btn" onClick={onDismiss}>
           Later
         </button>
-      </div>
+      )}
     </section>
   );
 }
@@ -312,6 +376,12 @@ function PaydayCard({ income, today }: { income: Income; today: string }) {
 
 function SafeNumber({ result, fmt, periodProgress }: { result: SafeToSpendResult; fmt: Fmt; periodProgress: number }) {
   const [open, setOpen] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const data = useData();
+  const today = useToday();
+  // Same calculation however old the balance is; only the wording changes.
+  const fresh = balanceFreshness(data.accounts, today);
+  const freshLine = freshnessText(fresh);
   const nav = useNav();
   const toPayday = result.nextPaydaySource === 'income';
   const until = toPayday ? `until payday ${fmt.day(result.nextPayday)}` : 'until the end of the month';
@@ -331,6 +401,7 @@ function SafeNumber({ result, fmt, periodProgress }: { result: SafeToSpendResult
       </h2>
       <div class="hero-amount-row">
         <button type="button" class="hero-number" onClick={() => setOpen(true)} aria-describedby="safe-what">
+          {fresh.stale && <span class="hero-about">About </span>}
           <span class={short ? 'big-number big-number-tight' : 'big-number'}>
             {fmt.money(Math.abs(roundedHeroAmount(result)), whole)}
           </span>
@@ -353,6 +424,15 @@ function SafeNumber({ result, fmt, periodProgress }: { result: SafeToSpendResult
         <span class="status-dot" aria-hidden="true" />
         {STATUS[result.status]}
       </p>
+      {freshLine && <p class="hero-sub hero-fresh">{freshLine}</p>}
+      {fresh.stale && (
+        <button type="button" class="btn btn-small btn-primary" onClick={() => setUpdating(true)}>
+          Update balance
+        </button>
+      )}
+      <Sheet open={updating} onClose={() => setUpdating(false)} title="What's your balance today?">
+        {updating && <UpdateBalanceForm onSaved={() => setUpdating(false)} />}
+      </Sheet>
       {!short ? (
         <p id="safe-sub" class="hero-sub">
           {result.safeToSpendToday < 0
@@ -612,12 +692,12 @@ function Explain({ result: r, fmt, collapseDetail = false }: { result: SafeToSpe
 
 function QuickLog({ inputRef }: { inputRef: { current: HTMLInputElement | null } }) {
   const store = useStore();
-  const { categories, settings } = useData();
+  const { categories, settings, rules } = useData();
   const fmt = useFmt();
   const today = useToday();
   const [text, setText] = useState('');
   const dec = settings.decimalSeparator;
-  const parsed = parseQuickLog(text, categories, dec);
+  const parsed = parseQuickLog(text, categories, dec, rules);
   const cat = parsed.kind === 'ok' ? categories.find((c) => c.id === parsed.categoryId) : undefined;
 
   const save = async (amount: number, override?: { categoryId?: string; note?: string; direction?: 'in' | 'out' }) => {
@@ -666,7 +746,7 @@ function QuickLog({ inputRef }: { inputRef: { current: HTMLInputElement | null }
           {parsed.kind === 'ok' && !parsed.confirm && (
             <>
               {parsed.direction === 'in' ? 'Money in: ' : ''}
-              {fmt.money(parsed.amount)} · {cat ? cat.name : 'No category yet'}
+              {fmt.money(parsed.amount)} · {cat ? cat.name : 'No category (that’s fine — it’s optional)'}
             </>
           )}
           {parsed.kind === 'noAmount' && <>Add an amount, like "{dec === ',' ? '4,50' : '4.50'} {parsed.text}".</>}
@@ -844,6 +924,8 @@ function BackupReminder() {
   const [dismissedAt, setDismissedAt] = useState(() => getPref<number>('backupReminderDismissedAt', 0));
   const every = settings.backupRemindDays;
   if (!every) return null;
+  // Until the first backup, the first-backup prompt does this job (one prompt at a time).
+  if (!settings.lastBackupAt && !getPref('firstBackupLater', false)) return null;
   const now = Date.now();
   const sinceBackup = settings.lastBackupAt ? now - settings.lastBackupAt : now - settings.createdAt;
   const dueMs = every * 86_400_000;
@@ -874,6 +956,44 @@ function BackupReminder() {
           }}
         >
           Not now
+        </button>
+      </div>
+    </section>
+  );
+}
+
+/** Straight after setup: one gentle prompt for a first backup (until there is one, or "Later"). */
+function FirstBackupPrompt() {
+  const { settings } = useData();
+  const nav = useNav();
+  const [later, setLater] = useState(() => getPref('firstBackupLater', false));
+  if (__DEMO__ || settings.exampleData || settings.lastBackupAt || later) return null;
+  return (
+    <section class="card card-quiet" aria-labelledby="first-backup">
+      <h2 id="first-backup" class="card-title">
+        Make your first backup
+      </h2>
+      <p>{STAYS_ON_DEVICE}</p>
+      <div class="row-gap">
+        <button
+          type="button"
+          class="btn btn-small btn-primary"
+          onClick={() => {
+            setPref('openMorePage', 'backup'); // land on Backup & restore, not the More menu
+            nav('more');
+          }}
+        >
+          Back up now
+        </button>
+        <button
+          type="button"
+          class="link-btn"
+          onClick={() => {
+            setPref('firstBackupLater', true);
+            setLater(true);
+          }}
+        >
+          Later
         </button>
       </div>
     </section>

@@ -5,10 +5,11 @@ import { MIN_PASSPHRASE, WrongPassphraseError } from '../lib/backup/crypto';
 import { readBackupText, summariseBackup, type BackupFile, type BackupSummary } from '../lib/backup/format';
 import { CURRENCY_INFO, type Currency } from '../lib/money';
 import { saveFile } from '../lib/saveFile';
-import { applyBackup, makeBackup, makeTransactionsCsv, markBackedUp } from '../state/backupActions';
+import { applyBackup, makeBackup, verifyBackup, makeTransactionsCsv, markBackedUp } from '../state/backupActions';
 import { useData, useStore } from '../state/store';
 import { Select, Toggle } from '../ui/fields';
 import { useFmt } from '../ui/hooks';
+import { Icon } from '../ui/icons';
 import { toast } from '../ui/Toast';
 
 export function daysSince(ms: number | undefined, now = Date.now()): number | null {
@@ -33,9 +34,9 @@ export function BackupScreen() {
         <h2 id="bk-status" class="card-title">
           {lastBackupText(settings.lastBackupAt)}
         </h2>
+        <p>{STAYS_ON_DEVICE}</p>
         <p class="muted">
-          Your budget lives only on this device. A backup is a file you keep somewhere safe — Files, iCloud Drive, Google Drive, or email it
-          to yourself.
+          A backup is a file you keep somewhere safe — Files, iCloud Drive, Google Drive, or email it to yourself.
         </p>
         <p class="muted">
           {settings.storagePersisted
@@ -79,8 +80,12 @@ export function BackupScreen() {
   );
 }
 
-function BackupNow() {
+/** The one-line reminder of where data lives (Backup, Your data, the first-backup prompt). */
+export const STAYS_ON_DEVICE = 'Your information stays on this device. Clearing browser data deletes it, so back up occasionally.';
+
+export function BackupNow({ onDone }: { onDone?: () => void }) {
   const store = useStore();
+  const [checked, setChecked] = useState('');
   const [lock, setLock] = useState(false);
   const [pass, setPass] = useState('');
   const [pass2, setPass2] = useState('');
@@ -115,6 +120,11 @@ function BackupNow() {
           {error}
         </p>
       )}
+      {checked && (
+        <p class="backup-checked">
+          <Icon name="done" small /> Backup checked — <strong>{checked}</strong> opens correctly{lock ? ' with your passphrase' : ''}.
+        </p>
+      )}
       <button
         type="button"
         class="btn btn-primary btn-block"
@@ -123,11 +133,16 @@ function BackupNow() {
           setBusy(true);
           setError('');
           try {
+            setChecked('');
             const file = await makeBackup(store, __APP_VERSION__, lock ? pass : undefined);
             const outcome = await saveFile(file);
             if (outcome === 'cancelled') return;
+            // Open the file again exactly as a restore would (decrypt, checksum, contents).
+            await verifyBackup(store, file, lock ? pass : undefined);
             await markBackedUp(store);
-            toast(outcome === 'shared' ? 'Backup ready — keep it somewhere safe' : `Backup saved: ${file.name}`);
+            setChecked(file.name);
+            toast(outcome === 'shared' ? 'Backup checked — keep it somewhere safe' : `Backup checked: ${file.name}`);
+            onDone?.();
             setPass('');
             setPass2('');
           } catch (e) {

@@ -3,6 +3,8 @@
 import { expect, test } from '@playwright/test';
 import fs from 'node:fs';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+// @ts-expect-error plain .mjs build helper
+import { readZip } from '../scripts/zip.mjs';
 
 const cfg = JSON.parse(fs.readFileSync('site.config.json', 'utf8'));
 const site = cfg.siteUrl.replace(/\/$/, '');
@@ -32,6 +34,20 @@ for (const paper of ['Letter', 'A4']) {
     expect(flat).toContain('Scanwithyourphonecamera');
     expect(flat).toContain('Yourfirstweek');
     expect(flat).toContain('(macOS14orlater)');
+    expect(flat).toContain('DownloadonEtsy.cominawebbrowser,nottheEtsyapp.');
+    expect(flat).toContain(cfg.zipFileName);
     await doc.cleanup();
   });
 }
+
+test('Where-It-All-Is.zip: the Etsy download holds the app and both guides', async () => {
+  const file = `dist/${cfg.zipFileName}`;
+  test.skip(!fs.existsSync(file), 'run `npm run build:pdf` first');
+  expect(cfg.zipFileName).toBe('Where-It-All-Is.zip');
+  const files: Map<string, Buffer> = readZip(fs.readFileSync(file));
+  expect([...files.keys()].sort()).toEqual([cfg.downloadFileName, 'Start-Here-A4.pdf', 'Start-Here-Letter.pdf'].sort());
+  // Byte-for-byte the files the build made (CRC checked on read).
+  expect(files.get(cfg.downloadFileName)!.equals(fs.readFileSync('dist/app.html'))).toBe(true);
+  for (const paper of ['Letter', 'A4']) expect(files.get(`Start-Here-${paper}.pdf`)!.equals(fs.readFileSync(`dist/Start-Here-${paper}.pdf`))).toBe(true);
+  expect(files.get(cfg.downloadFileName)!.toString('utf8', 0, 200)).toMatch(/<!doctype html>/i);
+});

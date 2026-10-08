@@ -77,7 +77,7 @@ describe('opening-balance date', () => {
     await store.upsert('transactions', [{ ...tx('2026-10-08', -2000), accountId: main.id, source: 'manual' }, { ...tx('2026-10-20', -500), accountId: main.id, source: 'manual' }]);
     // On Oct 20 the user says "my balance is 1,100 right now" (that already includes today's 5.00).
     const anchor = anchorBalance(main, 110000, store, '2026-10-20');
-    expect(anchor).toEqual({ openingBalance: 110500, openingDate: '2026-10-20' });
+    expect(anchor).toEqual({ openingBalance: 110500, openingDate: '2026-10-20', balanceCheckedAt: '2026-10-20' });
     expect(accountBalance({ ...main, ...anchor }, store.data.transactions, '2026-10-20')).toBe(110000);
   });
 });

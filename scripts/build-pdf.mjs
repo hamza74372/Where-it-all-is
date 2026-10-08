@@ -1,18 +1,24 @@
 // Start-Here PDF (2 pages) for the Etsy download, generated from HTML with values from
 // site.config.json — in Letter and A4 (dist/Start-Here-Letter.pdf, dist/Start-Here-A4.pdf).
 // The app link, its QR code and the file name all come from the config at build time.
-// Also copies the single-file app to its customer-facing name.
+// Also copies the single-file app to its customer-facing name and packs the Etsy download,
+// dist/Where-It-All-Is.zip (the app + both PDFs).
 // Run after `npm run build`: node scripts/build-pdf.mjs   (or `npm run package` for everything)
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import qrcode from 'qrcode-generator';
+import { writeZip } from './zip.mjs';
 
 const cfg = JSON.parse(fs.readFileSync('site.config.json', 'utf8'));
 const APP_URL = `${cfg.siteUrl.replace(/\/$/, '')}/${cfg.appPath}/`;
 const DEMO_URL = `${cfg.siteUrl.replace(/\/$/, '')}/demo/`;
 const PAPERS = { Letter: { w: '8.5in', h: '11in' }, A4: { w: '210mm', h: '297mm' } };
+// Screenshots follow the paper's market: Letter buyers see dollars, A4 buyers see pounds (the
+// app picks its currency from the device locale).
+const PAPER_LOCALE = { Letter: 'en-US', A4: 'en-GB' };
+const ZIP_NAME = cfg.zipFileName ?? 'Where-It-All-Is.zip';
 // Long links may wrap only after a slash (never at the hyphens in "where-it-all-is").
 const wrapUrl = (u) =>
   u.split(/(?<=\/)(?=[^/])/).map((part) => `<span style="white-space:nowrap">${esc(part)}</span>`).join('<wbr>');
@@ -40,8 +46,8 @@ fs.copyFileSync('dist/app.html', path.join('dist', cfg.downloadFileName));
 const browser = await chromium.launch();
 
 // 1. Real screenshots of the app (example numbers) for the guide.
-async function appShot(steps) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+async function appShot(locale, steps) {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale });
   const page = await ctx.newPage();
   await page.clock.install({ time: new Date(2026, 9, 6, 10, 0) });
   await page.goto(pathToFileURL(path.resolve('dist/app.html')).href);
@@ -53,15 +59,20 @@ async function appShot(steps) {
   await ctx.close();
   return `data:image/png;base64,${buf.toString('base64')}`;
 }
-const todayShot = await appShot(async (page) => {
-  await page.getByRole('button', { name: 'Clear examples' }).waitFor();
-  await page.addStyleTag({ content: '.card-note { display: none !important; }' }); // hide the example-numbers banner
-});
-const backupShot = await appShot(async (page) => {
-  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'More' }).click();
-  await page.getByRole('button', { name: /^Backup & restore/ }).click();
-  await page.locator('#bk-now').evaluate((el) => el.scrollIntoView({ block: 'start' }));
-});
+const shots = {};
+for (const [paper, locale] of Object.entries(PAPER_LOCALE)) {
+  shots[paper] = {
+    today: await appShot(locale, async (page) => {
+      await page.getByRole('button', { name: 'Clear examples' }).waitFor();
+      await page.addStyleTag({ content: '.card-note { display: none !important; }' }); // hide the example-numbers banner
+    }),
+    backup: await appShot(locale, async (page) => {
+      await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'More' }).click();
+      await page.getByRole('button', { name: /^Backup & restore/ }).click();
+      await page.locator('#bk-now').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    }),
+  };
+}
 
 // Drawn step illustrations (used unless real device screenshots are set in the config).
 const iosShare = `<svg viewBox="0 0 40 40" class="glyph" aria-hidden="true"><rect x="9" y="15" width="22" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M20 4v20M13 11l7-7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -79,7 +90,7 @@ const androidSteps = realOr(
 );
 
 // 2. The two pages.
-const makeHtml = (PAPER, PAGE) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(cfg.productName)} — Start here</title>
+const makeHtml = (PAPER, PAGE, { today: todayShot, backup: backupShot }) => `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(cfg.productName)} — Start here</title>
 <style>
   @page { size: ${PAPER}; margin: 0; }
   * { box-sizing: border-box; }
@@ -150,9 +161,9 @@ const makeHtml = (PAPER, PAGE) => `<!doctype html><html lang="en"><head><meta ch
     </div>
     <div class="box">
       <h3>On a computer</h3>
-      <p>Open the file you downloaded, <b>${esc(cfg.downloadFileName)}</b>. Double-click it and it opens in your browser. It works with no internet connection.</p>
+      <p>Open <b>${esc(ZIP_NAME)}</b> (double-click to unzip), then double-click <b>${esc(cfg.downloadFileName)}</b>. It opens in your browser and works with no internet connection.</p>
       <p>You can use the link above on a computer too.</p>
-      <div class="note"><b>Etsy’s app can’t download digital files.</b> Open Etsy in a web browser (Safari, Chrome, Edge) → Purchases → Download files. Or simply use the link.</div>
+      <div class="note"><b>Download on Etsy.com in a web browser, not the Etsy app.</b> Etsy’s app can’t download files: use Safari, Chrome or Edge → Purchases → Download files.</div>
     </div>
   </div>
 
@@ -234,7 +245,7 @@ const done = [];
 for (const [paper, size] of Object.entries(PAPERS)) {
   const ctx = await browser.newContext({ deviceScaleFactor: 2 });
   const page = await ctx.newPage();
-  await page.setContent(makeHtml(paper, size), { waitUntil: 'load' });
+  await page.setContent(makeHtml(paper, size, shots[paper]), { waitUntil: 'load' });
   await page.emulateMedia({ media: 'print' });
   const overflow = await page.$$eval('.page', (pages) => pages.map((p) => p.scrollHeight - p.clientHeight));
   if (overflow.some((o) => o > 1)) throw new Error(`Start-Here (${paper}) content doesn't fit its page (overflow px: ${overflow.join(', ')})`);
@@ -249,7 +260,15 @@ for (const [paper, size] of Object.entries(PAPERS)) {
 }
 await browser.close();
 
+// 4. The Etsy download: one zip with the app and both guides.
+writeZip(path.join('dist', ZIP_NAME), [
+  { name: cfg.downloadFileName, file: path.join('dist', cfg.downloadFileName) },
+  { name: 'Start-Here-Letter.pdf', file: 'dist/Start-Here-Letter.pdf' },
+  { name: 'Start-Here-A4.pdf', file: 'dist/Start-Here-A4.pdf' },
+]);
+
 console.log(`${done.join('\n')}
 app link ${APP_URL}
 dist/${cfg.downloadFileName}
+dist/${ZIP_NAME} (the Etsy download)
 previews in screenshots/phase6/`);

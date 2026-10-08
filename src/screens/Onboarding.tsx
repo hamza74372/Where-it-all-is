@@ -3,13 +3,16 @@
 import { useState } from 'preact/hooks';
 import { COMMON_BILLS, nextDayOfMonth } from '../data/defaults';
 import type { Schedule } from '../db/types';
-import { addDays, weekday } from '../lib/dates';
+import { addDays, endOfMonth, weekday } from '../lib/dates';
 import { amountExample, CURRENCIES, CURRENCY_INFO, type Currency } from '../lib/money';
-import { completeOnboarding, loadExampleData } from '../state/actions';
+import { buildOnboarding, completeOnboarding, loadExampleData, type OnboardingInput } from '../state/actions';
+import { computeSafeToSpend } from '../lib/safeToSpend';
+import { nextOccurrence } from '../lib/schedule';
+import { roundedHeroAmount } from './Today';
 import { RestorePanel } from './Backup';
 import { useData, useStore } from '../state/store';
 import { checkMoney, MoneyInput, ScheduleFields, Select, TextInput, Toggle } from '../ui/fields';
-import { useToday } from '../ui/hooks';
+import { useFmt, useToday } from '../ui/hooks';
 import { Wordmark } from '../ui/Brand';
 import { Icon } from '../ui/icons';
 
@@ -29,6 +32,7 @@ export function Onboarding() {
   const store = useStore();
   const { settings } = useData();
   const today = useToday();
+  const fmt = useFmt();
   const [step, setStep] = useState<Step>('welcome');
   const [busy, setBusy] = useState(false);
 
@@ -55,17 +59,13 @@ export function Onboarding() {
   const billChecks = bills.map((b) => checkMoney(b.amount, dec));
 
   const stepValid = (s: Step): boolean => {
-    if (s === 2) return balanceCheck.state === 'ok' || balanceCheck.state === 'empty';
-    if (s === 3) return noPay || payCheck.state === 'ok' || payCheck.state === 'empty';
-    if (s === 4) return billChecks.every((c, i) => (c.state === 'ok' && (!bills[i].custom || bills[i].name.trim())) || c.state === 'empty');
+    if (s === 1) return balanceCheck.state === 'ok' || balanceCheck.state === 'empty';
+    if (s === 2) return noPay || payCheck.state === 'ok' || payCheck.state === 'empty';
+    if (s === 3) return billChecks.every((c, i) => (c.state === 'ok' && (!bills[i].custom || bills[i].name.trim())) || c.state === 'empty');
     return true;
   };
 
-  const finish = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      await completeOnboarding(store, {
+  const input = (): OnboardingInput => ({
         name,
         currency,
         decimalSeparator: dec,
@@ -82,10 +82,37 @@ export function Onboarding() {
           const anchorDate = nextDayOfMonth(today, day);
           return [{ name: b.name.trim() || 'Bill', amount: c.value, schedule: { kind: 'monthly', anchorDate, dayOfMonth: day, weekendShift: 'none' } as Schedule }];
         }),
-      });
+  });
+
+  const finish = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await completeOnboarding(store, input());
     } finally {
       setBusy(false);
     }
+  };
+
+  /** The day the money needs to last until: the next payday entered, else the end of the month. */
+  const setupPayday = (): { date: string; isPay: boolean } => {
+    const pay = !noPay && payCheck.state === 'ok' ? nextOccurrence(paySchedule, today) : null;
+    return pay ? { date: pay, isPay: true } : { date: endOfMonth(today), isPay: false };
+  };
+
+  /** "Your number": the real calculation on exactly what setup is about to save. */
+  const previewNumber = () => {
+    const built = buildOnboarding(input(), store.data.categories);
+    return computeSafeToSpend({
+      today, accounts: [built.account], transactions: [], incomes: built.income ? [built.income] : [], bills: built.bills, goals: [],
+      settings: { buffer: 0, setAsideGoals: false },
+    });
+  };
+
+  // Currency applies straight away, so amounts during setup show the right symbol.
+  const chooseCurrency = async (c: Currency) => {
+    setCurrency(c);
+    await store.saveSettings({ currency: c });
   };
 
   const next = async () => {
@@ -150,6 +177,12 @@ export function Onboarding() {
     );
   }
 
+  const STEPS = ['Balance', 'Payday', 'Bills', 'Your number'] as const;
+  const n = Number(step);
+  const eg = (amount: string) => `e.g. ${dec === ',' ? amount.replace(/\./g, '#').replace(/,/g, '.').replace(/#/g, ',') : amount}`;
+  const payday = setupPayday();
+  const preview = step === 4 ? previewNumber() : null;
+
   return (
     <main class="screen onboarding" id="main">
       <div class="onb-top">
@@ -161,11 +194,11 @@ export function Onboarding() {
         </button>
       </div>
       <div class="progress" aria-hidden="true">
-        <span style={{ width: `${(Number(step) / 4) * 100}%` }} />
+        <span style={{ width: `${(n / 4) * 100}%` }} />
       </div>
-      <ol class="setup-dots" aria-label={`Setup step ${step} of 4`}>
-        {['You', 'Balance', 'Payday', 'Bills'].map((label, index) => (
-          <li key={label} class={index + 1 <= Number(step) ? 'is-active' : ''} aria-current={index + 1 === Number(step) ? 'step' : undefined}>
+      <ol class="setup-dots" aria-label={`Setup step ${step} of 4: ${STEPS[n - 1]}`}>
+        {STEPS.map((label, index) => (
+          <li key={label} class={index + 1 <= n ? 'is-active' : ''} aria-current={index + 1 === n ? 'step' : undefined}>
             <i aria-hidden="true" /><span>{label}</span>
           </li>
         ))}
@@ -173,13 +206,16 @@ export function Onboarding() {
 
       {step === 1 && (
         <section class="onb-step">
-          <h1 class="screen-title">Hello. Let's start simple.</h1>
-          <TextInput label="What should we call you? (optional)" value={name} onInput={setName} placeholder="Your name" />
-          <Select
-            label="Currency"
-            value={currency}
-            options={CURRENCIES.map((c) => ({ value: c, label: CURRENCY_INFO[c].label }))}
-            onChange={setCurrency}
+          <h1 class="screen-title">How much is in your main account right now?</h1>
+          <p class="muted why-we-ask">Why we ask: your number starts from what's in your account today — no bank login needed.</p>
+          <MoneyInput
+            label="Balance today"
+            value={balance}
+            onInput={setBalance}
+            autoFocus
+            placeholder={eg('1,250.00')}
+            showErrors={showErrors}
+            hint="Check your banking app, or use a rough number. You can add savings and cards later."
           />
           <div class="card card-quiet">
             <p>
@@ -189,26 +225,20 @@ export function Onboarding() {
               Switch to {amountExample(dec === '.' ? ',' : '.')}
             </button>
           </div>
+          <Select
+            label="Currency"
+            value={currency}
+            options={CURRENCIES.map((c) => ({ value: c, label: CURRENCY_INFO[c].label }))}
+            onChange={chooseCurrency}
+          />
+          <TextInput label="What should we call you? (optional)" value={name} onInput={setName} placeholder="e.g. Sam" />
         </section>
       )}
 
       {step === 2 && (
         <section class="onb-step">
-          <h1 class="screen-title">How much is in your main account right now?</h1>
-          <MoneyInput
-            label="Balance today"
-            value={balance}
-            onInput={setBalance}
-            autoFocus
-            showErrors={showErrors}
-            hint="Check your banking app, or use a rough number. You can add savings and cards later."
-          />
-        </section>
-      )}
-
-      {step === 3 && (
-        <section class="onb-step">
           <h1 class="screen-title">When do you get paid?</h1>
+          <p class="muted why-we-ask">Why we ask: so we know how many days your money needs to last.</p>
           {noPay ? (
             <div class="card card-quiet">
               <p>No problem. We'll plan to the end of each month instead.</p>
@@ -222,6 +252,7 @@ export function Onboarding() {
                 label={payVaries ? 'About how much, on average?' : 'How much lands in your account?'}
                 value={payAmount}
                 onInput={setPayAmount}
+                placeholder={eg('1,800.00')}
                 showErrors={showErrors}
                 hint="After tax — the amount that actually arrives."
               />
@@ -240,13 +271,19 @@ export function Onboarding() {
         </section>
       )}
 
-      {step === 4 && (
+      {step === 3 && (
         <section class="onb-step">
           <h1 class="screen-title">Your main monthly bills</h1>
-          <p class="muted">Fill in the ones you have. Leave the rest blank. You can add more, or other schedules, any time.</p>
+          <p class="muted why-we-ask">Why we ask: so money for them is set aside before they're due.</p>
+          <p>
+            Only bills due before {payday.isPay ? 'your next payday' : 'the end of the month'} ({fmt.day(payday.date)}) are needed now.
+            Leave the rest blank and add them any time.
+          </p>
           <ul class="bill-quick-list">
             {bills.map((b, i) => {
               const update = (patch: Partial<BillRow>) => setBills(bills.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+              const day = Number(b.day);
+              const afterPayday = day >= 1 && day <= 31 && nextDayOfMonth(today, Math.min(31, day)) >= payday.date;
               return (
                 <li key={b.id} class="bill-quick-row">
                   {b.custom ? (
@@ -259,7 +296,8 @@ export function Onboarding() {
                       <Icon name={b.icon} small /> {b.name}
                     </span>
                   )}
-                  <BillRowInputs row={b} showErrors={showErrors} onChange={update} />
+                  <BillRowInputs row={b} showErrors={showErrors} onChange={update} example={eg('45.00')} />
+                  {afterPayday && <p class="field-hint">Due after {payday.isPay ? 'payday' : 'this month'} — this one can wait.</p>}
                 </li>
               );
             })}
@@ -274,9 +312,26 @@ export function Onboarding() {
         </section>
       )}
 
+      {step === 4 && preview && (
+        <section class="onb-step" aria-labelledby="your-number">
+          <h1 id="your-number" class="screen-title">Your number</h1>
+          <p class="muted why-we-ask">This is what it all adds up to. It updates as you log, import and get paid.</p>
+          <div class="card setup-number">
+            <p class="hero-label">{preview.status === 'short' ? 'Short until payday' : 'Safe to spend today'}</p>
+            <p class="big-number">{fmt.money(Math.abs(roundedHeroAmount(preview)), { wholeIfRound: true })}</p>
+            <p>
+              {preview.status === 'short'
+                ? `What's missing to cover your bills ${preview.nextPaydaySource === 'income' ? 'until payday' : 'until the end of the month'}.`
+                : `What you can spend today and still cover your bills ${preview.nextPaydaySource === 'income' ? 'until payday' : 'until the end of the month'}.`}
+            </p>
+          </div>
+          <p class="muted">Rough numbers are fine. Change anything later in More.</p>
+        </section>
+      )}
+
       <div class="onb-actions">
         {step !== 1 && (
-          <button type="button" class="btn" onClick={() => setStep((Number(step) - 1) as Step)}>
+          <button type="button" class="btn" onClick={() => setStep((n - 1) as Step)}>
             Back
           </button>
         )}
@@ -308,7 +363,7 @@ function WelcomePreview() {
   );
 }
 
-function BillRowInputs(props: { row: BillRow; showErrors: boolean; onChange: (p: Partial<BillRow>) => void }) {
+function BillRowInputs(props: { row: BillRow; showErrors: boolean; onChange: (p: Partial<BillRow>) => void; example?: string }) {
   const name = props.row.name.trim() || 'New bill';
   return (
     <div class="bill-quick-inputs">
@@ -318,6 +373,7 @@ function BillRowInputs(props: { row: BillRow; showErrors: boolean; onChange: (p:
           ariaLabel={`${name} amount`}
           value={props.row.amount}
           onInput={(amount) => props.onChange({ amount })}
+          placeholder={props.example}
           showErrors={props.showErrors}
         />
       </div>
@@ -329,7 +385,7 @@ function BillRowInputs(props: { row: BillRow; showErrors: boolean; onChange: (p:
           inputMode="numeric"
           min={1}
           max={31}
-          placeholder="Day"
+          placeholder="e.g. 1"
           aria-label={`${name} day of month`}
           value={props.row.day}
           onInput={(e) => props.onChange({ day: e.currentTarget.value })}

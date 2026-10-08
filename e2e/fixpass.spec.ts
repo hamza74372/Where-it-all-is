@@ -12,7 +12,6 @@ test.beforeEach(async ({ page }) => {
 test('onboarding: monthly bills step, "Add another bill", first-day prompt, look-ahead line', async ({ page }) => {
   await page.goto(APP);
   await page.getByRole('button', { name: /Set up mine/ }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('1200');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('How much lands in your account?').fill('1000');
@@ -28,7 +27,9 @@ test('onboarding: monthly bills step, "Add another bill", first-day prompt, look
   await page.getByLabel('Bill name').fill('Netflix');
   await page.getByLabel('Netflix amount').fill('15');
   await page.getByLabel('Netflix day of month').fill('20');
+  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page.getByRole('button', { name: 'Finish' })).toHaveCount(0); // saved
 
   // Pay 1,000 on 9 Oct; 9–22 Oct holds rent 1,200 + Netflix 15 → 215 set aside now.
   // 1,200 − 215 = 985 over 3 days → 328.33 → shown as $328.

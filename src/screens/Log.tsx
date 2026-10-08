@@ -7,6 +7,7 @@ import type { Transaction } from '../db/types';
 import { addMonthsYM, parts, ymd } from '../lib/dates';
 import { isBeforeStart } from '../lib/safeToSpend';
 import { addTransfer, deleteTransactions, defaultAccount, saveWithUndo } from '../state/actions';
+import { getPref, setPref } from '../lib/prefs';
 import { filterLog, groupBy, LOG_PAGE } from '../lib/logFilter';
 import { isTransfer } from '../lib/transfers';
 import { useData, useStore } from '../state/store';
@@ -39,7 +40,12 @@ export function Log() {
   const [categoryId, setCategoryId] = useState('');
   const [shown, setShown] = useState(LOG_PAGE);
   const [editing, setEditing] = useState<Transaction | 'new' | null>(null);
-  const [importing, setImporting] = useState(false);
+  // "Import a statement" from Today's welcome-back card opens the import straight away.
+  const [importing, setImporting] = useState(() => {
+    const open = getPref('openImport', false);
+    if (open) setPref('openImport', false);
+    return open;
+  });
   const prefix = ymd(ym.y, ym.m, 1).slice(0, 7);
   const searching = query.trim() !== '';
   const catById = useMemo(() => new Map(data.categories.map((c) => [c.id, c])), [data.categories]);

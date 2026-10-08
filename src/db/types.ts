@@ -89,6 +89,8 @@ export interface Account extends BaseRecord {
    * don't move the balance. Undefined = every transaction counts (older data, example data).
    */
   openingDate?: ISODate;
+  /** The last day the person confirmed this balance (setup, an edit, "Update balance", a statement check). */
+  balanceCheckedAt?: ISODate;
   includeInSafeToSpend: boolean;
   archived: boolean;
 }

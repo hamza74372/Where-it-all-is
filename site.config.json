@@ -18,6 +18,7 @@
     "wordmarkReverse": "branding/wordmark-reverse.svg"
   },
   "downloadFileName": "Where-It-All-Is-Budget-App.html",
+  "zipFileName": "Where-It-All-Is.zip",
   "startHere": {
     "_readme": "Start-Here PDF settings. npm run package makes both Start-Here-Letter.pdf and Start-Here-A4.pdf. Leave a screenshot path empty to use the drawn illustration; set it to a PNG to use a real device screenshot instead.",
     "iphoneAddToHomeScreenImage": "",

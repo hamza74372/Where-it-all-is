@@ -67,26 +67,26 @@ test('phase 2 walkthrough + audit', async ({ page }, info) => {
   // ---------------- Setup ----------------
   await snap('welcome');
   await tap(page.getByRole('button', { name: /Set up mine/ }));
-  await snap('setup-1-name-currency');
-  await tap(page.getByRole('button', { name: 'Next' }));
-
   await type(page.getByLabel('Balance today'), '1200');
-  await snap('setup-2-balance');
+  await snap('setup-1-balance');
   await tap(page.getByRole('button', { name: 'Next' }));
 
   // Defaults are already "every 2 weeks, next Friday" — only the amount is needed.
   await type(page.getByLabel('How much lands in your account?'), '1500');
   await expect(page.getByLabel('How often')).toHaveValue('biweekly');
   await expect(page.getByLabel('Next payday')).toHaveValue('2026-10-09');
-  await snap('setup-3-pay');
+  await snap('setup-2-pay');
   await tap(page.getByRole('button', { name: 'Next' }));
 
   await type(page.getByLabel('Rent or mortgage amount'), '800');
   await type(page.getByLabel('Rent or mortgage day of month'), '1');
   await type(page.getByLabel('Phone amount'), '45');
   await type(page.getByLabel('Phone day of month'), '15');
-  await snap('setup-4-bills');
+  await snap('setup-3-bills');
+  await tap(page.getByRole('button', { name: 'Next' }));
+  await snap('setup-4-your-number');
   await tap(page.getByRole('button', { name: 'Finish' }));
+  await expect(page.getByRole('button', { name: 'Finish' })).toHaveCount(0); // saved
   await expect(page.locator('.big-number')).toBeVisible();
   const afterOnboarding = { taps: counts.setupTaps, fields: counts.setupFields };
   await snap('today-after-setup');

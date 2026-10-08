@@ -33,14 +33,12 @@ test('onboarding → log → undo → mark bill paid → calendar', async ({ pag
   await shot(page, '01-welcome');
   await page.getByRole('button', { name: /Set up mine/ }).click();
 
-  // Step 1: name, currency, decimal switch
+  // Step 1: balance, with currency, decimal switch and name (typing an unusual amount shows the prompt and blocks Next)
+  await expect(page.getByRole('list', { name: 'Setup step 1 of 4: Balance' })).toBeVisible();
   await page.getByLabel('What should we call you? (optional)').fill('Sam');
   await page.getByLabel('Currency').selectOption('USD');
   await expect(page.getByText("You'll type amounts like")).toContainText('12.50');
   await shot(page, '02-step1');
-  await page.getByRole('button', { name: 'Next' }).click();
-
-  // Step 2: balance (typing an unusual amount shows the prompt and blocks Next)
   await page.getByLabel('Balance today').fill('1.240');
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByText('Did you mean $1,240.00?')).toBeVisible();
@@ -49,18 +47,23 @@ test('onboarding → log → undo → mark bill paid → calendar', async ({ pag
   await expect(page.getByLabel('Balance today')).toHaveValue('1240');
   await page.getByRole('button', { name: 'Next' }).click();
 
-  // Step 3: pay — default is every 2 weeks from next Friday (9 Oct)
+  // Step 2: pay — default is every 2 weeks from next Friday (9 Oct)
   await page.getByLabel('How much lands in your account?').fill('1850');
   await shot(page, '04-pay');
   await page.getByRole('button', { name: 'Next' }).click();
 
-  // Step 4: bills
+  // Step 3: bills
   await page.getByLabel('Rent or mortgage amount').fill('950');
   await page.getByLabel('Rent or mortgage day of month').fill('1');
   await page.getByLabel('Phone amount').fill('45');
   await page.getByLabel('Phone day of month').fill('8');
   await shot(page, '05-bills');
+  await page.getByRole('button', { name: 'Next' }).click();
+
+  // Step 4: your number — the same calculation Today will show
+  await expect(page.locator('.setup-number .big-number')).toHaveText('$398');
   await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page.getByRole('button', { name: 'Finish' })).toHaveCount(0); // saved
 
   // Today: 1,240 − phone 45 (due 8 Oct, before payday 9 Oct) = 1,195 over 3 days → 398.33
   await expect(page.getByRole('heading', { name: 'Hi Sam' })).toBeVisible();
@@ -120,7 +123,6 @@ test('payday: confirm-your-pay card leads Today, rent today still set aside', as
   const problems = guard(page);
   await page.goto(APP);
   await page.getByRole('button', { name: /Set up mine/ }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('300');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('How much lands in your account?').fill('1850');
@@ -128,7 +130,9 @@ test('payday: confirm-your-pay card leads Today, rent today still set aside', as
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Rent or mortgage amount').fill('950');
   await page.getByLabel('Rent or mortgage day of month').fill('9');
+  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page.getByRole('button', { name: 'Finish' })).toHaveCount(0); // saved
 
   const card = page.getByRole('region', { name: 'Payday — confirm your pay' });
   await expect(card).toBeVisible();
@@ -168,7 +172,6 @@ test('comma-decimal user: switch in onboarding, amounts shown to match', async (
   await page.getByRole('button', { name: /Set up mine/ }).click();
   await page.getByRole('button', { name: 'Switch to 12,50' }).click();
   await expect(page.getByText("You'll type amounts like")).toContainText('12,50');
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('1.240,50');
   await page.getByRole('button', { name: 'Skip setup' }).click();
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'More' }).click();

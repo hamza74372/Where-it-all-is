@@ -34,7 +34,7 @@ npm run audit                             # layout audit: iPhone 13 WebKit + Pix
 npx playwright test -c playwright.audit.config.ts screens --project=webkit-iphone13-light --project=webkit-iphone13-dark
                                           # re-capture every screen into docs/screens/
 npm run dev                               # dev server (no CSP)
-npm run package                           # everything incl. site/ and the Start-Here PDFs
+npm run package                           # everything incl. site/, the Start-Here PDFs and dist/Where-It-All-Is.zip
 ```
 Always run `npm run build:all` before e2e or the audit; they test the built files. Before you push: typecheck, unit tests, e2e and the audit must all pass. The audit fails on text under 14 px, tap targets under 44 px, clipping, overlap, low contrast and sideways scrolling.
 

@@ -31,14 +31,15 @@ async function start(page: Page, when = new Date(2026, 9, 6, 14, 30)) {
 async function quickSetup(page: Page) {
   await page.getByRole('button', { name: /Set up mine/ }).click();
   await page.getByLabel('What should we call you? (optional)').fill('Sam');
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('1200');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('How much lands in your account?').fill('1500');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Rent or mortgage amount').fill('800');
   await page.getByLabel('Rent or mortgage day of month').fill('8');
+  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page.getByRole('button', { name: 'Finish' })).toHaveCount(0); // saved
   await page.getByRole('textbox', { name: 'Log a spend' }).fill('23.40 groceries');
   await page.getByRole('textbox', { name: 'Log a spend' }).press('Enter');
   await expect(page.getByRole('status')).toContainText('Logged $23.40'); // let the number update first
@@ -158,12 +159,17 @@ test('on a phone, Back up now uses the share sheet (Save to Files, AirDrop…)',
   expect(await page.evaluate(() => (window as unknown as { shared: string[] }).shared)).toEqual(['where-it-all-is-backup-2026-10-06.json']);
 });
 
-test('backup reminder after 7 days (gentle, dismissible) and the one-time storage note', async ({ page }) => {
+test('first-backup prompt after setup, then a reminder after 7 days (gentle, dismissible), and the one-time storage note', async ({ page }) => {
   await noShareSheet(page);
   await start(page);
   await quickSetup(page);
   await expect(page.getByRole('heading', { name: 'Keep your budget safe' })).toBeVisible();
   await page.getByRole('button', { name: 'Got it' }).click();
+  // Straight after setup: the first-backup prompt (one prompt at a time).
+  const first = page.getByRole('region', { name: 'Make your first backup' });
+  await expect(first).toContainText('Your information stays on this device. Clearing browser data deletes it, so back up occasionally.');
+  await first.getByRole('button', { name: 'Later' }).click();
+  await expect(first).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Time for a quick backup?' })).toHaveCount(0); // too soon
   await page.clock.setSystemTime(new Date(2026, 9, 15, 9, 0)); // 9 days later
   await page.reload();
@@ -207,7 +213,6 @@ test('partner share: opens as a separate read-only tab, never mixes with your da
   await noShareSheet(page);
   await start(page, new Date(2026, 9, 6, 18, 0));
   await page.getByRole('button', { name: /Set up mine/ }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('500');
   await page.getByRole('button', { name: 'Skip setup' }).click();
   const ownNumber = await page.locator('.big-number').textContent();

@@ -108,20 +108,21 @@ test('empty data', async ({ page }, info) => {
     await page.getByRole('button', { name: 'Back to welcome' }).click();
   });
   await page.getByRole('button', { name: /Set up mine/ }).click();
-  await h.shot('onboarding-1-name');
-  await page.getByRole('button', { name: 'Next' }).click();
-  await h.shot('onboarding-2-balance');
+  await h.shot('onboarding-1-balance');
   await h.step('balance-error', async () => {
     await page.getByLabel('Balance today').fill('abc'); // not a number → the error state
     await page.getByRole('button', { name: 'Next' }).click();
-    await h.shot('onboarding-2-balance-error');
+    await h.shot('onboarding-1-balance-error');
   });
   await page.getByLabel('Balance today').fill('1200');
   await page.getByRole('button', { name: 'Next' }).click();
-  await h.shot('onboarding-3-pay');
+  await h.shot('onboarding-2-payday');
   await page.getByRole('button', { name: 'Next' }).click();
-  await h.shot('onboarding-4-bills');
-  await page.getByRole('button', { name: 'Skip setup' }).click();
+  await h.shot('onboarding-3-bills');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await h.shot('onboarding-4-your-number');
+  await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page.getByRole('button', { name: 'Finish' })).toHaveCount(0); // saved
 
   // Empty app: only a balance.
   await expect(page.locator('.big-number')).toBeVisible();
@@ -208,7 +209,6 @@ test('filled data', async ({ page }, info) => {
   await page.goto(APP);
   await page.getByRole('button', { name: /Set up mine/ }).click();
   await page.getByLabel('What should we call you? (optional)').fill('Sam');
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('1200');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('How much lands in your account?').fill('1500');
@@ -223,7 +223,9 @@ test('filled data', async ({ page }, info) => {
   await page.getByLabel('Netflix amount').fill('15.49');
   await page.getByLabel('Netflix day of month').fill('20');
   await h.shot('onboarding-4-bills');
+  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page.getByRole('button', { name: 'Finish' })).toHaveCount(0); // saved
   await expect(page.locator('.big-number')).toBeVisible();
   await h.shot('today-first-day');
 
@@ -233,8 +235,10 @@ test('filled data', async ({ page }, info) => {
   await expect(page.locator('.hero')).toBeVisible();
   await h.shot('today-away-and-payday');
   await h.step('catch-up', async () => {
+    await page.getByRole('region', { name: 'While you were away' }).getByRole('button', { name: 'Skip' }).click();
     await page.getByRole('button', { name: 'They all happened' }).click();
     await h.shot('today-toast-undo');
+    await page.getByRole('region', { name: 'While you were away' }).getByRole('button', { name: 'Done' }).click();
   });
   await h.step('payday', async () => {
     await page.getByRole('button', { name: "Yes, it's in" }).click();

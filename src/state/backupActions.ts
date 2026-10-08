@@ -1,7 +1,7 @@
 // Backup, restore (replace or merge, both undoable), CSV export and partner sharing.
 
 import { checkPassphrase, encryptJson, decryptJson, NotOurFileError, type EncryptedFile } from '../lib/backup/crypto';
-import { backupFileName, buildBackup, type BackupFile } from '../lib/backup/format';
+import { backupFileName, buildBackup, readBackupText, type BackupFile } from '../lib/backup/format';
 import { mergeSnapshots, type MergeStats } from '../lib/backup/merge';
 import { buildPartnerSummary, isPartnerSummary, partnerFileName, QR_MAX_CHARS, toShareCode, type PartnerSummary } from '../lib/backup/partner';
 import { transactionsToCsv } from '../lib/backup/csvExport';
@@ -20,6 +20,22 @@ export async function makeBackup(store: Store, appVersion: string, passphrase?: 
   const file = await buildBackup(await store.exportSnapshot(), appVersion, now);
   const body = passphrase ? await encryptJson(file, passphrase, 'backup') : file;
   return { name: backupFileName(now, !!passphrase), text: JSON.stringify(body), type: 'application/json' };
+}
+
+/**
+ * Read a just-made backup back, the way a restore would: decrypt it (with the same passphrase),
+ * check its checksum, and compare what's inside with what's on the device. Throws if anything
+ * doesn't line up, so "Backup checked" is only said when the file really opens.
+ */
+export async function verifyBackup(store: Store, made: MadeFile, passphrase?: string): Promise<void> {
+  const read = await readBackupText(made.text, passphrase);
+  if (read.kind !== 'backup') throw new Error('The backup file couldn’t be opened again — please try once more.');
+  const now = await store.exportSnapshot();
+  for (const name of ['transactions', 'accounts', 'bills', 'categories'] as const) {
+    if ((read.file.stores[name] ?? []).length !== (now[name] ?? []).length) {
+      throw new Error('The backup file doesn’t match what’s on this device — please try once more.');
+    }
+  }
 }
 
 export async function markBackedUp(store: Store, now = Date.now()): Promise<void> {

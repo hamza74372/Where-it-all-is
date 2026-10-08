@@ -19,7 +19,6 @@ test('realistic month: bills paid, pay confirmed, spends logged, then the bank s
   await page.goto(APP);
   await page.getByRole('button', { name: /Set up mine/ }).click();
   await page.getByLabel('What should we call you? (optional)').fill('Sam');
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('1200');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('How much lands in your account?').fill('1500');
@@ -32,13 +31,17 @@ test('realistic month: bills paid, pay confirmed, spends logged, then the bank s
   await page.getByLabel('Bill name').fill('Netflix');
   await page.getByLabel('Netflix amount').fill('15.49');
   await page.getByLabel('Netflix day of month').fill('20');
+  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Finish' }).click();
+  await expect(page.getByRole('button', { name: 'Finish' })).toHaveCount(0); // saved
   await expect(page.locator('.big-number')).toBeVisible();
 
   // Back on Fri 16 Oct (payday): catch up, confirm today's pay, log four spends.
   await page.clock.setSystemTime(new Date(2026, 9, 16, 10, 0));
   await page.reload();
+  await page.getByRole('region', { name: 'While you were away' }).getByRole('button', { name: 'Skip' }).click();
   await page.getByRole('button', { name: 'They all happened' }).click();
+  await page.getByRole('region', { name: 'While you were away' }).getByRole('button', { name: 'Done' }).click();
   await page.getByRole('button', { name: "Yes, it's in" }).click();
   const box = page.getByRole('textbox', { name: 'Log a spend' });
   for (const t of ['4.50 coffee', '32.10 groceries', '12 lunch', '2.75 bus']) {

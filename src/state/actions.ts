@@ -146,9 +146,14 @@ export async function confirmPay(store: Store, income: Income, date: ISODate, am
  * (X minus anything already logged today) and today's date as the new opening date, so
  * transactions before today — already reflected in X — no longer move the balance.
  */
-export function anchorBalance(account: Pick<Account, 'id'>, currentBalance: Minor, store: Store, today: ISODate): { openingBalance: Minor; openingDate: ISODate } {
+export function anchorBalance(
+  account: Pick<Account, 'id'>,
+  currentBalance: Minor,
+  store: Store,
+  today: ISODate,
+): { openingBalance: Minor; openingDate: ISODate; balanceCheckedAt: ISODate } {
   const todays = accountBalance({ ...(account as Account), openingBalance: 0, openingDate: today }, store.data.transactions, today);
-  return { openingBalance: currentBalance - todays, openingDate: today };
+  return { openingBalance: currentBalance - todays, openingDate: today, balanceCheckedAt: today };
 }
 
 export interface OnboardingInput {
@@ -162,34 +167,35 @@ export interface OnboardingInput {
   today: ISODate;
 }
 
-export async function completeOnboarding(store: Store, input: OnboardingInput): Promise<void> {
+/** What setup will create — also used to preview "Your number" before anything is saved. */
+export function buildOnboarding(input: OnboardingInput, categories: Category[]): { account: Account; income: Income | null; bills: Bill[] } {
   const accountId = uid();
-  const { categories } = store.data;
-  await store.upsert('accounts', [
-    {
-      id: accountId, name: 'Main account', type: 'checking', openingBalance: input.balance ?? 0, openingDate: input.today,
-      includeInSafeToSpend: true, archived: false,
-    },
-  ]);
-  if (input.pay) {
-    await store.upsert('incomes', [
-      { id: uid(), name: 'Paycheck', amount: input.pay.amount, accountId, schedule: input.pay.schedule, variable: input.pay.variable, active: true },
-    ]);
-  }
-  if (input.bills.length) {
-    await store.upsert(
-      'bills',
-      input.bills.map((b) => ({
-        id: uid(), name: b.name, amount: b.amount, accountId, schedule: b.schedule, autopay: false, isDebtMinimum: false, active: true,
-        categoryId: categoryByName(categories, COMMON_BILLS.find((c) => c.name === b.name)?.categoryName ?? 'Bills')?.id,
-      })),
-    );
-  }
+  const now = Date.now();
+  const account: Account = {
+    id: accountId, name: 'Main account', type: 'checking', openingBalance: input.balance ?? 0, openingDate: input.today,
+    balanceCheckedAt: input.balance === null ? undefined : input.today,
+    includeInSafeToSpend: true, archived: false, updatedAt: now,
+  };
+  const income: Income | null = input.pay
+    ? { id: uid(), name: 'Paycheck', amount: input.pay.amount, accountId, schedule: input.pay.schedule, variable: input.pay.variable, active: true, updatedAt: now }
+    : null;
+  const bills: Bill[] = input.bills.map((b) => ({
+    id: uid(), name: b.name, amount: b.amount, accountId, schedule: b.schedule, autopay: false, isDebtMinimum: false, active: true, updatedAt: now,
+    categoryId: categoryByName(categories, COMMON_BILLS.find((c) => c.name === b.name)?.categoryName ?? 'Bills')?.id,
+  }));
+  return { account, income, bills };
+}
+
+export async function completeOnboarding(store: Store, input: OnboardingInput): Promise<void> {
+  const { account, income, bills } = buildOnboarding(input, store.data.categories);
+  await store.upsert('accounts', [account]);
+  if (income) await store.upsert('incomes', [income]);
+  if (bills.length) await store.upsert('bills', bills);
   await store.saveSettings({
     name: input.name.trim(),
     currency: input.currency,
     decimalSeparator: input.decimalSeparator,
-    defaultAccountId: accountId,
+    defaultAccountId: account.id,
     onboarded: true,
     exampleData: false,
   });
@@ -236,4 +242,26 @@ export async function clearExampleData(store: Store): Promise<void> {
   const categories = await store.upsert('categories', buildDefaultCategories());
   await store.upsert('rules', buildStarterRules(categories, uid));
   await store.saveSettings({ onboarded: false, exampleData: false, defaultAccountId: undefined });
+}
+
+/**
+ * "What's your balance today?" — set each account to the balance the person just checked. Like an
+ * account edit: the balance becomes true as of today, so nothing logged before today moves it
+ * again. Undo puts every account back.
+ */
+export async function updateBalances(store: Store, entries: Array<{ accountId: Id; balance: Minor }>, today: ISODate): Promise<Undo> {
+  const before = store.data.accounts.filter((a) => entries.some((e) => e.accountId === a.id));
+  const rows = before.map((a) => {
+    const entered = entries.find((e) => e.accountId === a.id)!.balance;
+    const signed = a.type === 'credit' ? -Math.abs(entered) : entered; // a card: what's owed
+    return { ...a, ...anchorBalance(a, signed, store, today) };
+  });
+  await store.upsert('accounts', rows);
+  return async () => void (await store.upsert('accounts', before));
+}
+
+/** A statement check (or an agreed balance) confirms the balance as of that day. */
+export async function markBalanceChecked(store: Store, accountId: Id, date: ISODate): Promise<void> {
+  const a = store.data.accounts.find((x) => x.id === accountId);
+  if (a && (!a.balanceCheckedAt || a.balanceCheckedAt < date)) await store.upsert('accounts', [{ ...a, balanceCheckedAt: date }]);
 }

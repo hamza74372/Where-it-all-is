@@ -10,7 +10,7 @@ import { detectMapping, type Detection, type MappingDraft } from '../lib/csv/det
 import { parseCsv } from '../lib/csv/parse';
 import { DEMO_MAX_ENTRIES, demoRemaining } from '../lib/demo';
 import { isBeforeStart } from '../lib/safeToSpend';
-import { saveWithUndo } from '../state/actions';
+import { markBalanceChecked, saveWithUndo } from '../state/actions';
 import {
   addBalanceAdjustment, addRule, addStatementAdjustment, balanceReport, bankStyleBalance, commitImport, countsOf, entryKind, entryNoun, importNotes, isBigGap, isConfirmedTransfer,
   prepareImport, resolutionOf, saveMapping, undoImport, type Prepared, type PreparedItem,
@@ -316,6 +316,7 @@ function MapStep(props: {
         <h2 id="preview-title" class="card-title">
           Preview
         </h2>
+        <p class="muted">Nothing changes until you confirm.</p>
         {preview.items.length === 0 ? (
           <p class="field-error">No transactions found with these settings — try a different date or amount column below.</p>
         ) : (
@@ -446,6 +447,7 @@ function ReviewStep(props: {
         <h2 id="review-title" class="card-title">
           Ready to import
         </h2>
+        <p class="muted">Nothing changes until you confirm.</p>
         <ul class="review-list">
           <li>
             <strong>{c.newCount}</strong> new {c.newCount === 1 ? 'transaction' : 'transactions'}
@@ -708,7 +710,14 @@ function StatementCheck({ accountId, prepared, onDone }: { accountId: Id; prepar
           Both say <strong>{fmt.money(report.bank)}</strong> on {fmt.day(report.date)}.
         </p>
         <div class="form-actions">
-          <button type="button" class="btn btn-primary btn-grow" onClick={onDone}>
+          <button
+            type="button"
+            class="btn btn-primary btn-grow"
+            onClick={async () => {
+              await markBalanceChecked(store, accountId, report.date); // the bank confirmed it
+              onDone();
+            }}
+          >
             Continue
           </button>
         </div>
@@ -718,6 +727,7 @@ function StatementCheck({ accountId, prepared, onDone }: { accountId: Id; prepar
 
   const adjust = async () => {
     const { difference, undo } = await addStatementAdjustment(store, accountId, report);
+    await markBalanceChecked(store, accountId, report.date);
     onDone(); // move on first: changing step clears toasts, and this one carries the Undo
     toast(`Balance adjustment of ${fmt.money(difference, { signed: true })} added`, undo);
   };
@@ -780,6 +790,7 @@ function BalanceStep({ accountId, importedIds, onDone }: { accountId: Id; import
 
   const adjust = async () => {
     const { difference, undo } = await addBalanceAdjustment(store, accountId, entered!, today);
+    await markBalanceChecked(store, accountId, today);
     // Move on first: changing step clears toasts, and this one carries the Undo.
     onDone();
     toast(`Balance adjustment of ${fmt.money(difference, { signed: true })} added`, undo);
@@ -802,6 +813,7 @@ function BalanceStep({ accountId, importedIds, onDone }: { accountId: Id; import
             const c = checkMoney(text, data.settings.decimalSeparator);
             if (c.state !== 'ok') return setShowErrors(true);
             if (c.value === appBalance) {
+              void markBalanceChecked(store, accountId, today);
               onDone();
               toast('Balances match — all good');
             } else setEntered(c.value);

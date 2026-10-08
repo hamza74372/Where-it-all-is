@@ -27,7 +27,7 @@
       }
     },
     {
-      "file": "empty-03-onboarding-1-name.png",
+      "file": "empty-03-onboarding-1-balance.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -40,7 +40,7 @@
       }
     },
     {
-      "file": "empty-04-onboarding-2-balance.png",
+      "file": "empty-04-onboarding-1-balance-error.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -53,7 +53,7 @@
       }
     },
     {
-      "file": "empty-05-onboarding-2-balance-error.png",
+      "file": "empty-05-onboarding-2-payday.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -66,7 +66,7 @@
       }
     },
     {
-      "file": "empty-06-onboarding-3-pay.png",
+      "file": "empty-06-onboarding-3-bills.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -79,7 +79,7 @@
       }
     },
     {
-      "file": "empty-07-onboarding-4-bills.png",
+      "file": "empty-07-onboarding-4-your-number.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],

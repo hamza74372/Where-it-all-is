@@ -37,9 +37,7 @@ test('setup by keyboard: Tab to "Set up mine", fill each step, Enter moves on', 
   await page.getByRole('button', { name: /^Set up mine/ }).waitFor();
   await tabTo(page, /^Set up mine/);
   await page.keyboard.press('Enter');
-  await tabTo(page, /^Next$/);
-  await page.keyboard.press('Enter');
-  await expect(page.getByLabel('Balance today')).toBeFocused(); // step 2 puts the cursor in the field
+  await expect(page.getByLabel('Balance today')).toBeFocused(); // step 1 puts the cursor in the field
   await page.keyboard.type('1200');
   await tabTo(page, /^Skip setup$/);
   await page.keyboard.press('Enter');

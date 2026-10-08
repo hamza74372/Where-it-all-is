@@ -126,7 +126,7 @@ export const ARTICLES: Article[] = [
           <li>
             <strong>Focus mode</strong> (top of Today) hides everything except the number and the log box.
           </li>
-          <li>Missed a few days? That’s fine. Import a statement instead, or just carry on from today.</li>
+          <li>Had a few days off from logging? That’s fine. Import a statement instead, or just carry on from today.</li>
         </ul>
       </>
     ),

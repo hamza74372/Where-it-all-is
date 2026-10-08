@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { ISODate, Schedule, ScheduleKind } from '../db/types';
 import { daysInMonth, parts } from '../lib/dates';
 import { parseAmount, toInputString, type DecimalMark, type Minor } from '../lib/money';
@@ -14,11 +14,12 @@ const useId = (prefix: string) => useState(() => `${prefix}-${++fieldSeq}`)[0];
 
 /**
  * Focus a field when it appears. The autofocus attribute only works on page load and when a dialog
- * opens; a new onboarding step or a form shown in place needs an explicit focus().
+ * opens; a new onboarding step or a form shown in place needs an explicit focus(). Done before
+ * paint, so a quick tap into another field on the same screen can't be overtaken by a late focus.
  */
 function useAutoFocus(on?: boolean) {
   const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (on) ref.current?.focus({ preventScroll: true });
   }, []);
   return ref;
@@ -90,6 +91,8 @@ export function MoneyInput(props: {
   showErrors?: boolean;
   /** Fuller name for screen readers when the visible label is short (e.g. "Rent amount"). */
   ariaLabel?: string;
+  /** Example text, e.g. "e.g. 1,250.00" (defaults to 0.00 in the person's format). */
+  placeholder?: string;
 }) {
   const id = useId('money');
   const ref = useAutoFocus(props.autoFocus);
@@ -108,7 +111,7 @@ export function MoneyInput(props: {
         type="text"
         inputMode="decimal"
         autoComplete="off"
-        placeholder={dec === ',' ? '0,00' : '0.00'}
+        placeholder={props.placeholder ?? (dec === ',' ? '0,00' : '0.00')}
         value={props.value}
         ref={ref}
         autoFocus={props.autoFocus}

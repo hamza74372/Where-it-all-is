@@ -2,7 +2,8 @@
 // Finds the amount (in the user's decimal format) and fuzzy-matches the rest to a category.
 
 import { CATEGORY_KEYWORDS } from '../data/defaults';
-import type { Category, Id } from '../db/types';
+import type { Category, Id, Rule } from '../db/types';
+import { applyRules } from './rules';
 import { parseAmount, type DecimalMark, type Minor } from './money';
 
 export type QuickLogParse =
@@ -19,7 +20,11 @@ export type QuickLogParse =
       confirm?: { suggested: Minor; literal: Minor | null };
     };
 
-export function parseQuickLog(input: string, categories: Category[], dec: DecimalMark): QuickLogParse {
+/**
+ * Rules ("Always put Starbucks in Coffee", the starter merchant rules) suggest the category from
+ * the merchant text first; then the category names and keywords. No match → no category (it's optional).
+ */
+export function parseQuickLog(input: string, categories: Category[], dec: DecimalMark, rules: Rule[] = []): QuickLogParse {
   const text = input.trim();
   if (!text) return { kind: 'empty' };
   const tokens = text.split(/\s+/);
@@ -36,7 +41,7 @@ export function parseQuickLog(input: string, categories: Category[], dec: Decima
     if (parsed.kind === 'invalid') continue;
 
     const note = [...tokens.slice(0, i), ...tokens.slice(i + 1)].join(' ');
-    const categoryId = note ? matchCategory(note, categories)?.id : undefined;
+    const categoryId = note ? suggestCategory(note, categories, rules) : undefined;
     const base = { kind: 'ok' as const, direction, categoryId, note: tidyNote(note) };
     if (parsed.kind === 'ok') return { ...base, amount: Math.abs(parsed.value) };
     return {
@@ -49,6 +54,14 @@ export function parseQuickLog(input: string, categories: Category[], dec: Decima
     };
   }
   return { kind: 'noAmount', text };
+}
+
+/** The suggested category for merchant text: a matching rule first, then a name/keyword match. */
+export function suggestCategory(text: string, categories: Category[], rules: Rule[]): Id | undefined {
+  const live = new Set(categories.filter((c) => !c.archived).map((c) => c.id));
+  const byRule = applyRules(text, rules).categoryId;
+  if (byRule && live.has(byRule)) return byRule;
+  return matchCategory(text, categories)?.id;
 }
 
 function tidyNote(s: string): string {

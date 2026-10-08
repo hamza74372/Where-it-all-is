@@ -11,7 +11,7 @@ import { Confirm } from '../ui/Confirm';
 import { EmptyState } from '../ui/EmptyState';
 import { useFmt } from '../ui/hooks';
 import { toast } from '../ui/Toast';
-import { lastBackupText } from './Backup';
+import { lastBackupText, STAYS_ON_DEVICE } from './Backup';
 
 /** Past imports, newest first. Undoing one removes only the rows it added (after a confirm). */
 export function ImportHistory({ limit, onImport }: { limit?: number; onImport?: () => void }) {
@@ -73,9 +73,26 @@ export function YourData({ onBackup }: { onBackup: () => void }) {
   const store = useStore();
   const nav = useNav();
   const { settings } = useData();
+  const fmt = useFmt();
   const [erasing, setErasing] = useState(false);
   return (
     <>
+      <section class="card" aria-labelledby="backups-title">
+        <h2 id="backups-title" class="card-title">
+          Backups
+        </h2>
+        <p>
+          {settings.lastBackupAt
+            ? <>Last backup: <strong>{fmt.day(todayISO(new Date(settings.lastBackupAt)))}</strong> ({lastBackupText(settings.lastBackupAt).replace('Last backup: ', '')})</>
+            : 'No backup yet.'}
+        </p>
+        <p class="muted">{STAYS_ON_DEVICE}</p>
+        {!__DEMO__ && (
+          <button type="button" class="btn" onClick={onBackup}>
+            Back up now
+          </button>
+        )}
+      </section>
       <section class="card" aria-labelledby="history-title">
         <h2 id="history-title" class="card-title">
           Import history

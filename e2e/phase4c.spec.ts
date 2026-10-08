@@ -20,7 +20,6 @@ async function startedOct6ImportOct16(page: Page) {
   await page.clock.install({ time: new Date(2026, 9, 6, 10, 0) });
   await page.goto(APP);
   await page.getByRole('button', { name: /Set up mine/ }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('Balance today').fill('1200');
   await page.getByRole('button', { name: 'Skip setup' }).click();
   await expect(page.locator('.big-number')).toBeVisible(); // saved before the reload below
