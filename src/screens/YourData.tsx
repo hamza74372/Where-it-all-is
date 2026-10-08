@@ -107,7 +107,6 @@ export function YourData({ onBackup }: { onBackup: () => void }) {
           Removes everything from this device: accounts, transactions, bills, plans, notes, imports and any partner view. Use it before you
           sell or give away this phone, or to start again. It can't be undone.
         </p>
-        <p class="muted">{lastBackupText(settings.lastBackupAt)}.</p>
         {!__DEMO__ && (
           <button type="button" class="btn" onClick={onBackup}>
             Back up first

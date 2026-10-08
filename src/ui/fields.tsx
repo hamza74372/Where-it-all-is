@@ -14,13 +14,18 @@ const useId = (prefix: string) => useState(() => `${prefix}-${++fieldSeq}`)[0];
 
 /**
  * Focus a field when it appears. The autofocus attribute only works on page load and when a dialog
- * opens; a new onboarding step or a form shown in place needs an explicit focus(). Done before
- * paint, so a quick tap into another field on the same screen can't be overtaken by a late focus.
+ * opens; a new onboarding step or a form shown in place needs an explicit focus(). Inside a sheet
+ * (<dialog>), the attribute is set so showModal() focuses the field as it opens. Elsewhere the field
+ * is focused before paint and never gets the attribute, which WebKit applies a frame later — that
+ * late focus could overtake a quick tap into another field on the same screen.
  */
 function useAutoFocus(on?: boolean) {
   const ref = useRef<HTMLInputElement>(null);
   useLayoutEffect(() => {
-    if (on) ref.current?.focus({ preventScroll: true });
+    const el = ref.current;
+    if (!on || !el) return;
+    if (el.closest('dialog')) el.autofocus = true;
+    else el.focus({ preventScroll: true });
   }, []);
   return ref;
 }
@@ -56,7 +61,6 @@ export function TextInput(props: {
         value={props.value}
         placeholder={props.placeholder}
         ref={ref}
-        autoFocus={props.autoFocus}
         onInput={(e) => props.onInput(e.currentTarget.value)}
       />
     </Field>
@@ -114,7 +118,6 @@ export function MoneyInput(props: {
         placeholder={props.placeholder ?? (dec === ',' ? '0,00' : '0.00')}
         value={props.value}
         ref={ref}
-        autoFocus={props.autoFocus}
         onInput={(e) => props.onInput(e.currentTarget.value)}
         onBlur={() => setTouched(true)}
         aria-label={props.ariaLabel}

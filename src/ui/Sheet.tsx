@@ -17,16 +17,24 @@ export function Sheet(props: { open: boolean; onClose: () => void; title: string
       d.showModal();
     }
     if (!props.open && d.open) d.close();
-    if (!props.open && opener.current) {
-      if (opener.current.isConnected) opener.current.focus();
-      opener.current = null;
-    }
+    if (!props.open) returnFocus();
   }, [props.open]);
 
-  // Close the native dialog in the same event as the user's tap. Waiting for the next
-  // render leaves the page behind it inert for a moment, and input typed then is lost.
+  // Focus goes back to the opener — but only if it's still nowhere in particular. This can run a
+  // frame after the sheet closed; by then the person may already be typing somewhere else.
+  const returnFocus = () => {
+    const to = opener.current;
+    opener.current = null;
+    const now = document.activeElement;
+    const unclaimed = !now || now === document.body || !!ref.current?.contains(now);
+    if (to?.isConnected && unclaimed) to.focus();
+  };
+
+  // Close the native dialog (and hand focus back) in the same event as the user's tap. Waiting for
+  // the next render leaves the page behind it inert for a moment, and input typed then is lost.
   const close = () => {
     if (ref.current?.open) ref.current.close();
+    returnFocus();
     props.onClose();
   };
 
