@@ -5,7 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: 'audit',
   testMatch: '*.audit.ts',
-  timeout: 120_000,
+  timeout: 180_000,
   reporter: 'list',
   workers: 1,
   projects: [

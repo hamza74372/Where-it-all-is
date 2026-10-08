@@ -118,14 +118,14 @@ test('while you were away: catch up in one tap, undo restores', async ({ page })
 test('focus mode hides everything but the number and log box, and is remembered', async ({ page }) => {
   await page.goto(APP);
   await page.getByRole('button', { name: 'Try with example numbers' }).click();
-  await page.getByRole('button', { name: 'Focus' }).click();
+  await page.getByRole('button', { name: 'Focus mode' }).click();
   await expect(page.getByRole('heading', { name: 'Next bills' })).toBeHidden();
   await expect(page.getByRole('heading', { name: 'Right now — one thing' })).toBeHidden();
   await expect(page.locator('.big-number')).toBeVisible();
   await expect(page.getByRole('textbox', { name: 'Log a spend' })).toBeVisible();
   await shot(page, 'focus');
   await page.reload();
-  await expect(page.getByRole('button', { name: 'Show everything' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Exit focus mode' })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('notes save by themselves; edits can be undone', async ({ page }) => {

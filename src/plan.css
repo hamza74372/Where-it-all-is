@@ -13,6 +13,14 @@
   border-radius: var(--radius-full);
   background: var(--progress-ok);
   transition: width var(--medium) var(--ease);
+  transform-origin: left;
+  animation: bar-fill var(--medium) var(--ease) both;
+}
+@keyframes bar-fill {
+  from { transform: scaleX(0); }
+}
+.row-envelope[class*='tone-'] .progress-bar span {
+  background: var(--tone);
 }
 .level-near span {
   background: var(--progress-warn);
@@ -22,11 +30,12 @@
 }
 
 .row-envelope .row-main {
-  width: 100%;
+  width: auto;
   gap: var(--space-2);
 }
 .env-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: var(--space-3);
@@ -49,6 +58,53 @@
 }
 .goal-add {
   align-self: flex-start;
+}
+.envelope-summary {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-5);
+}
+.envelope-summary .progress-ring .ring-track {
+  stroke: var(--surface-2);
+  opacity: 1;
+}
+.envelope-summary .progress-ring .ring-value {
+  stroke: var(--progress-ok);
+}
+.envelope-summary > span {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: var(--space-1);
+}
+.summary-amount {
+  font-family: var(--font-display);
+  font-size: var(--text-title);
+  line-height: var(--leading-tight);
+  max-width: 100%;
+  white-space: normal;
+}
+.envelope-summary small {
+  color: var(--text-muted);
+  font-size: var(--text-small);
+}
+@media (max-width: 22.5em) {
+  .envelope-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+.row-envelope > .progress-ring {
+  width: calc(var(--ring) - var(--space-5));
+  height: calc(var(--ring) - var(--space-5));
+}
+.row-envelope > .progress-ring .ring-track {
+  stroke: var(--surface-2);
+  opacity: 1;
+}
+.row-envelope > .progress-ring .ring-value {
+  stroke: var(--progress-ok);
 }
 
 /* Icon picker (categories, goals, chips) */
@@ -79,9 +135,55 @@
   max-width: calc(var(--space-7) * 4);
 }
 .slider {
+  appearance: none;
+  -webkit-appearance: none;
   width: 100%;
   min-height: var(--tap);
-  accent-color: var(--accent);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.slider::-webkit-slider-runnable-track {
+  height: var(--slider-track);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius-full);
+  background: linear-gradient(to right, var(--accent) 0, var(--accent) var(--slider-progress), var(--surface-2) var(--slider-progress), var(--surface-2) 100%);
+}
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: var(--slider-thumb);
+  height: var(--slider-thumb);
+  margin-top: calc((var(--slider-track) - var(--slider-thumb)) / 2 - var(--line));
+  border: var(--line-strong) solid var(--surface-raised);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  box-shadow: var(--shadow-1);
+}
+.slider::-moz-range-track {
+  height: var(--slider-track);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+}
+.slider::-moz-range-progress {
+  height: var(--slider-track);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+.slider::-moz-range-thumb {
+  width: var(--slider-thumb);
+  height: var(--slider-thumb);
+  border: var(--line-strong) solid var(--surface-raised);
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  box-shadow: var(--shadow-1);
+}
+.slider:focus-visible {
+  outline: var(--focus-ring) solid var(--focus);
+  outline-offset: var(--line-strong);
+  border-radius: var(--radius-full);
 }
 .compare {
   display: grid;
@@ -99,8 +201,47 @@
   font-size: var(--text-body);
 }
 .plan-date {
-  font-size: var(--text-heading);
+  font-family: var(--font-display);
+  font-size: var(--text-title);
   font-weight: var(--weight-bold);
+}
+.debt-chart {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+.debt-chart svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: var(--chart-h);
+  max-height: calc(var(--space-7) * 4);
+}
+.chart-axis {
+  stroke: var(--border);
+  stroke-width: var(--line);
+  vector-effect: non-scaling-stroke;
+}
+.debt-line {
+  fill: none;
+  stroke: var(--cat-ocean);
+  stroke-width: var(--line-strong);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 140;
+  animation: draw-line var(--medium) var(--ease) both;
+}
+.debt-end {
+  fill: var(--cat-sage);
+}
+@keyframes draw-line {
+  from { stroke-dashoffset: 140; }
 }
 
 /* Disclosures ("How this is estimated", "Where do I find my bank's CSV?") use the link style. */
@@ -145,6 +286,57 @@
 .swatch-before,
 .bar-before {
   background: var(--border);
+}
+.swatch-in,
+.in-bar {
+  background: var(--income);
+}
+.swatch-out,
+.out-bar {
+  background: var(--cat-ocean);
+}
+.insight-chart-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+.inout-visual {
+  height: var(--chart-h);
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--space-2);
+  border-bottom: var(--line) solid var(--border);
+}
+.inout-month {
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: var(--space-1);
+  align-items: end;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+.inout-bars {
+  height: 100%;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: var(--space-1);
+}
+.inout-bars i {
+  display: block;
+  width: var(--space-3);
+  min-height: var(--line-strong);
+  border-radius: var(--radius-full) var(--radius-full) 0 0;
+  transition: height var(--medium) var(--ease);
+}
+
+@media (min-width: 43.75em) {
+  .insight-chart-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .bars {
   list-style: none;

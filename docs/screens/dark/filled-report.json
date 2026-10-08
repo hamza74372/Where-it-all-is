@@ -10,7 +10,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -23,7 +23,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -36,7 +36,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -49,7 +49,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -62,7 +62,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -75,7 +75,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -88,7 +88,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -101,7 +101,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -114,7 +114,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -127,7 +127,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -140,7 +140,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -153,7 +153,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -166,7 +166,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -179,7 +179,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -192,7 +192,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -200,12 +200,33 @@
       "findings": {
         "smallText": [],
         "smallTargets": [],
-        "clipped": [],
+        "clipped": [
+          {
+            "text": "Friday, October 16",
+            "why": "runs off screen (16–401 of 390px)"
+          },
+          {
+            "text": "Monday, October 5",
+            "why": "runs off screen (16–423 of 390px)"
+          },
+          {
+            "text": "+$1,850.00",
+            "why": "runs off screen (309–406 of 390px)"
+          },
+          {
+            "text": "-$950.00",
+            "why": "runs off screen (328–406 of 390px)"
+          },
+          {
+            "text": "Friday, October 2",
+            "why": "runs off screen (16–401 of 390px)"
+          }
+        ],
         "overlaps": [],
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -218,7 +239,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -231,7 +252,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -244,7 +265,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -257,7 +278,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -270,7 +291,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -283,7 +304,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -296,7 +317,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -309,7 +330,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -322,7 +343,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -335,7 +356,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -348,7 +369,7 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
@@ -361,11 +382,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-29-today-tight-explain.png",
+      "file": "filled-29-today-short.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -374,11 +395,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-30-more-menu.png",
+      "file": "filled-30-today-short-explain.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -387,11 +408,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-31-more-accounts.png",
+      "file": "filled-31-more-menu.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -400,11 +421,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-32-more-paychecks.png",
+      "file": "filled-32-more-accounts.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -413,11 +434,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-33-more-categories.png",
+      "file": "filled-33-more-paychecks.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -426,11 +447,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-34-more-rules.png",
+      "file": "filled-34-more-categories.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -439,11 +460,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-35-more-notes.png",
+      "file": "filled-35-more-rules.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -452,11 +473,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-36-more-backup.png",
+      "file": "filled-36-more-notes.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -465,11 +486,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-37-more-share.png",
+      "file": "filled-37-more-backup.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -478,11 +499,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-38-more-data.png",
+      "file": "filled-38-more-share.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -491,11 +512,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-39-more-data-erase-confirm.png",
+      "file": "filled-39-more-data.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -504,11 +525,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-40-more-chips.png",
+      "file": "filled-40-more-data-erase-confirm.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -517,11 +538,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-41-more-settings.png",
+      "file": "filled-41-more-chips.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -530,11 +551,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-42-more-help.png",
+      "file": "filled-42-more-settings.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -543,11 +564,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-43-more-help-article.png",
+      "file": "filled-43-more-help.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -556,11 +577,11 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
       }
     },
     {
-      "file": "filled-44-more-about.png",
+      "file": "filled-44-more-help-article.png",
       "findings": {
         "smallText": [],
         "smallTargets": [],
@@ -569,7 +590,20 @@
         "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
-        "bg": "rgb(20, 28, 46)"
+        "bg": "rgb(17, 24, 39)"
+      }
+    },
+    {
+      "file": "filled-45-more-about.png",
+      "findings": {
+        "smallText": [],
+        "smallTargets": [],
+        "clipped": [],
+        "overlaps": [],
+        "lowContrast": [],
+        "horizontalScroll": false,
+        "theme": "auto",
+        "bg": "rgb(17, 24, 39)"
       }
     }
   ],

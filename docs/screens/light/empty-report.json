@@ -111,7 +111,23 @@
         "smallTargets": [],
         "clipped": [],
         "overlaps": [],
-        "lowContrast": [],
+        "lowContrast": [
+          {
+            "text": "This covers today to Saturday, October 3",
+            "ratio": 1.25,
+            "need": 4.5
+          },
+          {
+            "text": "No bills are due before your next pay.",
+            "ratio": 1.25,
+            "need": 4.5
+          },
+          {
+            "text": "Savings and accounts you've left out of ",
+            "ratio": 1.25,
+            "need": 4.5
+          }
+        ],
         "horizontalScroll": false,
         "theme": "auto",
         "bg": "rgb(247, 243, 234)"

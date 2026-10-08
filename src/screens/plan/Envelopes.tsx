@@ -13,6 +13,7 @@ import { Progress } from '../../ui/Progress';
 import { Sheet } from '../../ui/Sheet';
 import { toast } from '../../ui/Toast';
 import { EmptyState } from '../../ui/EmptyState';
+import { CategoryChip, ProgressRing } from '../../ui/Visual';
 
 export function Envelopes() {
   const store = useStore();
@@ -37,9 +38,16 @@ export function Envelopes() {
   return (
     <>
       {rows.length > 0 && (
-        <p class="muted">
-          {fmt.month(`${month}-01`)}: {fmt.money(totalSpent)} spent of {fmt.money(totalLimit)} across your envelopes.
-        </p>
+        <section class="card envelope-summary" aria-label="Envelope total">
+          <ProgressRing
+            value={totalLimit ? totalSpent / totalLimit : 0}
+            label="Total envelope spending"
+            valueText={`${fmt.money(totalSpent)} of ${fmt.money(totalLimit)}`}
+          >
+            <strong>{totalLimit ? Math.round((totalSpent / totalLimit) * 100) : 0}%</strong><span>used</span>
+          </ProgressRing>
+          <span><span class="section-label">{fmt.month(`${month}-01`)}</span><strong class="summary-amount money">{fmt.money(totalLimit - totalSpent)} left</strong><small>{fmt.money(totalSpent)} spent of {fmt.money(totalLimit)}</small></span>
+        </section>
       )}
 
       {suggestions.map((s) => (
@@ -118,12 +126,10 @@ function EnvelopeItem({ row, onEdit }: { row: EnvelopeRow; onEdit: () => void })
   const fmt = useFmt();
   const status = row.remaining >= 0 ? `${fmt.money(row.remaining)} left` : `${fmt.money(-row.remaining)} over`;
   return (
-    <li class="row row-envelope">
+    <li class={`row row-envelope tone-${row.category.order % 8}`}>
       <button type="button" class="row-main row-button" onClick={onEdit} aria-label={`${row.category.name}: ${status}. Edit`}>
         <span class="env-head">
-          <span>
-            <Icon name={row.category.icon} small /> {row.category.name}
-          </span>
+          <CategoryChip name={row.category.name} icon={row.category.icon} index={row.category.order} compact />
           <span class={`money env-status env-${row.level}`}>{status}</span>
         </span>
         <Progress

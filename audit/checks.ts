@@ -33,7 +33,7 @@ export function auditPage(): Finding {
     const c = el.closest('[class]');
     return `${el.tagName.toLowerCase()}${c ? '.' + String(c.className).split(' ')[0] : ''}`;
   };
-  const inFixed = (el: Element) => !!el.closest('.bottom-nav, .toast-region');
+  const inFixed = (el: Element) => !!el.closest('.bottom-nav, .app-nav, .toast-region');
 
   const out: Finding = {
     smallText: [], smallTargets: [], clipped: [], overlaps: [], lowContrast: [],
@@ -58,7 +58,7 @@ export function auditPage(): Finding {
     }
   }
   if (!dialog) {
-    for (const el of Array.from(document.querySelectorAll('.bottom-nav span'))) {
+    for (const el of Array.from(document.querySelectorAll('.bottom-nav span, .app-nav button > span'))) {
       const px = parseFloat(getComputedStyle(el).fontSize);
       if (px < 14 && !seenText.has(`nav|${px}`)) {
         seenText.add(`nav|${px}`);

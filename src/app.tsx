@@ -12,9 +12,11 @@ import { More } from './screens/More';
 import { Onboarding } from './screens/Onboarding';
 import { PartnerTab } from './screens/Partner';
 import { Plan } from './screens/Plan';
-import { Today } from './screens/Today';
+import { roundedHeroAmount, Today, useSafeToSpend } from './screens/Today';
 import { NavContext, type Tab } from './state/nav';
 import { Store, StoreContext, useData, useStore } from './state/store';
+import { useFmt, useToday } from './ui/hooks';
+import { BrandMark, Wordmark } from './ui/Brand';
 import { Icon, type IconName } from './ui/icons';
 import { LogSkeleton, TodaySkeleton } from './ui/Skeleton';
 import { dismissToast, ToastHost } from './ui/Toast';
@@ -64,7 +66,7 @@ export function App() {
     // The shape of the screen while the budget loads from the device — never a blank page.
     const tab = getPref<Tab>('tab', 'today');
     return (
-      <div class="shell">
+      <div class="shell app-shell">
         <main class="screen skeleton-screen" aria-busy="true" aria-label="Loading your budget">
           {tab === 'log' ? <LogSkeleton /> : <TodaySkeleton />}
         </main>
@@ -138,7 +140,11 @@ function Shell() {
     setTab(t);
     setPref('tab', t);
     dismissToast();
-    document.getElementById('main')?.scrollTo(0, 0);
+    const main = document.getElementById('main');
+    main?.scrollTo(0, 0);
+    // A route change in this single-page app should land keyboard and screen-reader
+    // users at the new screen, not leave them cycling from the old nav button.
+    requestAnimationFrame(() => main?.focus({ preventScroll: true }));
   };
 
   return (
@@ -159,8 +165,9 @@ function Shell() {
         {!settings.onboarded ? (
           <Onboarding />
         ) : (
-          <>
-            <main class="screen" id="main">
+          <div class="app-frame">
+            <AppNav tabs={tabs} tab={tab} go={go} />
+            <main class={`screen screen-${tab}`} id="main" tabIndex={-1}>
               {tab === 'today' && <Today />}
               {tab === 'log' && <Log />}
               {tab === 'bills' && <Bills />}
@@ -169,23 +176,62 @@ function Shell() {
               {tab === 'partner' && <PartnerTab />}
             </main>
             <ToastHost />
-            <nav class="bottom-nav" aria-label="Main">
-              <ul>
-                {tabs.map((t) => (
-                  <li key={t.id}>
-                    <button type="button" aria-current={t.id === tab ? 'page' : undefined} onClick={() => go(t.id)}>
-                      <Icon name={t.icon} />
-                      <span>{t.label}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </>
+          </div>
         )}
         {!settings.onboarded && <ToastHost />}
       </div>
     </NavContext.Provider>
+  );
+}
+
+function AppNav({ tabs, tab, go }: { tabs: typeof TABS; tab: Tab; go: (tab: Tab) => void }) {
+  const data = useData();
+  const fmt = useFmt();
+  const today = useToday();
+  const safe = useSafeToSpend(data, today);
+  const safeAmount = roundedHeroAmount(safe);
+
+  return (
+    <nav class="app-nav" aria-label="Main">
+      <div class="nav-brand">
+        <span class="nav-mark"><BrandMark size="sm" /></span>
+        <span class="nav-wordmark"><Wordmark /></span>
+      </div>
+      <ul>
+        {tabs.map((t) => (
+          <li key={t.id}>
+            <button
+              type="button"
+              aria-current={t.id === tab ? 'page' : undefined}
+              onClick={() => go(t.id)}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                go(t.id);
+              }}
+            >
+              <Icon name={t.icon} />
+              <span>{t.label}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div class="nav-summary">
+        <span class="nav-summary-label">Safe today</span>
+        <strong class="money">{fmt.money(Math.abs(safeAmount), { wholeIfRound: true })}</strong>
+        <button
+          type="button"
+          class="nav-backup"
+          onClick={() => {
+            setPref('openMorePage', 'backup');
+            go('more');
+          }}
+        >
+          <Icon name={data.settings.lastBackupAt ? 'done' : 'info'} small />
+          <span>{data.settings.lastBackupAt ? 'Backed up' : 'No backup yet'}</span>
+        </button>
+      </div>
+    </nav>
   );
 }
 

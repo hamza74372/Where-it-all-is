@@ -124,7 +124,7 @@ export const ARTICLES: Article[] = [
           </li>
           <li>If an amount looks unusual for how you type amounts, the app asks “Did you mean…?” instead of guessing.</li>
           <li>
-            <strong>Focus</strong> (top of Today) hides everything except the number and the log box.
+            <strong>Focus mode</strong> (top of Today) hides everything except the number and the log box.
           </li>
           <li>Missed a few days? That’s fine. Import a statement instead, or just carry on from today.</li>
         </ul>

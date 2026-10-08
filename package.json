@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit",
     "e2e": "playwright test",
     "audit": "playwright test -c playwright.audit.config.ts",
+    "shots:devices": "node scripts/device-shots.mjs",
+    "shots:visual": "node scripts/visual-shots.mjs",
     "sheets": "esbuild scripts/make-debt-sheets.ts --bundle --platform=node --format=esm --log-level=warning --outfile=node_modules/.cache/make-debt-sheets.mjs && node node_modules/.cache/make-debt-sheets.mjs",
     "build:site": "node scripts/build-site.mjs",
     "build:pdf": "node scripts/build-pdf.mjs",
@@ -25,6 +27,7 @@
     "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
+    "@fontsource-variable/fraunces": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
     "@playwright/test": "^1.63.0",
     "@preact/preset-vite": "^2.10.6",

@@ -5,7 +5,7 @@
 import {
   ArrowLeftRight, Baby, Banknote, Bike, Book, Building2, Bus, CalendarDays, Car, Cat, ChartNoAxesColumn, Check, ChevronDown,
   ChevronLeft, ChevronRight, CircleCheck, Coffee, Dog, Droplet, Dumbbell, Ellipsis, Flame, Fuel, Gamepad2, Gift, GraduationCap,
-  HandCoins, Heart, House, Inbox, Info, Landmark, LifeBuoy, Lightbulb, List, Music, Package, PartyPopper, PawPrint, PiggyBank, Pill,
+  Focus, HandCoins, Heart, House, Inbox, Info, Landmark, LifeBuoy, Lightbulb, List, Music, Package, PartyPopper, PawPrint, PiggyBank, Pill,
   Plane, Plus, Popcorn, Receipt, ReceiptText, Sandwich, Scissors, Search, Shirt, ShoppingBag, ShoppingCart, Smartphone, Sparkles,
   Sprout, Star, Stethoscope, Sun, TrainFront, TriangleAlert, Tv, Users, Utensils, Wallet, Wifi, X, Zap,
   type IconNode,
@@ -33,6 +33,7 @@ const UI = {
   pay: HandCoins,
   calendar: CalendarDays,
   search: Search,
+  focus: Focus,
   inbox: Inbox,
   wallet: Wallet,
 } satisfies Record<string, IconNode>;

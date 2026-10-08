@@ -4,7 +4,7 @@ import { useState } from 'preact/hooks';
 import { uid } from '../db/db';
 import type { Bill, ISODate, Schedule } from '../db/types';
 import { billsBetween, monthlySetAside, nextUnpaid, paydaysBetween } from '../lib/bills';
-import { addMonthsYM, daysInMonth, parts, weekday, ymd } from '../lib/dates';
+import { addMonthsYM, daysBetween, daysInMonth, parts, weekday, ymd } from '../lib/dates';
 import { describeSchedule } from '../lib/schedule';
 import { billPaymentAmount, markBillPaid, saveWithUndo } from '../state/actions';
 import { useData, useStore } from '../state/store';
@@ -14,6 +14,7 @@ import { Icon } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
 import { toast } from '../ui/Toast';
 import { EmptyState } from '../ui/EmptyState';
+import { CategoryChip } from '../ui/Visual';
 
 export function Bills() {
   const data = useData();
@@ -30,16 +31,25 @@ export function Bills() {
           <Icon name="plus" /> Add bill
         </button>
       </div>
-      <Segmented
-        label="Show bills as"
-        value={view}
-        onChange={setView}
-        options={[
-          { value: 'list', label: 'List' },
-          { value: 'calendar', label: 'Calendar' },
-        ]}
-      />
-      {view === 'list' ? <BillList bills={active} onEdit={setEditing} onAdd={() => setEditing('new')} /> : <Calendar onEdit={setEditing} />}
+      <div class="bills-view-switch">
+        <Segmented
+          label="Show bills as"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'list', label: 'List' },
+            { value: 'calendar', label: 'Calendar' },
+          ]}
+        />
+      </div>
+      <div class="bills-layout">
+        <div class={view === 'list' ? 'bills-pane is-active' : 'bills-pane'}>
+          <BillList bills={active} onEdit={setEditing} onAdd={() => setEditing('new')} />
+        </div>
+        <div class={view === 'calendar' ? 'bills-pane is-active' : 'bills-pane'}>
+          <Calendar onEdit={setEditing} />
+        </div>
+      </div>
       {yearly.length > 0 && view === 'list' && <BigBills bills={yearly} />}
       <BillSheet bill={editing} onClose={() => setEditing(null)} />
     </>
@@ -67,16 +77,20 @@ function BillList({ bills, onEdit, onAdd }: { bills: Bill[]; onEdit: (b: Bill) =
       {rows.map(({ bill, due }) => {
         const amount = billPaymentAmount(store, bill, today);
         const overdue = due != null && due < today;
+        const dueIn = due == null ? null : daysBetween(today, due);
+        const category = data.categories.find((item) => item.id === bill.categoryId);
         return (
           <li key={bill.id} class="row row-bill">
             <button type="button" class="row-main row-button" onClick={() => onEdit(bill)} aria-label={`Edit ${bill.name}`}>
-              <span>
-                {bill.name}
-                {bill.autopay && <span class="badge">Autopay</span>}
+              <span class="bill-name">{bill.name}</span>
+              <span class="bill-chip-row">
+                {category && <CategoryChip name={category.name} icon={category.icon} index={category.order} compact />}
+                {overdue && <span class="due-chip due-overdue">Overdue</span>}
+                {!overdue && dueIn != null && dueIn <= 7 && <span class="due-chip">In {dueIn} {dueIn === 1 ? 'day' : 'days'}</span>}
               </span>
               <span class="row-sub">
                 {due ? `${overdue ? 'Was due' : 'Next'} ${fmt.day(due)} (${fmt.relative(due, today)})` : 'No more due dates'} ·{' '}
-                {describeSchedule(bill.schedule)}
+                {describeSchedule(bill.schedule)}{bill.autopay ? ' · Autopay' : ''}
               </span>
             </button>
             <span class="row-end">
