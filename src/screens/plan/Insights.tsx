@@ -38,7 +38,8 @@ export function Insights() {
     const txs = data.transactions.filter((tx) => tx.date.startsWith(key) && tx.source !== 'transfer' && tx.source !== 'adjustment');
     const incoming = txs.filter((tx) => tx.amount > 0).reduce((sum, tx) => sum + tx.amount, 0);
     const outgoing = txs.filter((tx) => tx.amount < 0).reduce((sum, tx) => sum - tx.amount, 0);
-    return { label: fmt.month(`${key}-01`).slice(0, 3), incoming, outgoing, inText: fmt.money(incoming), outText: fmt.money(outgoing) };
+    const shortLabel = fmt.month(`${key}-01`).slice(0, 3);
+    return { label: key === currentMonth(today) ? `${shortLabel} (so far)` : shortLabel, incoming, outgoing, inText: fmt.money(incoming), outText: fmt.money(outgoing) };
   });
 
   return (

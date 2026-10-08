@@ -115,11 +115,11 @@ export function buildExampleData(today: ISODate, categories: Category[]) {
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
   };
   const historyMonths = [
-    { monthsAgo: 1, groceries: 82000, eatingOut: 61000, transport: 52000, fun: 50451 },
-    { monthsAgo: 2, groceries: 88000, eatingOut: 67500, transport: 48000, fun: 46951 },
-    { monthsAgo: 3, groceries: 84000, eatingOut: 72000, transport: 53000, fun: 44451 },
-    { monthsAgo: 4, groceries: 80000, eatingOut: 60500, transport: 48000, fun: 51951 },
-    { monthsAgo: 5, groceries: 100000, eatingOut: 76000, transport: 60000, fun: 51451 },
+    { monthsAgo: 1, income: 192949, groceries: 36000, eatingOut: 12400, transport: 10000, fun: 8000 },
+    { monthsAgo: 2, income: 202749, groceries: 38500, eatingOut: 13500, transport: 11000, fun: 9200 },
+    { monthsAgo: 3, income: 191849, groceries: 34500, eatingOut: 11800, transport: 9500, fun: 7500 },
+    { monthsAgo: 4, income: 209649, groceries: 40000, eatingOut: 15500, transport: 11800, fun: 9800 },
+    { monthsAgo: 5, income: 124749, groceries: 37200, eatingOut: 14200, transport: 10200, fun: 8600 },
   ];
   const historyTransactions: Transaction[] = __DEMO__ ? [] : historyMonths.flatMap((month) => {
     const entry = (day: number, amount: number, note: string, categoryName?: string): Transaction => ({
@@ -127,8 +127,8 @@ export function buildExampleData(today: ISODate, categories: Category[]) {
       categoryId: categoryName ? cat(categoryName) : undefined, note, source: 'manual', cleared: true, updatedAt: now,
     });
     return [
-      entry(7, 185000, 'Paycheck'),
-      entry(21, 185000, 'Paycheck'),
+      entry(7, Math.floor(month.income / 2), 'Paycheck'),
+      entry(21, Math.ceil(month.income / 2), 'Paycheck'),
       entry(1, -95000, 'Rent', 'Home'),
       entry(8, -1549, 'Netflix', 'Subscriptions'),
       entry(12, -4500, 'Phone', 'Bills'),
