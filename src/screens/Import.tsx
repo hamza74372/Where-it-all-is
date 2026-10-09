@@ -12,7 +12,7 @@ import { DEMO_MAX_ENTRIES, demoRemaining } from '../lib/demo';
 import { isBeforeStart } from '../lib/safeToSpend';
 import { markBalanceChecked, saveWithUndo } from '../state/actions';
 import {
-  addBalanceAdjustment, addRule, addStatementAdjustment, balanceReport, bankStyleBalance, commitImport, countsOf, entryKind, entryNoun, importNotes, isBigGap, isConfirmedTransfer,
+  addBalanceAdjustment, addRule, addStatementAdjustment, balanceReport, bankStyleBalance, commitImport, countsOf, describeImport, entryKind, entryNoun, importNotes, isBigGap, isConfirmedTransfer,
   prepareImport, resolutionOf, saveMapping, undoImport, type Prepared, type PreparedItem,
 } from '../state/importActions';
 import { useData, useStore } from '../state/store';
@@ -40,6 +40,8 @@ interface ImportResult {
   toSort: Id[];
   /** Transactions added by this import (for the balance check's "check the rows" list). */
   importedIds: Id[];
+  /** What happened to each row, in plain words. */
+  summary: string[];
 }
 
 interface Loaded {
@@ -88,12 +90,13 @@ export function Import({ onClose }: { onClose: () => void }) {
   const finish = async (p: Prepared) => {
     if (!loaded || !mapping) return;
     const saved = await saveMapping(store, mappingName, mapping, loaded.savedId);
+    const summary = describeImport(store, p);
     const { batch, transactions, matched, transfers } = await commitImport(store, { fileName: loaded.fileName, accountId, mappingId: saved.id, items: p.items });
     const toSort = transactions.filter((t) => !t.categoryId && t.amount < 0 && !t.transferId).map((t) => t.id);
     const counts = countsOf(p);
     setResult({
       batchId: batch.id, imported: transactions.length, duplicates: counts.duplicateCount, matched: matched.length, transfers,
-      leftOut: counts.leftOutCount + counts.undecidedCount, unreadable: p.skipped.length, toSort, importedIds: [...transactions, ...matched].map((t) => t.id),
+      leftOut: counts.leftOutCount + counts.undecidedCount, unreadable: p.skipped.length, toSort, importedIds: [...transactions, ...matched].map((t) => t.id), summary,
     });
     setStep(toSort.length ? 'sort' : 'balance');
   };
@@ -1004,7 +1007,7 @@ function SortStep({ ids, onDone }: { ids: Id[]; onDone: () => void }) {
 function DoneStep(props: { result: ImportResult; onUndo: () => Promise<void>; onClose: () => void }) {
   const data = useData();
   const [confirming, setConfirming] = useState(false);
-  const { imported, duplicates, matched, transfers, leftOut, unreadable, toSort } = props.result;
+  const { imported, duplicates, matched, transfers, leftOut, unreadable, toSort, summary } = props.result;
   const stillToSort = toSort.filter((id) => data.transactions.some((t) => t.id === id && !t.categoryId)).length;
   const skipped = duplicates + unreadable;
   return (
@@ -1012,6 +1015,7 @@ function DoneStep(props: { result: ImportResult; onUndo: () => Promise<void>; on
       <h2 id="done-title" class="card-title">
         {imported > 0 ? `Imported ${imported} ${imported === 1 ? 'transaction' : 'transactions'}` : `Linked ${matched} to what's already here`}
       </h2>
+      {summary.length > 0 && <p class="import-summary">{summary.join(' · ')}</p>}
       <ul class="review-list">
         {imported > 0 && matched > 0 && <li>{matched} already in the app, so linked instead of added twice</li>}
         {transfers > 0 && <li>{transfers} marked as moves between your accounts (not spending or income)</li>}

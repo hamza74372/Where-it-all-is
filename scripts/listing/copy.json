@@ -66,7 +66,7 @@
     {
       "file": "10-together.jpg",
       "headline": "Budget together.",
-      "sub": "Send your partner a locked file. They see your plan, read-only.",
+      "sub": "Send your partner a locked, read-only snapshot. Send a new one to update it.",
       "captionShare": "Locked with a passphrase",
       "captionView": "Their read-only view"
     },

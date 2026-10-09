@@ -143,9 +143,12 @@ export function isBeforeStart(account: Pick<Account, 'openingDate'> | undefined,
 }
 
 /** True when a payment for this bill's occurrence on `dueDate` has been recorded. */
+/** Settled: paid (a transaction is linked to this due date) or skipped this time. */
 export function isBillPaid(bill: Bill, dueDate: ISODate, transactions: Transaction[]): boolean {
-  return transactions.some((t) => t.billId === bill.id && t.billDueDate === dueDate);
+  return !!bill.skippedDates?.includes(dueDate) || transactions.some((t) => t.billId === bill.id && t.billDueDate === dueDate);
 }
+
+export const isBillSkipped = (bill: Bill, dueDate: ISODate): boolean => !!bill.skippedDates?.includes(dueDate);
 
 /** Earliest payday strictly after `today` across active incomes, or null if none. */
 export function nextPaydayAfter(today: ISODate, incomes: Income[]): ISODate | null {

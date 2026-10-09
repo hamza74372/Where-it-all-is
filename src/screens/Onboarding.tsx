@@ -11,12 +11,13 @@ import { nextOccurrence } from '../lib/schedule';
 import { roundedHeroAmount } from './Today';
 import { RestorePanel } from './Backup';
 import { useData, useStore } from '../state/store';
-import { checkMoney, MoneyInput, ScheduleFields, Select, TextInput, Toggle } from '../ui/fields';
+import { checkMoney, MoneyInput, ScheduleFields, Segmented, Select, TextInput, Toggle } from '../ui/fields';
 import { useFmt, useToday } from '../ui/hooks';
 import { Wordmark } from '../ui/Brand';
 import { Icon } from '../ui/icons';
 
-type Step = 'welcome' | 'restore' | 1 | 2 | 3 | 4;
+/** 'card' is the optional step after Balance (shown under the Balance dot). */
+type Step = 'welcome' | 'restore' | 1 | 'card' | 2 | 3 | 4;
 
 interface BillRow {
   id: string;
@@ -47,6 +48,14 @@ export function Onboarding() {
   const [paySchedule, setPaySchedule] = useState<Schedule>({ kind: 'biweekly', anchorDate: nextFriday, weekendShift: 'before' });
   const [bills, setBills] = useState<BillRow[]>(COMMON_BILLS.map((b) => ({ id: b.name, name: b.name, icon: b.icon, amount: '', day: '' })));
   const [showErrors, setShowErrors] = useState(false);
+  // "Do you also use a credit card?" — and, if so, the card in one compact step.
+  const [hasCard, setHasCard] = useState<'no' | 'yes'>('no');
+  const [cardAnswered, setCardAnswered] = useState(false); // only a real choice is remembered (Today won't ask again)
+  const [cardName, setCardName] = useState('Credit card');
+  const [cardOwed, setCardOwed] = useState('');
+  const [cardDay, setCardDay] = useState('');
+  const [cardPay, setCardPay] = useState<'full' | 'minimum'>('full');
+  const [cardMin, setCardMin] = useState('');
 
   // The decimal choice applies while typing in onboarding, before settings are saved.
   const setDecimal = async (d: '.' | ',') => {
@@ -57,9 +66,17 @@ export function Onboarding() {
   const balanceCheck = checkMoney(balance, dec);
   const payCheck = checkMoney(payAmount, dec);
   const billChecks = bills.map((b) => checkMoney(b.amount, dec));
+  const owedCheck = checkMoney(cardOwed, dec);
+  const minCheck = checkMoney(cardMin, dec);
+  const dueDay = Number(cardDay);
+  const dueDayOk = Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 31;
 
   const stepValid = (s: Step): boolean => {
     if (s === 1) return balanceCheck.state === 'ok' || balanceCheck.state === 'empty';
+    if (s === 'card') {
+      if (owedCheck.state === 'empty') return true; // skipping the card is fine
+      return owedCheck.state === 'ok' && dueDayOk && (cardPay === 'full' || minCheck.state === 'ok');
+    }
     if (s === 2) return noPay || payCheck.state === 'ok' || payCheck.state === 'empty';
     if (s === 3) return billChecks.every((c, i) => (c.state === 'ok' && (!bills[i].custom || bills[i].name.trim())) || c.state === 'empty');
     return true;
@@ -74,6 +91,11 @@ export function Onboarding() {
         pay:
           !noPay && payCheck.state === 'ok'
             ? { amount: payCheck.value, variable: payVaries, schedule: paySchedule }
+            : null,
+        hasCard: cardAnswered ? hasCard : undefined,
+        card:
+          hasCard === 'yes' && owedCheck.state === 'ok' && dueDayOk
+            ? { name: cardName, owed: Math.abs(owedCheck.value), dueDay, pay: cardPay, minimum: cardPay === 'minimum' && minCheck.state === 'ok' ? Math.abs(minCheck.value) : undefined }
             : null,
         bills: bills.flatMap((b, i) => {
           const c = billChecks[i];
@@ -104,7 +126,7 @@ export function Onboarding() {
   const previewNumber = () => {
     const built = buildOnboarding(input(), store.data.categories);
     return computeSafeToSpend({
-      today, accounts: [built.account], transactions: [], incomes: built.income ? [built.income] : [], bills: built.bills, goals: [],
+      today, accounts: built.card ? [built.account, built.card] : [built.account], transactions: [], incomes: built.income ? [built.income] : [], bills: built.bills, goals: [],
       settings: { buffer: 0, setAsideGoals: false },
     });
   };
@@ -122,8 +144,11 @@ export function Onboarding() {
     }
     setShowErrors(false);
     if (step === 4) await finish();
+    else if (step === 1) setStep(hasCard === 'yes' ? 'card' : 2);
+    else if (step === 'card') setStep(2);
     else setStep(typeof step === 'number' ? ((step + 1) as Step) : 1);
   };
+  const back = () => setStep(step === 'card' ? 1 : step === 2 ? (hasCard === 'yes' ? 'card' : 1) : ((Number(step) - 1) as Step));
 
   if (step === 'restore') {
     return (
@@ -178,7 +203,7 @@ export function Onboarding() {
   }
 
   const STEPS = ['Balance', 'Payday', 'Bills', 'Your number'] as const;
-  const n = Number(step);
+  const n = step === 'card' ? 1 : Number(step);
   const eg = (amount: string) => `e.g. ${dec === ',' ? amount.replace(/\./g, '#').replace(/,/g, '.').replace(/#/g, ',') : amount}`;
   const payday = setupPayday();
   const preview = step === 4 ? previewNumber() : null;
@@ -187,7 +212,7 @@ export function Onboarding() {
     <main class="screen onboarding" id="main">
       <div class="onb-top">
         <p class="muted" aria-live="polite">
-          Step {step} of 4
+          Step {n} of 4
         </p>
         <button type="button" class="link-btn" onClick={finish} disabled={busy}>
           Skip setup
@@ -196,7 +221,7 @@ export function Onboarding() {
       <div class="progress" aria-hidden="true">
         <span style={{ width: `${(n / 4) * 100}%` }} />
       </div>
-      <ol class="setup-dots" aria-label={`Setup step ${step} of 4: ${STEPS[n - 1]}`}>
+      <ol class="setup-dots" aria-label={`Setup step ${n} of 4: ${STEPS[n - 1]}`}>
         {STEPS.map((label, index) => (
           <li key={label} class={index + 1 <= n ? 'is-active' : ''} aria-current={index + 1 === n ? 'step' : undefined}>
             <i aria-hidden="true" /><span>{label}</span>
@@ -232,6 +257,52 @@ export function Onboarding() {
             onChange={chooseCurrency}
           />
           <TextInput label="What should we call you? (optional)" value={name} onInput={setName} placeholder="e.g. Sam" />
+          <Segmented
+            label="Do you also use a credit card?"
+            value={hasCard}
+            onChange={(v) => {
+              setHasCard(v);
+              setCardAnswered(true);
+            }}
+            options={[
+              { value: 'no', label: 'No card' },
+              { value: 'yes', label: 'Yes, I use a card' },
+            ]}
+          />
+        </section>
+      )}
+
+      {step === 'card' && (
+        <section class="onb-step">
+          <h1 class="screen-title">Your credit card</h1>
+          <p class="muted why-we-ask">Why we ask: so the card payment is set aside before it's due. Leave it blank to add it later.</p>
+          <TextInput label="Card name" value={cardName} onInput={setCardName} placeholder="e.g. Credit card" />
+          <MoneyInput label="What you owe on it now" value={cardOwed} onInput={setCardOwed} placeholder={eg('320.00')} showErrors={showErrors} />
+          <label class="day-field">
+            <span class="field-label">Payment due day (day of month)</span>
+            <input
+              class="input input-narrow"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={31}
+              placeholder="e.g. 25"
+              value={cardDay}
+              onInput={(e) => setCardDay(e.currentTarget.value)}
+            />
+          </label>
+          {showErrors && owedCheck.state === 'ok' && !dueDayOk && <p class="field-error">Add the day of the month the payment is due (1–31).</p>}
+          <Segmented
+            label="Each month you pay"
+            value={cardPay}
+            onChange={setCardPay}
+            options={[
+              { value: 'full', label: 'Pay in full' },
+              { value: 'minimum', label: 'Minimum' },
+            ]}
+          />
+          {cardPay === 'full' && <p class="muted">The whole balance is set aside before the payment day.</p>}
+          {cardPay === 'minimum' && <MoneyInput label="Minimum payment" value={cardMin} onInput={setCardMin} placeholder={eg('25.00')} showErrors={showErrors} />}
         </section>
       )}
 
@@ -241,7 +312,7 @@ export function Onboarding() {
           <p class="muted why-we-ask">Why we ask: so we know how many days your money needs to last.</p>
           {noPay ? (
             <div class="card card-quiet">
-              <p>No problem. We'll plan to the end of each month instead.</p>
+              <p>Safe to spend plans until the end of the month using money you already have. Log money when it arrives.</p>
               <button type="button" class="btn btn-small" onClick={() => setNoPay(false)}>
                 Add pay after all
               </button>
@@ -331,7 +402,7 @@ export function Onboarding() {
 
       <div class="onb-actions">
         {step !== 1 && (
-          <button type="button" class="btn" onClick={() => setStep((n - 1) as Step)}>
+          <button type="button" class="btn" onClick={back}>
             Back
           </button>
         )}

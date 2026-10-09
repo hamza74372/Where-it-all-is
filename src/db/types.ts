@@ -77,6 +77,10 @@ export interface Settings extends BaseRecord {
   storageNoteSeen?: boolean;
   exampleData?: boolean;
   onboarded?: boolean;
+  /** Setup's "Do you also use a credit card?" answer (unset if setup was skipped). */
+  setupCard?: 'yes' | 'no';
+  /** The "finish setting up" card on Today was closed. */
+  setupChecklistDismissed?: boolean;
 }
 
 export interface Account extends BaseRecord {
@@ -120,6 +124,8 @@ export interface Bill extends BaseRecord {
    * 'fixed' sets aside `amount`. Ignored for ordinary bills.
    */
   amountSource?: 'fixed' | 'cardBalance';
+  /** Due dates the person chose to skip ("not paid this time"): settled, with no money moved. */
+  skippedDates?: ISODate[];
   active: boolean;
 }
 
@@ -149,6 +155,8 @@ export interface Transaction extends BaseRecord {
   importDate?: ISODate;
   /** A manual entry that an import row was matched to (instead of adding the row again). */
   matchedBatchId?: Id;
+  /** A bill payment whose amount an import corrected to the bank's figure: what it was before (undo puts it back). */
+  amountBeforeImport?: Minor;
   /** For a bank fee: the transaction it was charged on. */
   linkedTxId?: Id;
   billId?: Id;

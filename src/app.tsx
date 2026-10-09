@@ -143,8 +143,14 @@ function Shell() {
     const main = document.getElementById('main');
     main?.scrollTo(0, 0);
     // A route change in this single-page app should land keyboard and screen-reader
-    // users at the new screen, not leave them cycling from the old nav button.
-    requestAnimationFrame(() => main?.focus({ preventScroll: true }));
+    // users at the new screen, not leave them cycling from the old nav button. This runs a frame
+    // later, so only if focus is still where the tap left it: never take it from a field someone has
+    // already moved to (that lost a quick-log entry typed straight after tapping Today — CT-01).
+    const from = document.activeElement;
+    requestAnimationFrame(() => {
+      const now = document.activeElement;
+      if (now === from || now === null || now === document.body) main?.focus({ preventScroll: true });
+    });
   };
 
   return (

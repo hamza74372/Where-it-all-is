@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-09T10:16:18.342Z",
+  "generatedAt": "2026-10-09T11:54:02.016Z",
   "observations": [
     {
       "customer": "A-Maya",
@@ -82,14 +82,14 @@
       "customer": "A-Maya",
       "day": "2026-10-16",
       "action": "Confirm a varying paycheck",
-      "result": "$201",
+      "result": "$198",
       "expected": "Actual amount replaces estimate"
     },
     {
       "customer": "A-Maya",
       "day": "2026-10-17",
       "action": "Open Today and check safe-to-spend",
-      "result": "$217",
+      "result": "$214",
       "expected": "A clear current daily number"
     },
     {
@@ -103,7 +103,7 @@
       "customer": "A-Maya",
       "day": "2026-11-09",
       "action": "Open Today and check safe-to-spend",
-      "result": "$721",
+      "result": "$696",
       "expected": "A clear current daily number"
     }
   ],
@@ -140,8 +140,8 @@
       "customer": "A-Maya",
       "date": "2026-10-28",
       "check": "Backup → wipe → restore safe number",
-      "expected": "$1,442",
-      "actual": "$1,442",
+      "expected": "$1,392",
+      "actual": "$1,392",
       "result": "Pass"
     }
   ],

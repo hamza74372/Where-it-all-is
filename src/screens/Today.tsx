@@ -131,6 +131,7 @@ export function Today() {
           {paydayCards.some(Boolean) ? paydayCards : !focus && !showAway && <NextUp result={result} />}
           <QuickLog inputRef={logRef} />
           {!focus && <FirstBackupPrompt />}
+          {!focus && <SetupChecklist />}
         </div>
         <section class="card desktop-breakdown" aria-labelledby="desktop-breakdown-title">
           <h2 id="desktop-breakdown-title" class="card-title">How this number is made</h2>
@@ -696,22 +697,38 @@ function QuickLog({ inputRef }: { inputRef: { current: HTMLInputElement | null }
   const fmt = useFmt();
   const today = useToday();
   const [text, setText] = useState('');
+  // 'saving' from Enter until IndexedDB has the entry; 'saved' (with a tick) until the next keystroke.
+  const [status, setStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const dec = settings.decimalSeparator;
   const parsed = parseQuickLog(text, categories, dec, rules);
   const cat = parsed.kind === 'ok' ? categories.find((c) => c.id === parsed.categoryId) : undefined;
 
+  const saving = useRef(false);
   const save = async (amount: number, override?: { categoryId?: string; note?: string; direction?: 'in' | 'out' }) => {
+    if (saving.current) return; // one entry at a time: a second Enter or tap can't double it
     if (parsed.kind !== 'ok' && !override) return;
     const p = parsed.kind === 'ok' ? parsed : null;
     const direction = override?.direction ?? p?.direction ?? 'out';
     const categoryId = override?.categoryId ?? p?.categoryId;
-    const { undo } = await logTransaction(store, {
-      amount, direction, date: today, categoryId, note: override?.note ?? p?.note ?? '',
-    });
-    const catName = categories.find((c) => c.id === categoryId)?.name;
-    toast(`${direction === 'in' ? 'Added' : 'Logged'} ${fmt.money(amount)}${catName ? ` · ${catName}` : ''}`, undo);
-    setText('');
+    saving.current = true;
+    setStatus('saving');
+    try {
+      // Resolves only once IndexedDB has committed the entry; the text stays until then.
+      const { undo } = await logTransaction(store, {
+        amount, direction, date: today, categoryId, note: override?.note ?? p?.note ?? '',
+      });
+      const catName = categories.find((c) => c.id === categoryId)?.name;
+      toast(`${direction === 'in' ? 'Added' : 'Logged'} ${fmt.money(amount)}${catName ? ` · ${catName}` : ''}`, undo);
+      setText('');
+      setStatus('saved');
+    } catch (e) {
+      setStatus('idle');
+      toast(e instanceof Error ? e.message : 'That entry couldn’t be saved. Try again.');
+    } finally {
+      saving.current = false;
+    }
   };
+  const busy = status === 'saving';
 
   return (
     <section class="card" aria-labelledby="ql-label">
@@ -735,15 +752,26 @@ function QuickLog({ inputRef }: { inputRef: { current: HTMLInputElement | null }
             autoComplete="off"
             placeholder={`Try "${dec === ',' ? '12,50' : '12.50'} coffee"`}
             value={text}
-            onInput={(e) => setText(e.currentTarget.value)}
+            readOnly={busy}
+            aria-busy={busy}
+            onInput={(e) => {
+              setText(e.currentTarget.value);
+              if (status === 'saved') setStatus('idle');
+            }}
             aria-describedby="ql-preview"
           />
-          <button type="submit" class="btn btn-primary" disabled={parsed.kind !== 'ok' || !!parsed.confirm}>
+          <button type="submit" class="btn btn-primary" disabled={busy || parsed.kind !== 'ok' || !!parsed.confirm}>
             Save
           </button>
         </div>
         <p id="ql-preview" class="ql-preview" aria-live="polite">
-          {parsed.kind === 'ok' && !parsed.confirm && (
+          {busy && <>Saving…</>}
+          {status === 'saved' && !text && (
+            <span class="ql-saved">
+              <Icon name="done" small /> Saved
+            </span>
+          )}
+          {!busy && parsed.kind === 'ok' && !parsed.confirm && (
             <>
               {parsed.direction === 'in' ? 'Money in: ' : ''}
               {fmt.money(parsed.amount)} · {cat ? cat.name : 'No category (that’s fine — it’s optional)'}
@@ -774,6 +802,7 @@ function QuickLog({ inputRef }: { inputRef: { current: HTMLInputElement | null }
               key={p.id}
               type="button"
               class="chip"
+              disabled={busy}
               onClick={() =>
                 save(p.amount, { categoryId: categoryByName(categories, p.categoryName)?.id, note: p.label, direction: 'out' })
               }
@@ -963,6 +992,51 @@ function BackupReminder() {
 }
 
 /** Straight after setup: one gentle prompt for a first backup (until there is one, or "Later"). */
+/**
+ * "When you have a minute": only what setup skipped, each a link straight to the right place.
+ * Optional, never nagging; "Hide this" closes it for good.
+ */
+function SetupChecklist() {
+  const store = useStore();
+  const { settings, accounts, bills, importBatches } = useData();
+  const nav = useNav();
+  if (__DEMO__ || settings.exampleData || settings.setupChecklistDismissed) return null;
+  const live = accounts.filter((a) => !a.archived);
+  const toMore = (page: string) => () => {
+    setPref('openMorePage', page);
+    nav('more');
+  };
+  const items: Array<{ key: string; label: string; go: () => void }> = [];
+  if (settings.setupCard !== 'no' && !live.some((a) => a.type === 'credit')) items.push({ key: 'card', label: 'Add your credit card', go: toMore('accounts') });
+  if (!live.some((a) => a.type === 'savings')) items.push({ key: 'savings', label: 'Add savings', go: toMore('accounts') });
+  // The first-backup prompt asks first; after "Later" it waits here instead.
+  if (!settings.lastBackupAt && getPref('firstBackupLater', false)) items.push({ key: 'backup', label: 'Make your first backup', go: toMore('backup') });
+  if (bills.filter((b) => b.active).length < 2)
+    items.push({ key: 'bill', label: 'Add another bill', go: () => { setPref('openAddBill', true); nav('bills'); } });
+  if (!importBatches.length) items.push({ key: 'import', label: 'Try an import', go: () => { setPref('openImport', true); nav('log'); } });
+  if (!items.length) return null;
+  return (
+    <section class="card card-quiet setup-checklist" aria-labelledby="setup-checklist">
+      <h2 id="setup-checklist" class="card-title">
+        When you have a minute
+      </h2>
+      <p class="muted">A few optional extras. Do any, all or none.</p>
+      <ul class="rows">
+        {items.map((i) => (
+          <li key={i.key} class="row">
+            <button type="button" class="link-btn" onClick={i.go}>
+              {i.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+      <button type="button" class="link-btn" onClick={() => store.saveSettings({ setupChecklistDismissed: true })}>
+        Hide this
+      </button>
+    </section>
+  );
+}
+
 function FirstBackupPrompt() {
   const { settings } = useData();
   const nav = useNav();

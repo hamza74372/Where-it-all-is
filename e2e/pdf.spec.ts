@@ -36,6 +36,9 @@ for (const paper of ['Letter', 'A4']) {
     expect(flat).toContain('(macOS14orlater)');
     expect(flat).toContain('DownloadonEtsy.cominawebbrowser,nottheEtsyapp.');
     expect(flat).toContain(cfg.zipFileName);
+    // CT-05: the link opens the app; the numbers live only in this browser.
+    expect(flat).toContain('Thislinkopenstheapp.Yournumbersaresavedonlyinthisbrowseronthisdevice,unlessyoumakeabackup.');
+    expect(flat).not.toContain('personalcopy');
     await doc.cleanup();
   });
 }

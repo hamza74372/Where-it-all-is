@@ -95,6 +95,7 @@ test('onboarding → log → undo → mark bill paid → calendar', async ({ pag
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Bills' }).click();
   await shot(page, '09-bills');
   await page.getByRole('button', { name: /Mark Phone paid/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Mark paid', exact: true }).click(); // paid in full
   await expect(page.getByRole('status')).toContainText('Phone marked paid');
 
   await page.getByRole('radio', { name: 'Calendar' }).click();

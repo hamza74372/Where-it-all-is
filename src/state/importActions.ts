@@ -2,11 +2,14 @@
 // suggestions + rules), commit as one batch, undo a batch, and the balance check at the end.
 
 import { uid } from '../db/db';
-import type { Account, Category, CsvMapping, Id, ImportBatch, ISODate, Rule, Transaction } from '../db/types';
+import type { Account, Bill, Category, CsvMapping, Id, ImportBatch, ISODate, Rule, Transaction } from '../db/types';
 import { convertRows, findDuplicates, matchExistingEntries, statementEnd, tidyDescription, type Draft, type Skipped } from '../lib/csv/convert';
 import type { MappingDraft } from '../lib/csv/detect';
 import type { Minor } from '../lib/money';
 import { applyRules } from '../lib/rules';
+import { addDays, daysBetween } from '../lib/dates';
+import { isBillPaid } from '../lib/safeToSpend';
+import { occurrences } from '../lib/schedule';
 import { accountBalance, isBeforeStart } from '../lib/safeToSpend';
 import { guessTransferAccount, isTransfer, transferPartners, TRANSFER_WORDS } from '../lib/transfers';
 import type { Undo } from './actions';
@@ -33,6 +36,8 @@ export interface PreparedItem {
   /** The user's pick for a row with candidates. */
   choice?: Id | 'new' | 'skip';
   transfer?: TransferSuggestion;
+  /** The bill occurrence this row pays (an autopay or bill the bank took). adoptAmount: the bill was already marked paid at another amount — the bank's figure replaces it. */
+  bill?: { billId: Id; dueDate: ISODate; name: string; adoptAmount?: boolean };
   categoryId?: Id;
   note: string;
 }
@@ -78,6 +83,8 @@ export interface Counts {
   leftOutCount: number;
   feeCount: number;
   transferCount: number;
+  /** Rows that pay one of your bills (new, or correcting a bill already marked paid). */
+  billCount: number;
   needSorting: number;
 }
 
@@ -92,9 +99,42 @@ export function countsOf(p: Pick<Prepared, 'items'>): Counts {
     leftOutCount: kinds.filter((k) => k === 'skip').length,
     feeCount: fresh.filter((i) => i.draft.feeOf !== undefined).length,
     transferCount: fresh.filter(isConfirmedTransfer).length,
+    billCount: p.items.filter((i, n) => !!i.bill && (kinds[n] === 'new' || kinds[n] === 'link')).length,
     // Money coming in (pay, refunds), fees and transfers don't need sorting.
     needSorting: fresh.filter((i) => !i.categoryId && i.draft.amount < 0 && i.draft.feeOf === undefined && !isConfirmedTransfer(i)).length,
   };
+}
+
+/** Words in a bill's name that say nothing about which bill it is. */
+const GENERIC_BILL_WORDS = new Set(['bill', 'bills', 'payment', 'monthly', 'the', 'and', 'for', 'direct', 'debit']);
+const billWords = (name: string) => name.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3 && !GENERIC_BILL_WORDS.has(w));
+
+/**
+ * The bill occurrence a bank row pays: an ordinary bill on this account, due within a week before
+ * (or a few days after) the row, where the row names the bill at a plausible amount (half to twice
+ * the bill — autopay amounts vary) or has exactly the bill's amount within 3 days. paid: whether that
+ * occurrence was already marked paid (then the existing 'bill' entry is the one to link).
+ */
+function billOccurrenceFor(draft: Draft, accountId: Id, bills: Bill[], transactions: Transaction[], claimed: Set<string>) {
+  if (draft.amount >= 0) return null;
+  const desc = draft.description.toLowerCase();
+  const paid = -draft.amount;
+  let best: { bill: Bill; date: ISODate; gap: number } | null = null;
+  for (const bill of bills) {
+    if (!bill.active || bill.accountId !== accountId || bill.payToAccountId) continue;
+    const named = billWords(bill.name).some((w) => desc.includes(w));
+    for (const date of occurrences(bill.schedule, addDays(draft.date, -4), addDays(draft.date, 7))) {
+      const key = `${bill.id}|${date}`;
+      if (claimed.has(key)) continue;
+      const gap = Math.abs(daysBetween(date, draft.date));
+      const plausible = named && paid >= bill.amount / 2 && paid <= bill.amount * 2;
+      const exact = paid === bill.amount && gap <= 3;
+      if ((plausible || exact) && (!best || gap < best.gap)) best = { bill, date, gap };
+    }
+  }
+  if (!best) return null;
+  const settledBy = transactions.find((t) => t.billId === best!.bill.id && t.billDueDate === best!.date && t.source === 'bill' && !t.matchedBatchId);
+  return { ...best, paidEntry: settledBy, skipped: isBillPaid(best.bill, best.date, transactions) && !settledBy };
 }
 
 export function prepareImport(store: Store, rows: string[][], mapping: MappingDraft, accountId: Id): Prepared {
@@ -104,6 +144,7 @@ export function prepareImport(store: Store, rows: string[][], mapping: MappingDr
   const matches = matchExistingEntries(drafts, dupOf, transactions, accountId);
   const feesCat = store.data.categories.find((c) => c.name === BANK_FEES && !c.archived);
   const partnersUsed = new Set<Id>();
+  const billsClaimed = new Set<string>();
   const items = drafts.map((draft, i): PreparedItem => {
     const duplicate = !!dupOf[i];
     if (draft.feeOf !== undefined) {
@@ -119,6 +160,21 @@ export function prepareImport(store: Store, rows: string[][], mapping: MappingDr
       ...(m && 'id' in m ? { matchId: m.id } : {}),
       ...(m && 'candidates' in m ? { candidates: m.candidates } : {}),
     };
+    // A bill the bank took (autopay, or one you paid): link the row to that due date.
+    if (!duplicate && !m) {
+      const occ = billOccurrenceFor(draft, accountId, store.data.bills, transactions, billsClaimed);
+      if (occ && !occ.skipped) {
+        billsClaimed.add(`${occ.bill.id}|${occ.date}`);
+        item.bill = { billId: occ.bill.id, dueDate: occ.date, name: occ.bill.name };
+        item.categoryId ??= occ.bill.categoryId;
+        // Already marked paid at the bill's amount: this row is that payment, at the bank's real amount.
+        if (occ.paidEntry) {
+          item.matchId = occ.paidEntry.id;
+          item.bill.adoptAmount = occ.paidEntry.amount !== draft.amount;
+        }
+        return item;
+      }
+    }
     // Rows that would be added as new: could this be money moving between your own accounts?
     if (!duplicate && !m) {
       const partner = transferPartners(draft, accountId, transactions, accounts, partnersUsed)[0];
@@ -132,6 +188,40 @@ export function prepareImport(store: Store, rows: string[][], mapping: MappingDr
     return item;
   });
   return { items, skipped, statement: statementEnd(drafts) };
+}
+
+/**
+ * What happens to each row, in plain words, for the import's last screen — e.g.
+ * "2 imported · 1 linked to your Savings transfer · 1 matched to your Electric bill · 3 already imported".
+ * Call before committing (it reads the entries rows are linked to).
+ */
+export function describeImport(store: Store, p: Pick<Prepared, 'items'>): string[] {
+  const { transactions, accounts } = store.data;
+  const accountName = (id?: Id) => accounts.find((a) => a.id === id)?.name ?? 'another account';
+  const groups = new Map<string, number>();
+  const add = (phrase: string) => groups.set(phrase, (groups.get(phrase) ?? 0) + 1);
+  let imported = 0;
+  let duplicates = 0;
+  for (const item of p.items) {
+    const r = resolutionOf(item);
+    if (r.kind === 'duplicate') duplicates++;
+    else if (item.bill && (r.kind === 'new' || r.kind === 'link')) add(`matched to your ${item.bill.name} bill`);
+    else if (r.kind === 'link') {
+      const t = transactions.find((x) => x.id === r.id);
+      if (t && isTransfer(t)) {
+        const other = transactions.find((x) => x.transferId && x.transferId === t.transferId && x.id !== t.id);
+        add(`linked to your ${accountName(other?.accountId ?? t.accountId)} transfer`);
+      } else add("linked to something you'd already logged");
+    } else if (r.kind === 'new' && isConfirmedTransfer(item)) {
+      const partner = item.transfer!.partnerId ? transactions.find((x) => x.id === item.transfer!.partnerId) : undefined;
+      if (partner) add(`linked to your ${accountName(partner.accountId)} transfer`);
+      else add(`marked as a move to or from ${accountName(item.transfer!.accountId)}`);
+    } else if (r.kind === 'new') imported++;
+  }
+  const lines = imported ? [`${imported} imported`] : [];
+  for (const [phrase, n] of groups) lines.push(`${n} ${phrase}`);
+  if (duplicates) lines.push(`${duplicates} already imported`);
+  return lines;
 }
 
 async function ensureBankFeesCategory(store: Store): Promise<Category> {
@@ -177,6 +267,7 @@ export async function commitImport(
       importBatchId: batchId,
       linkedTxId: isFee ? resultId[i.draft.feeOf!] : undefined,
       transferId,
+      ...(i.bill && !transfer ? { billId: i.bill.billId, billDueDate: i.bill.dueDate } : {}),
       cleared: true,
     });
     if (!transfer) return;
@@ -197,7 +288,10 @@ export async function commitImport(
     const r = res[idx];
     if (r.kind !== 'link') return [];
     const t = store.data.transactions.find((x) => x.id === r.id);
-    return t ? [{ ...t, matchedBatchId: batchId, importDescription: i.draft.description, importDate: i.draft.date, cleared: true }] : [];
+    if (!t) return [];
+    // A bill payment the bank shows at a different amount takes the bank's figure (undo restores it).
+    const corrected = i.bill?.adoptAmount && t.amount !== i.draft.amount ? { amount: i.draft.amount, amountBeforeImport: t.amount } : {};
+    return [{ ...t, ...corrected, matchedBatchId: batchId, importDescription: i.draft.description, importDate: i.draft.date, cleared: true }];
   });
 
   const own = fresh.filter((t) => t.accountId === opts.accountId);
@@ -230,7 +324,11 @@ export async function undoImport(store: Store, batchId: Id): Promise<Undo> {
   const partners = store.data.transactions.filter((t) => !addedIds.has(t.id) && !!t.transferId && transferIds.has(t.transferId));
   await store.remove('transactions', [...addedIds]);
   const restored = [
-    ...linked.map(({ matchedBatchId: _m, importDescription: _d, importDate: _i, ...rest }) => ({ ...rest, cleared: false })),
+    ...linked.map(({ matchedBatchId: _m, importDescription: _d, importDate: _i, amountBeforeImport, ...rest }) => ({
+      ...rest,
+      ...(amountBeforeImport !== undefined ? { amount: amountBeforeImport } : {}), // a bill amount the import corrected
+      cleared: false,
+    })),
     ...partners.map(({ transferId: _t, ...rest }) => rest),
   ];
   if (restored.length) await store.upsert('transactions', restored);

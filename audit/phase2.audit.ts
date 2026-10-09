@@ -127,6 +127,7 @@ test('phase 2 walkthrough + audit', async ({ page }, info) => {
 
   await tap(nav('Bills'));
   await tap(page.getByRole('button', { name: /Mark Phone paid/ }));
+  await tap(page.getByRole('dialog').getByRole('button', { name: 'Mark paid', exact: true }));
   await expect(page.getByRole('status')).toContainText('Phone marked paid');
   await snap('bills-after-mark-paid');
 

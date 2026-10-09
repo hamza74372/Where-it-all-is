@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-10-09T10:19:13.271Z",
+  "generatedAt": "2026-10-09T11:54:12.815Z",
   "observations": [
     {
       "customer": "D-Sam-Alex",
       "day": "2026-10-09",
       "action": "Open Today and check safe-to-spend",
-      "result": "$257",
+      "result": "$244",
       "expected": "A clear current daily number"
     },
     {
@@ -19,7 +19,7 @@
       "customer": "D-Sam-Alex",
       "day": "2026-10-16",
       "action": "Open Today and check safe-to-spend",
-      "result": "$118",
+      "result": "$117",
       "expected": "A clear current daily number"
     },
     {
@@ -33,7 +33,7 @@
       "customer": "D-Sam-Alex",
       "day": "2026-10-23",
       "action": "Open Today and check safe-to-spend",
-      "result": "$247",
+      "result": "$246",
       "expected": "A clear current daily number"
     },
     {
@@ -47,7 +47,7 @@
       "customer": "D-Sam-Alex",
       "day": "2026-10-30",
       "action": "Open Today and check safe-to-spend",
-      "result": "$36",
+      "result": "$35",
       "expected": "A clear current daily number"
     },
     {
@@ -76,32 +76,32 @@
       "date": "2026-10-09",
       "check": "Account ledger",
       "expected": "1837.50",
-      "actual": "1850.00",
-      "result": "Mismatch"
+      "actual": "1837.50",
+      "result": "Pass"
     },
     {
       "customer": "D-Sam-Alex",
       "date": "2026-10-16",
       "check": "Account ledger",
       "expected": "1824.00",
-      "actual": "1836.50",
-      "result": "Mismatch"
+      "actual": "1824.00",
+      "result": "Pass"
     },
     {
       "customer": "D-Sam-Alex",
       "date": "2026-10-23",
       "check": "Account ledger",
       "expected": "1809.50",
-      "actual": "1822.00",
-      "result": "Mismatch"
+      "actual": "1809.50",
+      "result": "Pass"
     },
     {
       "customer": "D-Sam-Alex",
       "date": "2026-10-30",
       "check": "Account ledger",
       "expected": "1794.00",
-      "actual": "1806.50",
-      "result": "Mismatch"
+      "actual": "1794.00",
+      "result": "Pass"
     }
   ],
   "runtimeProblems": [],

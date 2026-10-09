@@ -155,7 +155,7 @@ const makeHtml = (PAPER, PAGE, { today: todayShot, backup: backupShot }) => `<!d
         <a href="${esc(APP_URL)}">${APP_QR}</a>
         <div>
           <p class="qr-cap">Scan with your phone camera</p>
-          <p>It’s your personal copy’s address — bookmark it, but please don’t post it publicly.</p>
+          <p>This link opens the app. Your numbers are saved only in this browser on this device, unless you make a backup. Bookmark it, but please don’t post it publicly.</p>
         </div>
       </div>
     </div>

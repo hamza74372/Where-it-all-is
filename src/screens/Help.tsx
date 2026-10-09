@@ -24,18 +24,20 @@ export const ARTICLES: Article[] = [
         <p>Setup takes about two minutes. Rough numbers are fine — you can change anything later.</p>
         <Steps>
           <li>
-            <strong>Name and currency.</strong> Pick how you type amounts — “12.50” or “12,50”.
-          </li>
-          <li>
-            <strong>Your main account’s balance today.</strong> Check your banking app. The app counts everything from today onwards.
+            <strong>Your main account’s balance today.</strong> Check your banking app. The app counts everything from today onwards. Pick
+            your currency and how you type amounts — “12.50” or “12,50”. Use a credit card? Say so and add it in one short step: what you
+            owe, the payment day, and whether you pay it in full or the minimum.
           </li>
           <li>
             <strong>Your pay.</strong> How much lands and when. If it varies, tick “My pay varies” and use an average — you’ll confirm the
-            real amount each payday.
+            real amount each payday. No regular pay (freelance, gig work)? Choose “I don’t have regular pay”. Safe to spend plans until the end of the month using money you already have. Log money when it arrives.
           </li>
           <li>
-            <strong>Your main monthly bills.</strong> Rent, phone, subscriptions — an amount and the day of the month. Add more any time
-            from Bills.
+            <strong>Your main monthly bills.</strong> Rent, phone, subscriptions — an amount and the day of the month. Only bills due
+            before your next payday are needed now; add more any time from Bills.
+          </li>
+          <li>
+            <strong>Your number.</strong> What it all adds up to: safe to spend today.
           </li>
         </Steps>
         <h3>Put it on your Home Screen</h3>
@@ -251,6 +253,7 @@ export const ARTICLES: Article[] = [
           the date and time it was made. It never mixes with their own budget, and they can remove it in one tap. Small shares can also be
           sent as a QR code.
         </p>
+        <p>This is a read-only snapshot. It doesn't update by itself. Send a new one whenever you want your partner to see the latest.</p>
       </>
     ),
   },

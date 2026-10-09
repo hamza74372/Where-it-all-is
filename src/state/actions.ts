@@ -1,6 +1,6 @@
 // User actions. Each returns an `undo` so the UI can offer an 8-second Undo toast.
 
-import { buildDefaultCategories, buildExampleData, COMMON_BILLS } from '../data/defaults';
+import { buildDefaultCategories, buildExampleData, COMMON_BILLS, nextDayOfMonth } from '../data/defaults';
 import { uid } from '../db/db';
 import type { Account, Bill, Category, Id, Income, ISODate, Schedule, Transaction } from '../db/types';
 import { defaultSettings } from '../db/settings';
@@ -130,6 +130,13 @@ export async function markBillPaid(
   return () => store.remove('transactions', saved.map((t) => t.id));
 }
 
+/** "Skip this time": the occurrence is settled without any money moving; the next due date comes up. */
+export async function markBillSkipped(store: Store, bill: Bill, dueDate: ISODate): Promise<Undo> {
+  const before = store.data.bills.find((b) => b.id === bill.id) ?? bill;
+  await store.upsert('bills', [{ ...before, skippedDates: [...new Set([...(before.skippedDates ?? []), dueDate])].sort() }]);
+  return async () => void (await store.upsert('bills', [before]));
+}
+
 export async function confirmPay(store: Store, income: Income, date: ISODate, amount: Minor): Promise<Undo> {
   const [tx] = await store.upsert('transactions', [
     {
@@ -163,12 +170,16 @@ export interface OnboardingInput {
   balance: Minor | null;
   pay: { amount: Minor; variable: boolean; schedule: Schedule } | null;
   bills: Array<{ name: string; amount: Minor; schedule: Schedule }>;
+  /** A credit card from setup: what's owed now, the payment day, and pay in full or a fixed minimum. */
+  card?: { name: string; owed: Minor; dueDay: number; pay: 'full' | 'minimum'; minimum?: Minor } | null;
+  /** Setup's card answer, remembered so Today's checklist doesn't ask again. */
+  hasCard?: 'yes' | 'no';
   /** The day the balance was entered — it becomes the account's opening date. */
   today: ISODate;
 }
 
 /** What setup will create — also used to preview "Your number" before anything is saved. */
-export function buildOnboarding(input: OnboardingInput, categories: Category[]): { account: Account; income: Income | null; bills: Bill[] } {
+export function buildOnboarding(input: OnboardingInput, categories: Category[]): { account: Account; income: Income | null; bills: Bill[]; card: Account | null } {
   const accountId = uid();
   const now = Date.now();
   const account: Account = {
@@ -183,12 +194,30 @@ export function buildOnboarding(input: OnboardingInput, categories: Category[]):
     id: uid(), name: b.name, amount: b.amount, accountId, schedule: b.schedule, autopay: false, isDebtMinimum: false, active: true, updatedAt: now,
     categoryId: categoryByName(categories, COMMON_BILLS.find((c) => c.name === b.name)?.categoryName ?? 'Bills')?.id,
   }));
-  return { account, income, bills };
+  // The card: an account for what's owed (not counted in safe-to-spend, like any card) and its payment
+  // bill — following the card's balance for "pay in full", or a fixed minimum.
+  const c = input.card;
+  const card: Account | null = c
+    ? {
+        id: uid(), name: c.name.trim() || 'Credit card', type: 'credit', openingBalance: -Math.abs(c.owed), openingDate: input.today,
+        balanceCheckedAt: input.today, includeInSafeToSpend: false, archived: false, updatedAt: now,
+      }
+    : null;
+  if (c && card) {
+    const day = Math.min(31, Math.max(1, Math.round(c.dueDay) || 1));
+    bills.push({
+      id: uid(), name: `${card.name} payment`, amount: c.pay === 'minimum' ? Math.abs(c.minimum ?? 0) : 0, accountId,
+      payToAccountId: card.id, amountSource: c.pay === 'minimum' ? 'fixed' : 'cardBalance',
+      schedule: { kind: 'monthly', anchorDate: nextDayOfMonth(input.today, day), dayOfMonth: day, weekendShift: 'none' },
+      autopay: false, isDebtMinimum: false, active: true, updatedAt: now, categoryId: categoryByName(categories, 'Bills')?.id,
+    });
+  }
+  return { account, income, bills, card };
 }
 
 export async function completeOnboarding(store: Store, input: OnboardingInput): Promise<void> {
-  const { account, income, bills } = buildOnboarding(input, store.data.categories);
-  await store.upsert('accounts', [account]);
+  const { account, income, bills, card } = buildOnboarding(input, store.data.categories);
+  await store.upsert('accounts', card ? [account, card] : [account]);
   if (income) await store.upsert('incomes', [income]);
   if (bills.length) await store.upsert('bills', bills);
   await store.saveSettings({
@@ -198,6 +227,7 @@ export async function completeOnboarding(store: Store, input: OnboardingInput): 
     defaultAccountId: account.id,
     onboarded: true,
     exampleData: false,
+    setupCard: input.hasCard,
   });
 }
 

@@ -1,14 +1,15 @@
 // Spec §7.4 — bill list + month calendar with paydays, mark paid, big yearly bills helper.
 
 import { useState } from 'preact/hooks';
+import { getPref, setPref } from '../lib/prefs';
 import { uid } from '../db/db';
 import type { Bill, ISODate, Schedule } from '../db/types';
 import { billsBetween, monthlySetAside, nextUnpaid, paydaysBetween } from '../lib/bills';
 import { addMonthsYM, daysBetween, daysInMonth, parts, weekday, ymd } from '../lib/dates';
 import { describeSchedule } from '../lib/schedule';
-import { billPaymentAmount, markBillPaid, saveWithUndo } from '../state/actions';
+import { billPaymentAmount, markBillPaid, markBillSkipped, saveWithUndo } from '../state/actions';
 import { useData, useStore } from '../state/store';
-import { checkMoney, MoneyInput, moneyText, ScheduleFields, Segmented, Select, TextInput, Toggle } from '../ui/fields';
+import { checkMoney, DateInput, MoneyInput, moneyText, ScheduleFields, Segmented, Select, TextInput, Toggle } from '../ui/fields';
 import { useFmt, useToday } from '../ui/hooks';
 import { Icon } from '../ui/icons';
 import { Sheet } from '../ui/Sheet';
@@ -19,7 +20,12 @@ import { CategoryChip } from '../ui/Visual';
 export function Bills() {
   const data = useData();
   const [view, setView] = useState<'list' | 'calendar'>('list');
-  const [editing, setEditing] = useState<Bill | 'new' | null>(null);
+  // Today's "Add another bill" lands here with the add form open.
+  const [editing, setEditing] = useState<Bill | 'new' | null>(() => {
+    const open = getPref('openAddBill', false);
+    if (open) setPref('openAddBill', false);
+    return open ? 'new' : null;
+  });
   const active = data.bills.filter((b) => b.active);
   const yearly = active.filter((b) => monthlySetAside(b) > 0);
 
@@ -61,6 +67,7 @@ function BillList({ bills, onEdit, onAdd }: { bills: Bill[]; onEdit: (b: Bill) =
   const data = useData();
   const fmt = useFmt();
   const today = useToday();
+  const [paying, setPaying] = useState<{ bill: Bill; due: ISODate } | null>(null);
   if (!bills.length) {
     return (
       <div class="card">
@@ -99,10 +106,7 @@ function BillList({ bills, onEdit, onAdd }: { bills: Bill[]; onEdit: (b: Bill) =
                 <button
                   type="button"
                   class="btn btn-small"
-                  onClick={async () => {
-                    const undo = await markBillPaid(store, bill, due, overdue ? due : today, amount);
-                    toast(`${bill.name} marked paid`, undo);
-                  }}
+                  onClick={() => setPaying({ bill, due })}
                   aria-label={`Mark ${bill.name} paid for ${fmt.day(due)}`}
                 >
                   Mark paid
@@ -112,7 +116,73 @@ function BillList({ bills, onEdit, onAdd }: { bills: Bill[]; onEdit: (b: Bill) =
           </li>
         );
       })}
+      {paying && <MarkPaidSheet bill={paying.bill} due={paying.due} onClose={() => setPaying(null)} />}
     </ul>
+  );
+}
+
+/**
+ * "Mark paid": paid in full (the bill's amount), a different amount (this time only), or skip this
+ * time (settled, no money moved; the next due date comes up). A late payment is recorded on the day
+ * it was actually paid — today unless changed — so the balance moves when the money left.
+ */
+function MarkPaidSheet({ bill, due, onClose }: { bill: Bill; due: ISODate; onClose: () => void }) {
+  const store = useStore();
+  const data = useData();
+  const fmt = useFmt();
+  const today = useToday();
+  const dec = data.settings.decimalSeparator;
+  const full = billPaymentAmount(store, bill, today);
+  const [how, setHow] = useState<'full' | 'different' | 'skip'>('full');
+  const [amount, setAmount] = useState(moneyText(full, dec));
+  const [paidOn, setPaidOn] = useState<ISODate>(today);
+  const [showErrors, setShowErrors] = useState(false);
+  const check = checkMoney(amount, dec);
+  const late = due < today;
+
+  const confirm = async () => {
+    if (how === 'skip') {
+      const undo = await markBillSkipped(store, bill, due);
+      toast(`${bill.name} skipped this time`, undo);
+      return onClose();
+    }
+    if (how === 'different' && (check.state !== 'ok' || check.value <= 0)) return setShowErrors(true);
+    const paid = how === 'full' ? full : Math.abs((check as { value: number }).value);
+    const undo = await markBillPaid(store, bill, due, late ? paidOn : today, paid);
+    toast(`${bill.name} marked paid · ${fmt.money(paid)}`, undo);
+    onClose();
+  };
+
+  return (
+    <Sheet open onClose={onClose} title={`${bill.name} — due ${fmt.day(due)}`}>
+      <form
+        class="form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          confirm();
+        }}
+      >
+        <Segmented
+          label="What happened?"
+          value={how}
+          onChange={setHow}
+          options={[
+            { value: 'full', label: 'Paid in full' },
+            { value: 'different', label: 'Different amount' },
+            { value: 'skip', label: 'Skip this time' },
+          ]}
+        />
+        {how === 'full' && <p>{fmt.money(full)} paid{late ? '' : ' today'}.</p>}
+        {how === 'different' && (
+          <MoneyInput label="Amount paid" value={amount} onInput={setAmount} showErrors={showErrors} hint="Only this payment changes. Next time it's back to the usual amount." />
+        )}
+        {how === 'skip' && <p class="muted">Not paid this time. No money moves, and the next due date comes up.</p>}
+        {how !== 'skip' && late && <DateInput label="Paid on" value={paidOn} onInput={setPaidOn} hint={`It was due ${fmt.day(due)}.`} />}
+        <button type="submit" class="btn btn-primary btn-block">
+          {how === 'skip' ? 'Skip this time' : 'Mark paid'}
+        </button>
+      </form>
+    </Sheet>
   );
 }
 

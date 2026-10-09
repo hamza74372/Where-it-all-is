@@ -202,6 +202,7 @@ async function markBill(page, name) {
   await nav(page, 'Bills').click();
   const button = page.getByRole('button', { name: new RegExp(`Mark ${name} paid`) }).first();
   await button.click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Mark paid', exact: true }).click(); // paid in full
   await page.getByRole('status').filter({ hasText: `${name} marked paid` }).waitFor();
 }
 

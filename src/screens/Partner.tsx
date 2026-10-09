@@ -47,6 +47,7 @@ export function ShareWithPartner() {
         No account, no cloud. You make a locked file and send it however you like — AirDrop, WhatsApp, email. Your partner opens it in their
         own copy of the app, where it shows as a read-only Partner tab. It never mixes with their own budget.
       </p>
+      <p class="partner-snapshot-note">This is a read-only snapshot. It doesn't update by itself. Send a new one whenever you want your partner to see the latest.</p>
       <CreateShare />
       <OpenShare />
       {data.partner && <PartnerHeldNote />}
@@ -282,7 +283,7 @@ export function PartnerTab() {
   const isShort = s.safe.status === 'short' || (s.safe.status === 'tight' && s.safe.shortfall > 0);
 
   return (
-    <div class="partner-view" aria-label={`${who} shared budget (read only)`}>
+    <div class="partner-view" aria-label={`${who} budget snapshot (read only)`}>
       <h1 class="screen-title">{who} budget</h1>
       <p class="partner-asof">
         <span class="badge">Read only</span> As of {asOf}

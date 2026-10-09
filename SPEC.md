@@ -93,8 +93,8 @@ safeToSpendToday = floor(safeToSpendPeriod / daysLeft) − spentToday(discretion
 
 ### 7.1 Onboarding (4 steps, skippable, "Try with example numbers" button)
 Progress dots: **Balance → Payday → Bills → Your number**. Every field shows an example ("e.g. 1,250.00", in the chosen decimal style) and every step has a one-line "Why we ask".
-1. **Balance** — main account balance (cursor starts here), plus currency (default from the device locale), decimal style and an optional name.
-2. **Payday** — amount + schedule; "my pay varies" toggle → use average; "I don't have regular pay" plans to month end.
+1. **Balance** — main account balance (cursor starts here), plus currency (default from the device locale), decimal style and an optional name. "Do you also use a credit card?" — if yes, one compact step (still under the Balance dot): card name, what you owe now, the payment due day, "Pay in full" or "Minimum (amount)". Setup creates the card account (not counted in safe to spend) and its payment bill (follows the card balance, or a fixed minimum). Skipping it is fine; only a real answer is remembered.
+2. **Payday** — amount + schedule; "my pay varies" toggle → use average; "I don't have regular pay": "Safe to spend plans until the end of the month using money you already have. Log money when it arrives." (Expected/irregular income is v1.1.)
 3. **Bills** — quick-add list of common ones (2 fields each). Only bills due before the next payday are needed now; rows due after it say "this one can wait". Nothing is mandatory.
 4. **Your number** — a preview of safe to spend, from the real calculation on exactly what setup will save. "Finish" saves.
 → Lands on Today. Example-data mode clearly labelled; "Clear examples" one tap.
@@ -103,7 +103,8 @@ Acceptance: an e2e test completes setup with a time model (8 s per step read, 2 
 ### 7.2 Today
 - Big **Safe to spend today**, sub-line "until payday Fri 10 Oct: 214".
 - **Balance freshness:** each account stores `balanceCheckedAt` (set by setup, account edits, "Update balance", and a matching or adjusted statement balance check). The hero says "Updated today" or "Balance last checked N days ago" (oldest included account). From 3 days (`STALE_AFTER_DAYS`), the hero reads "About $X" with a one-tap **Update balance** button (sheet: "What's your balance today?"). The calculation never changes with age — only the wording and the button.
-- Quick log box: type `25 groceries` or `12.50 coffee` → parses amount; the category is suggested from the merchant text (saved rules first, then category names/keywords). Category is optional ("No category — that's fine"). Enter or Save logs it (≤ 3 taps; a chip is 1 tap). Every save shows an Undo toast. Plus 4–6 one-tap preset chips (user-editable).
+- Quick log box: type `25 groceries` or `12.50 coffee` → parses amount; the category is suggested from the merchant text (saved rules first, then category names/keywords). Category is optional ("No category — that's fine"). Enter or Save logs it (≤ 3 taps; a chip is 1 tap). Every save shows an Undo toast. Plus 4–6 one-tap preset chips (user-editable). While an entry is being written the box is read-only and Save/chips are off; once IndexedDB has committed it the box clears and says "Saved" (writes ask for an immediate commit). Tab changes never pull focus out of a field the person has moved to (that lost entries typed straight after tapping Today — customer test CT-01).
+- "When you have a minute" (after setup, dismissible with "Hide this"): only what was skipped — add your credit card (unless setup said no card), add savings, make your first backup (after "Later" on the first-backup prompt), add another bill (fewer than two), try an import — each a link straight to the right place. No guilt wording.
 - "Next 3 bills" card with due dates.
 - "Right now — one thing" card (single suggested action: confirm a bill paid / log yesterday / import statement / back up).
 - "While you were away" card when bills or paydays passed since the last visit. Steps: (1) "Welcome back. What's your balance today?" (save sets each balance as of today, or Skip); (2) confirm the bills and pay that passed (each, or "They all happened"); (3) the new number, with an optional "Import a statement". "Later" closes it. Confirming the last item moves straight to the number.
@@ -117,7 +118,7 @@ Acceptance: an e2e test completes setup with a time model (8 s per step read, 2 
 
 ### 7.4 Bills
 - List + month calendar (paydays and bills on the calendar, colour-coded).
-- Each bill: next due, schedule text ("every 2nd Friday"), mark paid (creates transaction), autopay flag.
+- Each bill: next due, schedule text ("every 2nd Friday"), autopay flag, and "Mark paid" with three choices: **Paid in full** (the bill's amount), **Different amount** (this occurrence only), **Skip this time** (settled with no money moved — stored on the bill as a skipped date; the next due date comes up; undo restores). A late payment is recorded on the day it was paid (today unless changed), so the balance moves when the money left. Editing a bill's amount applies going forward; past payments keep what was paid.
 - "Big yearly bills" helper: shows monthly set-aside amount.
 
 ### 7.5 Plan (envelopes + goals + debt, tabs)
@@ -140,12 +141,14 @@ Acceptance: an e2e test completes setup with a time model (8 s per step read, 2 
 3. Choose target account.
 4. **Duplicate detection:** same date + amount + normalised description within account, and against previous batches → skip by default, show count.
 5. **Rules engine:** apply rules in priority order to set category/rename; uncategorised rows shown in a fast "sort these" screen (one row at a time, big category buttons, "always do this" checkbox creates a rule).
-6. Summary: imported N, skipped M duplicates, K need sorting. Undo whole batch.
+6. Summary in plain words, row by row — e.g. "2 imported · 1 linked to your Savings transfer · 1 matched to your Electric bill · 3 already imported" — then the details. Undo whole batch.
+- **Bills the bank took:** a debit row that names an ordinary bill on the account (at half to twice its amount — autopay varies), or matches its amount exactly within 3 days, is linked to that due date, so the bill counts as paid at the bank's real amount. If the bill was already marked paid at another amount, the row corrects that payment instead of adding a second one (undoing the import restores the old amount).
 - The preview and "Ready to import" screens say "Nothing changes until you confirm."
 - Ship **preset mappings** for common export formats (generic, plus test with sample CSVs styled like major US/UK banks — do not claim official bank support).
 - Ship **20 starter rules** (e.g. contains "UBER" → Transport, "TESCO|WALMART|ALDI" → Groceries, "NETFLIX|SPOTIFY" → Subscriptions).
 
 ### 7.9 Household sharing (DIFFERENTIATOR #2, no server)
+- **Snapshot, not sync:** the Share screen and help say "This is a read-only snapshot. It doesn't update by itself. Send a new one whenever you want your partner to see the latest." Listing copy never says "shared budget" or "sync".
 - **Share snapshot:** export an encrypted `.wiai` file (AES-GCM via WebCrypto, passphrase) containing bills, upcoming paydays, safe-to-spend, envelopes (option: include/exclude transactions). Partner opens their copy of the app → Import shared snapshot → read-only "Partner view" tab.
 - **Full device move/sync:** same mechanism with all data, "Replace my data" vs "Merge" (merge by id + updatedAt; last-write-wins per record).
 - QR option: if payload is small (< ~2 KB, e.g. summary view), show QR to scan; else file.
@@ -169,7 +172,7 @@ Acceptance: an e2e test completes setup with a time model (8 s per step read, 2 
 ## 9. Deliverables to customers (Etsy files)
 
 The Etsy download is one file, **`Where-It-All-Is.zip`** (`npm run package`), containing:
-1. `Start-Here-Letter.pdf` and `Start-Here-A4.pdf` — 2 pages: open link / add to home screen (iPhone, Android, Windows, Mac) with screenshots; where data lives; backups; support contact via Etsy messages.
+1. `Start-Here-Letter.pdf` and `Start-Here-A4.pdf` — 2 pages: open link / add to home screen (iPhone, Android, Windows, Mac) with screenshots; where data lives; backups; support contact via Etsy messages. The app link is described as: "This link opens the app. Your numbers are saved only in this browser on this device, unless you make a backup."
 2. `Where-It-All-Is-Budget-App.html` — offline single file.
 Plus: hosted link (unlisted path) for phone install.
 Note in listing + PDF: "Download on Etsy.com in a web browser, not the Etsy app."

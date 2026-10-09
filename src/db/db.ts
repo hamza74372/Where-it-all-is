@@ -12,6 +12,15 @@ function req<T>(r: IDBRequest<T>): Promise<T> {
   });
 }
 
+/** Commit now: every request is already queued, so there's no reason to wait for auto-commit. */
+function commitNow(tx: IDBTransaction) {
+  try {
+    tx.commit?.();
+  } catch {
+    // Already committing (or an older browser without commit()): auto-commit follows.
+  }
+}
+
 function done(tx: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
     let failure: unknown = null;
@@ -88,6 +97,7 @@ export class DB {
     const rec = stamp(value, keepStamp) as StoreMap[S];
     const tx = this.idb.transaction(store, 'readwrite');
     tx.objectStore(store).put(rec);
+    commitNow(tx);
     await done(tx);
     return rec;
   }
@@ -95,6 +105,7 @@ export class DB {
   async delete(store: StoreName, id: string): Promise<void> {
     const tx = this.idb.transaction(store, 'readwrite');
     tx.objectStore(store).delete(id);
+    commitNow(tx);
     await done(tx);
   }
 
@@ -105,6 +116,7 @@ export class DB {
   async batch(stores: StoreName[], fn: (w: BatchWriter) => void): Promise<void> {
     const tx = this.idb.transaction(stores, 'readwrite');
     fn(new BatchWriter(tx));
+    commitNow(tx);
     await done(tx);
   }
 
