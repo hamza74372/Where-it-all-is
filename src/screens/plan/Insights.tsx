@@ -39,7 +39,8 @@ export function Insights() {
     const incoming = txs.filter((tx) => tx.amount > 0).reduce((sum, tx) => sum + tx.amount, 0);
     const outgoing = txs.filter((tx) => tx.amount < 0).reduce((sum, tx) => sum - tx.amount, 0);
     const shortLabel = fmt.month(`${key}-01`).slice(0, 3);
-    return { label: key === currentMonth(today) ? `${shortLabel} (so far)` : shortLabel, incoming, outgoing, inText: fmt.money(incoming), outText: fmt.money(outgoing) };
+    const partial = key === currentMonth(today);
+    return { label: partial ? `${shortLabel}*` : shortLabel, fullLabel: partial ? `${shortLabel} (so far)` : shortLabel, incoming, outgoing, inText: fmt.money(incoming), outText: fmt.money(outgoing) };
   });
 
   return (
@@ -71,6 +72,7 @@ export function Insights() {
           <h2 id="inout-title" class="card-title">Six-month flow</h2>
           <p class="bar-legend muted"><i class="swatch swatch-in" /> Money in <i class="swatch swatch-out" /> Money out</p>
           <InOutBars rows={sixMonths} />
+          {month === currentMonth(today) && <p class="muted chart-note">* So far this month</p>}
         </section>
       </div>
       <section class="card" aria-labelledby="cmp-title">

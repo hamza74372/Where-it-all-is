@@ -1,6 +1,9 @@
 // The two listing videos (1920×1080 MP4, 12–15 s, no sound), recorded from the real app with
-// its example numbers. The app runs in a phone frame on a branded stage; a gentle cursor glides to
-// each target and shows a tap. Run after `npm run build`:  npm run listing:video
+// its example numbers. The phone layout is shown large (frame 1057 px tall) beside the headline.
+// Our own cursor glides with CSS transitions (800 ms, ease-in-out); each tap shrinks it for 120 ms,
+// shows a soft mint ripple, then makes the real click. Screens change with short cross-fades
+// (no scrolling through lists); number changes get a gentle zoom inside the phone screen.
+// Run after `npm run build`:  npm run listing:video
 import { chromium } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -11,13 +14,20 @@ import { calibrateClosing } from './capture.mjs';
 
 const W = 1920;
 const H = 1080;
-const APP_W = 430; // a large phone, so Today's chips fit under the number
+const APP_W = 430;
 const APP_H = 932;
-const MIN_S = 12;
-const MAX_S = 15;
+const S = 1.1; // the phone screen, shown 1.1× (473 × 1025 px; frame 1057 px tall)
+const BEZEL = 16;
+const LIMITS = [[12, 14], [13, 15]];
+const CHECK = path.join(OUT, 'frames-check');
+
+const MOVE_MS = 800;
+const HOLD_BEFORE = 800;
+const HOLD_AFTER = 1200;
 
 function stage(server, v) {
   const b = server.base;
+  const phoneH = APP_H * S + BEZEL * 2;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <link rel="stylesheet" href="${b}/src/tokens.css"><link rel="stylesheet" href="${b}/src/fonts.css">
 <style>
@@ -26,38 +36,65 @@ function stage(server, v) {
   body { font-family: var(--font); color: var(--hero-text); -webkit-font-smoothing: antialiased;
          background: radial-gradient(1100px 800px at 75% 20%, var(--hero-end), transparent 70%), var(--hero-start); }
   .copy { position: absolute; left: 150px; top: 0; bottom: 0; width: 760px; display: flex; flex-direction: column; justify-content: center; }
-  .logo { height: 46px; margin-bottom: 56px; align-self: flex-start; }
-  h1 { font-family: var(--font-display); font-weight: 640; font-size: 92px; line-height: 1.05; letter-spacing: -0.015em; }
-  p { margin-top: 30px; font-size: 38px; line-height: 1.35; color: var(--hero-muted); }
-  .device { position: absolute; right: 230px; top: ${(H - APP_H - 36) / 2}px; padding: 18px; border-radius: 64px; background: #0E1526;
+  .logo { height: 50px; margin-bottom: 52px; align-self: flex-start; }
+  h1 { font-family: var(--font-display); font-weight: 600; font-size: 96px; line-height: 1.06; letter-spacing: 0.012em; }
+  p { margin-top: 30px; font-size: 40px; line-height: 1.35; color: var(--hero-muted); }
+  .device { position: absolute; left: 1100px; transform-origin: 0 0; transition: transform 700ms cubic-bezier(0.42, 0, 0.58, 1); top: ${(H - phoneH) / 2}px; padding: ${BEZEL}px; border-radius: 74px; background: #0E1526;
             box-shadow: 0 30px 80px rgb(0 0 0 / 40%); }
-  iframe { display: block; width: ${APP_W}px; height: ${APP_H}px; border: 0; border-radius: 48px; background: var(--bg); }
+  .screen { position: relative; width: ${APP_W * S}px; height: ${APP_H * S}px; border-radius: 58px; overflow: hidden; background: var(--bg); }
+  .zoom { position: absolute; left: 0; top: 0; width: ${APP_W}px; height: ${APP_H}px; transform-origin: 0 0; transform: scale(${S});
+          transition: transform 600ms cubic-bezier(0.42, 0, 0.58, 1); }
+  iframe { display: block; width: ${APP_W}px; height: ${APP_H}px; border: 0; background: var(--bg); }
+  .veil { position: absolute; inset: 0; background: var(--bg) center / cover no-repeat; opacity: 0; transition: opacity 300ms ease; pointer-events: none; }
   .cursor { position: absolute; left: 0; top: 0; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%;
-            background: rgb(255 255 255 / 55%); border: 3px solid var(--hero-start); box-shadow: 0 4px 14px rgb(0 0 0 / 30%);
-            transform: translate(${W + 80}px, ${H * 0.75}px); pointer-events: none; z-index: 10; }
-  .ripple { position: absolute; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; border: 4px solid var(--accent);
-            pointer-events: none; z-index: 9; animation: ripple 600ms var(--ease) forwards; }
-  @keyframes ripple { from { transform: scale(0.6); opacity: 1; } to { transform: scale(2.4); opacity: 0; } }
+            background: rgb(255 255 255 / 60%); border: 3px solid var(--hero-start); box-shadow: 0 4px 14px rgb(0 0 0 / 30%);
+            transform: translate(1700px, 1000px) scale(1); pointer-events: none; z-index: 10;
+            transition: transform ${MOVE_MS}ms cubic-bezier(0.42, 0, 0.58, 1); }
+  .ripple { position: absolute; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; background: rgb(124 200 181 / 45%);
+            border: 3px solid var(--accent); pointer-events: none; z-index: 9; animation: ripple 400ms ease-out forwards; }
+  @keyframes ripple { from { transform: scale(0.5); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
 </style></head><body>
   <div class="copy"><img class="logo" src="${b}/branding/wordmark-reverse.svg" alt=""><h1>${v.headline}</h1><p>${v.sub}</p></div>
-  <div class="device"><iframe id="app" src="${server.app}"></iframe></div>
+  <div class="device"><div class="screen"><div class="zoom" id="zoom"><iframe id="app" src="${server.app}"></iframe></div><div class="veil" id="veil"></div></div></div>
   <div class="cursor" id="cursor"></div>
 <script>
   const c = document.getElementById('cursor');
-  window.moveCursor = (x, y, ms) => new Promise((done) => {
-    c.style.transition = 'transform ' + ms + 'ms cubic-bezier(0.45, 0, 0.2, 1)';
-    c.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
-    setTimeout(done, ms + 30);
+  let at = { x: 1700, y: 1000 };
+  const place = (scale) => { c.style.transform = 'translate(' + at.x + 'px, ' + at.y + 'px) scale(' + scale + ')'; };
+  window.moveCursor = (x, y) => new Promise((done) => { at = { x, y }; c.style.transitionDuration = '${MOVE_MS}ms'; place(1); setTimeout(done, ${MOVE_MS} + 40); });
+  window.pressCursor = () => new Promise((done) => {
+    c.style.transitionDuration = '120ms';
+    place(0.82);
+    setTimeout(() => {
+      place(1);
+      const r = document.createElement('div');
+      r.className = 'ripple';
+      r.style.left = at.x + 'px';
+      r.style.top = at.y + 'px';
+      document.body.appendChild(r);
+      setTimeout(() => r.remove(), 450);
+      setTimeout(done, 400);
+    }, 120);
   });
-  window.tapAt = (x, y) => {
-    const r = document.createElement('div');
-    r.className = 'ripple';
-    r.style.left = x + 'px';
-    r.style.top = y + 'px';
-    document.body.appendChild(r);
-    c.animate([{ scale: 1 }, { scale: 0.8 }, { scale: 1 }], { duration: 260 });
-    setTimeout(() => r.remove(), 700);
-  };
+  const zoom = document.getElementById('zoom');
+  /** Zoom the phone screen by k around a point given in app CSS pixels (k = 1: back to normal). */
+  window.zoomTo = (px, py, k) => new Promise((done) => {
+    const s = ${S} * k;
+    zoom.style.transform = 'translate(' + (${S} * px * (1 - k)) + 'px, ' + (${S} * py * (1 - k)) + 'px) scale(' + s + ')';
+    setTimeout(done, 640);
+  });
+  const veil = document.getElementById('veil');
+  /** Cover the screen with a still of itself (instantly, so nothing visibly changes)… */
+  window.freeze = (src) => new Promise((done) => {
+    const img = new Image();
+    img.onload = () => { veil.style.transition = 'none'; veil.style.backgroundImage = 'url(' + src + ')'; veil.style.opacity = '1'; requestAnimationFrame(() => done()); };
+    img.src = src;
+  });
+  /** …then dissolve it away to show the new screen underneath. */
+  window.thaw = () => new Promise((done) => { veil.style.transition = 'opacity 300ms ease'; veil.style.opacity = '0'; setTimeout(done, 320); });
+  /** Camera close-up: scale the whole phone by k and move it by (tx, ty). */
+  const device = document.querySelector('.device');
+  window.closeUp = (tx, ty, k) => new Promise((done) => { device.style.transform = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + k + ')'; setTimeout(done, 740); });
 </script></body></html>`;
 }
 
@@ -70,11 +107,12 @@ async function record(page, run) {
     await cdp.send('Page.screencastFrameAck', { sessionId }).catch(() => undefined);
   });
   await cdp.send('Page.startScreencast', { format: 'jpeg', quality: 92, maxWidth: W, maxHeight: H, everyNthFrame: 1 });
+  await page.waitForTimeout(300); // the first frame arrives before anything happens: no loading frames
   const t0 = Date.now() / 1000;
   await run();
   const t1 = Date.now() / 1000;
   await cdp.send('Page.stopScreencast');
-  return { frames, t0, t1 };
+  return { frames: frames.filter((f, i) => f.t >= t0 - 0.05 || i === frames.findLastIndex((g) => g.t < t0)), t0, t1 };
 }
 
 /** Frames → H.264 MP4 at 30 fps, holding each frame for as long as it was on screen. */
@@ -87,7 +125,7 @@ function encode({ frames, t0, t1 }, out) {
   frames.forEach((f, i) => {
     const file = path.join(dir, `f${String(i).padStart(5, '0')}.jpg`);
     fs.writeFileSync(file, Buffer.from(f.data, 'base64'));
-    const start = i === 0 ? t0 : f.t;
+    const start = Math.max(t0, f.t);
     const end = i + 1 < frames.length ? frames[i + 1].t : t1;
     lines.push(`file '${file.replace(/\\/g, '/')}'`, `duration ${Math.max(0.001, end - start).toFixed(4)}`);
   });
@@ -95,41 +133,65 @@ function encode({ frames, t0, t1 }, out) {
   const list = path.join(dir, 'frames.txt');
   fs.writeFileSync(list, lines.join('\n'));
   execFileSync(ffmpeg, ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', list,
-    '-vf', `fps=30,scale=${W}:${H},format=yuv420p`, '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-an', '-movflags', '+faststart', out]);
+    '-vf', `fps=30,scale=${W}:${H}`, '-c:v', 'libx264', '-preset', 'slow', '-crf', '18', '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', out]);
+  // A 2-frames-per-second contact sheet to check for jumps, a missing cursor or half-drawn frames.
+  fs.mkdirSync(CHECK, { recursive: true });
+  execFileSync(ffmpeg, ['-y', '-hide_banner', '-loglevel', 'error', '-i', out, '-vf', 'fps=2,scale=480:-1,tile=6x5:padding=6:color=0xE9E4D8', '-frames:v', '1',
+    path.join(CHECK, `${path.basename(out, '.mp4')}-2fps.jpg`)]);
   return t1 - t0;
 }
 
-/** Glide the cursor to an element in the app, then tap it for real. */
+/** Moves our cursor to elements in the app (mapped from app pixels to the stage) and taps them. */
 function director(page) {
-  const app = page.frameLocator('#app');
-  const centre = async (locator, below = false) => {
-    await locator.scrollIntoViewIfNeeded();
-    const box = await locator.boundingBox();
-    if (!box) throw new Error('Target not visible');
-    // below: rest just under the target, so its label stays readable.
-    return { x: box.x + box.width / 2, y: below ? box.y + box.height + 30 : box.y + box.height / 2 };
+  const frame = page.frame({ url: /dist\/app\.html/ });
+  const toStage = async (locator) => {
+    const screen = await page.locator('.screen').boundingBox();
+    const r = await locator.evaluate((el) => {
+      const b = el.getBoundingClientRect();
+      return { x: b.x + b.width / 2, y: b.y + b.height / 2, top: b.y, bottom: b.y + b.height };
+    });
+    return { x: screen.x + r.x * S, y: screen.y + r.y * S, app: r };
   };
   return {
-    app,
+    frame,
     wait: (ms) => page.waitForTimeout(ms),
-    async hover(locator, ms = 900, below = false) {
-      const { x, y } = await centre(locator, below);
-      await page.evaluate(([x, y, ms]) => window.moveCursor(x, y, ms), [x, y, ms]);
-      return { x, y };
+    async moveTo(locator, { below = false } = {}) {
+      await page.waitForTimeout(HOLD_BEFORE);
+      const p = await toStage(locator);
+      const y = below ? p.y + ((p.app.bottom - p.app.top) / 2) * S + 34 : p.y;
+      await page.evaluate(([x, y]) => window.moveCursor(x, y), [p.x, y]);
     },
-    async tap(locator, ms = 900) {
-      const { x, y } = await this.hover(locator, ms);
-      await page.evaluate(([x, y]) => window.tapAt(x, y), [x, y]);
-      await page.mouse.click(x, y);
+    /** Hold, glide, press (120 ms + ripple), then the real click. */
+    async tap(locator, click = () => locator.evaluate((el) => el.click())) {
+      await this.moveTo(locator);
+      await page.evaluate(() => window.pressCursor());
+      await click();
     },
-    /** Smooth-scroll the app's own scroller so `locator` comes into view (shown in the video). */
-    async scrollTo(locator, block = 'center') {
-      await locator.evaluate((el, block) => el.scrollIntoView({ behavior: 'smooth', block }), block);
-      await page.waitForTimeout(900);
+    /** A short cross-fade: freeze the screen as it is, change it underneath, dissolve to the new one. */
+    async crossFade(work) {
+      const still = await page.locator('.screen').screenshot({ type: 'jpeg', quality: 92 });
+      await page.evaluate((src) => window.freeze(src), `data:image/jpeg;base64,${still.toString('base64')}`);
+      await work();
+      await settle(frame);
+      await page.waitForTimeout(150);
+      await page.evaluate(() => window.thaw());
     },
-    async away() {
-      await page.evaluate(([x, y]) => window.moveCursor(x, y, 900), [W + 80, H * 0.75]);
+    /** Close-up on an element: the phone scales by k so the element's top-left lands at (x, y) on the stage. */
+    async closeUp(locator, k, x, y) {
+      const device = await page.locator('.device').boundingBox();
+      const screen = await page.locator('.screen').boundingBox();
+      const r = await locator.evaluate((el) => { const b = el.getBoundingClientRect(); return { x: b.x, y: b.y }; });
+      const q = { x: screen.x + r.x * S - device.x, y: screen.y + r.y * S - device.y }; // in the phone's own pixels
+      await page.evaluate(([tx, ty, k]) => window.closeUp(tx, ty, k), [x - device.x - k * q.x, y - device.y - k * q.y, k]);
     },
+    async zoom(locator, k) {
+      const r = await locator.evaluate((el) => {
+        const b = el.getBoundingClientRect();
+        return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+      });
+      await page.evaluate(([x, y, k]) => window.zoomTo(x, y, k), [r.x, r.y, k]);
+    },
+    unzoom: () => page.evaluate(() => window.zoomTo(0, 0, 1)),
   };
 }
 
@@ -142,27 +204,32 @@ async function newStage(browser, server, v) {
   return { ctx, page };
 }
 
-/** The app inside the stage's iframe, as a Playwright page-like object for setup helpers. */
-const appFrame = (page) => page.frame({ url: /dist\/app\.html/ });
-
 async function video1(browser, server) {
   const v = COPY.videos[0];
   const { ctx, page } = await newStage(browser, server, v);
-  const frame = appFrame(page);
-  await openExampleApp(frame, server, { coffee: true, navigate: false });
   const d = director(page);
-  const chip = d.app.getByRole('button', { name: /^Coffee \$4\.50/ });
-  await chip.scrollIntoViewIfNeeded();
-  await settle(frame);
+  await openExampleApp(d.frame, server, { coffee: true, navigate: false });
+  const chip = d.frame.getByRole('button', { name: /^Coffee \$4\.50/ });
+  await d.frame.locator('#main').evaluate((m) => m.scrollTo(0, 0));
+  await settle(d.frame);
+  const hero = d.frame.locator('.hero .big-number');
+  const before = await hero.textContent();
   const rec = await record(page, async () => {
-    await d.wait(2000); // Today, the number
-    await d.tap(chip, 1300);
-    await d.wait(2200); // the number updates
-    await d.hover(d.app.getByRole('button', { name: 'Undo' }), 1100, true);
-    await d.wait(3300); // the undo toast
-    await d.away();
-    await d.wait(1700);
+    await d.wait(2800); // Today: $380
+    await d.tap(chip);
+    await page.waitForFunction(([b]) => {
+      const el = document.querySelector('#app').contentDocument.querySelector('.hero .big-number');
+      return el && el.textContent !== b;
+    }, [before]);
+    await d.zoom(d.frame.locator('.hero .big-number'), 1.15); // $380 → $376
+    await d.wait(HOLD_AFTER);
+    await d.unzoom();
+    await d.wait(1000);
+    await d.moveTo(d.frame.getByRole('button', { name: 'Undo' }), { below: true }); // the undo toast
+    await d.wait(2000);
   });
+  const after = await hero.textContent();
+  console.log(`video 1: ${before} → ${after}`);
   await ctx.close();
   return encode(rec, path.join(OUT, v.file));
 }
@@ -170,32 +237,41 @@ async function video1(browser, server) {
 async function video2(browser, server, closing) {
   const v = COPY.videos[1];
   const { ctx, page } = await newStage(browser, server, v);
-  const frame = appFrame(page);
-  await openExampleApp(frame, server, { coffee: false, navigate: false });
-  await importStatementA(frame, BUILD);
+  const d = director(page);
+  const f = d.frame;
+  await openExampleApp(f, server, { coffee: false, navigate: false });
+  await importStatementA(f, BUILD);
   const file = path.join(BUILD, 'statement-october.csv');
   fs.writeFileSync(file, statementB(closing));
-  const d = director(page);
-  await d.app.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Log' }).click();
-  await settle(frame);
+  await f.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Log' }).click();
+  await settle(f);
+  const top = () => f.locator('#main').evaluate((m) => m.scrollTo(0, 0));
   const rec = await record(page, async () => {
-    await d.wait(700);
-    await d.tap(d.app.getByRole('button', { name: 'Import statement' }), 1000);
+    await d.wait(400);
+    await d.tap(f.getByRole('button', { name: 'Import statement' }));
+    await f.getByRole('heading', { name: 'Import a statement' }).waitFor();
     await d.wait(500);
-    const chooser = page.waitForEvent('filechooser');
-    await d.tap(d.app.locator('label.file-btn'), 900);
-    await (await chooser).setFiles(file);
-    await d.app.getByRole('heading', { name: 'Preview' }).waitFor();
-    await d.wait(1200); // already imported
-    await d.scrollTo(d.app.getByText('matches something you logged').nth(2));
-    await d.wait(900); // matched to what you logged
-    await d.tap(d.app.getByRole('button', { name: 'Continue' }), 900);
-    await d.app.getByRole('heading', { name: 'Ready to import' }).waitFor();
-    await d.wait(1500); // linked, not added twice · skipped
-    await d.tap(d.app.getByRole('button', { name: /^(Import|Link) \d+/ }), 800);
-    await finishImportUntil(frame, frame.getByRole('heading', { name: 'Your bank and the app agree' }));
-    await d.away();
-    await d.wait(1800);
+    await d.tap(f.locator('label.file-btn'), () => f.locator('input[type=file]').setInputFiles(file));
+    await f.getByRole('heading', { name: 'Preview' }).waitFor();
+    // Jump to the preview rows: already imported, then matched to what you logged.
+    await d.crossFade(() => f.getByRole('heading', { name: 'Preview' }).evaluate((h) => h.scrollIntoView({ block: 'start' })));
+    await d.wait(1700);
+    await d.crossFade(async () => {
+      await f.getByRole('button', { name: 'Continue' }).click();
+      await f.getByRole('heading', { name: 'Ready to import' }).waitFor();
+      await top();
+    });
+    await d.wait(1600); // the counts
+    await d.crossFade(async () => {
+      await f.getByRole('button', { name: /^(Import|Link) \d+/ }).click();
+      await finishImportUntil(f, f.getByRole('heading', { name: 'Your bank and the app agree' }));
+      await top();
+    });
+    await d.wait(500);
+    // Close-up on the balance check: the card large, beside the headline (no empty phone below it).
+    await d.closeUp(f.locator('.card').filter({ hasText: 'Your bank and the app agree' }).first(), 2, 990, 330);
+    await page.evaluate(() => window.moveCursor(1430, 800)); // out of the way, below the card
+    await d.wait(1100); // final state on screen ~2 s in all
   });
   await ctx.close();
   return encode(rec, path.join(OUT, v.file));
@@ -211,7 +287,10 @@ try {
   lengths.forEach((s, i) => {
     const f = COPY.videos[i].file;
     console.log(`${f}  ${s.toFixed(1)} s  ${(fs.statSync(path.join(OUT, f)).size / 1024 / 1024).toFixed(1)} MB`);
-    if (s < MIN_S || s > MAX_S) throw new Error(`${f} is ${s.toFixed(1)} s (want ${MIN_S}–${MAX_S} s)`);
+  });
+  lengths.forEach((s, i) => {
+    const [lo, hi] = LIMITS[i];
+    if (s < lo || s > hi) throw new Error(`${COPY.videos[i].file} is ${s.toFixed(1)} s (want ${lo}–${hi} s)`);
   });
 } finally {
   await browser.close();

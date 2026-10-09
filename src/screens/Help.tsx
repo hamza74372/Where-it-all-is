@@ -112,7 +112,7 @@ export const ARTICLES: Article[] = [
     body: (
       <>
         <p>
-          On Today, type an amount and a word — <strong>“12.50 coffee”</strong>, <strong>“uber 8.40”</strong> or just <strong>“7”</strong> —
+          On Today, type an amount and a word — <strong>“12.50 coffee”</strong>, <strong>“taxi 8.40”</strong> or just <strong>“7”</strong> —
           then press Enter. The app picks a category from the word. Start with <strong>+</strong> for money coming in: “+40 refund”.
         </p>
         <ul>
@@ -165,7 +165,7 @@ export const ARTICLES: Article[] = [
           </li>
         </ul>
         <p>
-          After you sort a row, the app offers “Always put Starbucks in Coffee?”. Say yes and future imports sort themselves. See and edit
+          After you sort a row, the app offers “Always put Corner Café in Coffee?”. Say yes and future imports sort themselves. See and edit
           rules in More → Rules.
         </p>
       </>

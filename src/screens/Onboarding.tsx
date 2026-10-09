@@ -288,7 +288,7 @@ export function Onboarding() {
                 <li key={b.id} class="bill-quick-row">
                   {b.custom ? (
                     <>
-                      <TextInput label="Bill name" value={b.name} onInput={(name) => update({ name })} placeholder="e.g. Netflix" autoFocus />
+                      <TextInput label="Bill name" value={b.name} onInput={(name) => update({ name })} placeholder="e.g. Gym" autoFocus />
                       {showErrors && !b.name.trim() && billChecks[i].state === 'ok' && <p class="field-error">Give this bill a name.</p>}
                     </>
                   ) : (

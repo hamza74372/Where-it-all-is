@@ -138,7 +138,7 @@ export function MiniSparkline(props: { values: number[]; label: string }) {
   );
 }
 
-export function InOutBars(props: { rows: Array<{ label: string; incoming: number; outgoing: number; inText: string; outText: string }> }) {
+export function InOutBars(props: { rows: Array<{ label: string; fullLabel?: string; incoming: number; outgoing: number; inText: string; outText: string }> }) {
   const max = Math.max(1, ...props.rows.flatMap((row) => [row.incoming, row.outgoing]));
   return (
     <div class="inout-chart">
@@ -156,7 +156,7 @@ export function InOutBars(props: { rows: Array<{ label: string; incoming: number
       <table class="sr-only">
         <caption>Six month money in and money out</caption>
         <thead><tr><th>Month</th><th>Money in</th><th>Money out</th></tr></thead>
-        <tbody>{props.rows.map((row) => <tr key={row.label}><th>{row.label}</th><td>{row.inText}</td><td>{row.outText}</td></tr>)}</tbody>
+        <tbody>{props.rows.map((row) => <tr key={row.label}><th>{row.fullLabel ?? row.label}</th><td>{row.inText}</td><td>{row.outText}</td></tr>)}</tbody>
       </table>
     </div>
   );

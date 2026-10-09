@@ -6,7 +6,8 @@ import type { AppData } from '../../state/store';
 import { billsBetween, paydaysBetween } from '../bills';
 import { addDays } from '../dates';
 import { envelopeRows, monthOf } from '../envelopes';
-import { computeSafeToSpend } from '../safeToSpend';
+import { accountBalance, computeSafeToSpend } from '../safeToSpend';
+import type { Bill } from '../../db/types';
 import { isTransfer } from '../transfers';
 import { fromBase64, isEncryptedFile, NotOurFileError, PBKDF2_ITERATIONS, type EncryptedFile } from './crypto';
 
@@ -30,6 +31,15 @@ export interface PartnerSummary {
 
 const DAYS_AHEAD = 45;
 
+/** What a bill will take: a card bill is what's owed on the card (as on the Bills screen), others their amount. */
+function billAmount(data: AppData, bill: Bill, today: string): number {
+  if (bill.payToAccountId && bill.amountSource !== 'fixed') {
+    const card = data.accounts.find((a) => a.id === bill.payToAccountId);
+    if (card) return Math.max(0, -accountBalance(card, data.transactions, today));
+  }
+  return bill.amount;
+}
+
 export function buildPartnerSummary(data: AppData, today: string, includeTransactions: boolean, now = Date.now()): PartnerSummary {
   const s = computeSafeToSpend({
     today, accounts: data.accounts, transactions: data.transactions, incomes: data.incomes, bills: data.bills, goals: data.goals, settings: data.settings,
@@ -50,7 +60,7 @@ export function buildPartnerSummary(data: AppData, today: string, includeTransac
     },
     bills: billsBetween(data.bills, today, until, data.transactions)
       .filter((b) => !b.paid)
-      .map((b) => ({ name: b.bill.name, date: b.date, amount: b.bill.amount, autopay: b.bill.autopay })),
+      .map((b) => ({ name: b.bill.name, date: b.date, amount: billAmount(data, b.bill, today), autopay: b.bill.autopay })),
     paydays: paydaysBetween(data.incomes, today, until).map((p) => ({ name: p.income.name, date: p.date, amount: p.income.amount, variable: p.income.variable })),
     envelopes: envelopeRows(data.categories, data.transactions, data.envelopeMoves, monthOf(today)).map((r) => ({
       name: r.category.name, icon: r.category.icon, limit: r.limit, spent: r.spent,

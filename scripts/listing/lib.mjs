@@ -102,24 +102,27 @@ export async function hideExampleBanner(page) {
 }
 
 /**
- * Two statements for the import scenes. A is imported first (off camera). B overlaps it, so A's
- * rows come back as "already imported"; five of B's rows are spends the example numbers already
- * logged; two are new. B has a balance column whose closing figure is set to what the app has, so
- * the app's own check can agree.
+ * Two statements for the import scenes (generic merchant names only — no brands in listing photos).
+ * A is imported first (off camera). B overlaps it, so A's rows come back as "already imported"; five of
+ * B's rows are spends the example numbers already logged; two are new. A's rows and B's new rows net to
+ * zero, so the import ends on the same balance every other image shows ($1,221.56). B's closing
+ * figure is read from the app's own balance check, so the app can agree.
  */
-export const STATEMENT_A = ['Date,Description,Amount', '10/02/2026,CORNER SHOP 0142,-6.20', '10/03/2026,SHELL OIL 5521,-40.00', '10/05/2026,CVS PHARMACY #88,-9.80'].join('\n') + '\n';
+export const STATEMENT_A = ['Date,Description,Amount', '10/02/2026,CORNER SHOP,-6.20', '10/03/2026,FUEL STATION,-40.00', '10/05/2026,PHARMACY,-9.80'].join('\n') + '\n';
 const B_ROWS = [
-  ['10/02/2026', 'CORNER SHOP 0142', -620],
-  ['10/03/2026', 'SHELL OIL 5521', -4000],
-  ['10/05/2026', 'CVS PHARMACY #88', -980],
-  ['10/08/2026', 'WHOLEFDS MKT 10233', -2875],
-  ['10/09/2026', 'BARNES & NOBLE 2210', -1299],
-  ['10/10/2026', 'SPOTIFY USA', -1099],
-  ['10/11/2026', 'METRO TRANSIT CARD', -1800],
-  ['10/12/2026', 'SAFEWAY 1452', -3420],
-  ['10/12/2026', 'STARBUCKS #1180', -450],
-  ['10/13/2026', 'CHIPOTLE 2291', -1140],
+  ['10/02/2026', 'CORNER SHOP', -620],
+  ['10/03/2026', 'FUEL STATION', -4000],
+  ['10/05/2026', 'PHARMACY', -980],
+  ['10/08/2026', 'GROCERY MARKET', -2875],
+  ['10/09/2026', 'BOOKSHOP', -1299],
+  ['10/10/2026', 'MUSIC SUBSCRIPTION', -1099],
+  ['10/11/2026', 'TRANSIT CARD', -1800],
+  ['10/12/2026', 'SUPERMARKET', -3420],
+  ['10/12/2026', 'COFFEE SHOP', -450],
+  ['10/13/2026', 'REFUND ONLINE ORDER', 6699],
 ];
+/** The balance every scene shows (the example numbers' Everyday account on SCENE_DAY). */
+export const SCENE_BALANCE = 122156;
 export function statementB(closing) {
   let after = closing;
   const balances = [];

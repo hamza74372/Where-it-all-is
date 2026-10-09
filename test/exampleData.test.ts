@@ -61,3 +61,21 @@ describe('example history', () => {
     expect(diffs).toEqual([]);
   });
 });
+
+describe('partner view of the example numbers', () => {
+  it('a card bill shows what is owed on the card, as the Bills screen does (not the stored 0)', async () => {
+    const { buildPartnerSummary } = await import('../src/lib/backup/partner');
+    const { defaultSettings } = await import('../src/db/settings');
+    const today = '2026-10-13';
+    const ex = buildExampleData(today, buildDefaultCategories());
+    const data = { ...ex, settings: defaultSettings('en-US'), rules: [], envelopeMoves: [], notes: [], importBatches: [], tombstones: [] } as unknown as Parameters<typeof buildPartnerSummary>[0];
+    const card = buildPartnerSummary(data, today, false).bills.find((b) => b.name === 'Credit card');
+    expect(card?.amount).toBe(8650); // card opened owing 64.00, plus a 22.50 takeaway on it
+  });
+
+  it('uses no brand names', () => {
+    const ex = buildExampleData('2026-10-13', buildDefaultCategories());
+    const names = [...ex.bills.map((b) => b.name), ...ex.transactions.map((t) => t.note), ...ex.accounts.map((a) => a.name), ...ex.goals.map((g) => g.name), ...ex.debts.map((d) => d.name)];
+    expect(names.filter((n) => /netflix|spotify|starbucks|amazon|walmart|tesco|chase/i.test(n))).toEqual([]);
+  });
+});

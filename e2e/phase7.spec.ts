@@ -89,12 +89,12 @@ test('Accounts: a hidden account is listed under "Hidden accounts" and comes bac
 test('one delete rule: a single bill goes straight away with Undo — no confirm', async ({ page }) => {
   await examples(page);
   await nav(page, 'Bills').click();
-  await page.getByRole('button', { name: 'Edit Netflix' }).click();
+  await page.getByRole('button', { name: 'Edit Streaming' }).click();
   await page.getByRole('button', { name: 'Delete this bill' }).click();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Edit Netflix' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Edit Streaming' })).toHaveCount(0);
   await page.getByRole('status').getByRole('button', { name: 'Undo' }).click();
-  await expect(page.getByRole('button', { name: 'Edit Netflix' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit Streaming' })).toBeVisible();
 });
 
 test('Your data: import history lists past imports; undoing one asks first and removes only its rows', async ({ page }, info) => {

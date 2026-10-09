@@ -101,7 +101,7 @@ export function buildExampleData(today: ISODate, categories: Category[]) {
     bill('Phone', 4500, 12, 'Bills', { autopay: true }),
     bill('Electric', 8000, 15, 'Bills'),
     bill('Internet', 5500, 20, 'Bills', { autopay: true }),
-    bill('Netflix', 1549, 8, 'Subscriptions', { autopay: true }),
+    bill('Streaming', 1549, 8, 'Subscriptions', { autopay: true }),
     bill('Credit card', 0, 25, 'Bills', { payToAccountId: card.id, amountSource: 'cardBalance' }),
   ];
 
@@ -130,7 +130,7 @@ export function buildExampleData(today: ISODate, categories: Category[]) {
       entry(7, Math.floor(month.income / 2), 'Paycheck'),
       entry(21, Math.ceil(month.income / 2), 'Paycheck'),
       entry(1, -95000, 'Rent', 'Home'),
-      entry(8, -1549, 'Netflix', 'Subscriptions'),
+      entry(8, -1549, 'Streaming', 'Subscriptions'),
       entry(12, -4500, 'Phone', 'Bills'),
       entry(15, -8000, 'Electric', 'Bills'),
       entry(20, -5500, 'Internet', 'Bills'),

@@ -725,9 +725,9 @@ select.input {
 .donut-segment.chart-tone-2 { stroke: var(--cat-plum); }
 .donut-segment.chart-tone-3 { stroke: var(--cat-sand); }
 .donut-segment.chart-tone-4 { stroke: var(--cat-slate); }
-.donut-segment.chart-tone-5 { stroke: var(--cat-teal); }
+.donut-segment.chart-tone-5 { stroke: var(--cat-coral); }
 .donut-segment.chart-tone-6 { stroke: var(--cat-amber); }
-.donut-segment.chart-tone-7 { stroke: var(--cat-coral); }
+.donut-segment.chart-tone-7 { stroke: var(--cat-teal); }
 .donut-centre {
   display: grid;
   text-align: center;
@@ -767,9 +767,9 @@ select.input {
 .chart-tone-2 { --tone: var(--cat-plum); }
 .chart-tone-3 { --tone: var(--cat-sand); }
 .chart-tone-4 { --tone: var(--cat-slate); }
-.chart-tone-5 { --tone: var(--cat-teal); }
+.chart-tone-5 { --tone: var(--cat-coral); }
 .chart-tone-6 { --tone: var(--cat-amber); }
-.chart-tone-7 { --tone: var(--cat-coral); }
+.chart-tone-7 { --tone: var(--cat-teal); }
 .category-bars ul {
   list-style: none;
   margin: 0;
