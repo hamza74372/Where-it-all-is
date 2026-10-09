@@ -1,0 +1,111 @@
+{
+  "generatedAt": "2026-10-09T10:19:13.271Z",
+  "observations": [
+    {
+      "customer": "D-Sam-Alex",
+      "day": "2026-10-09",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$257",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "D-Sam-Alex",
+      "day": "2026-10-09",
+      "action": "Create and open weekly partner share 1",
+      "result": "Alex received a separate read-only snapshot without changing Alex’s own budget.",
+      "expected": "Weekly household visibility without merging data"
+    },
+    {
+      "customer": "D-Sam-Alex",
+      "day": "2026-10-16",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$118",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "D-Sam-Alex",
+      "day": "2026-10-16",
+      "action": "Create and open weekly partner share 2",
+      "result": "Alex received a separate read-only snapshot without changing Alex’s own budget.",
+      "expected": "Weekly household visibility without merging data"
+    },
+    {
+      "customer": "D-Sam-Alex",
+      "day": "2026-10-23",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$247",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "D-Sam-Alex",
+      "day": "2026-10-23",
+      "action": "Create and open weekly partner share 3",
+      "result": "Alex received a separate read-only snapshot without changing Alex’s own budget.",
+      "expected": "Weekly household visibility without merging data"
+    },
+    {
+      "customer": "D-Sam-Alex",
+      "day": "2026-10-30",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$36",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "D-Sam-Alex",
+      "day": "2026-10-30",
+      "action": "Create and open weekly partner share 4",
+      "result": "Alex received a separate read-only snapshot without changing Alex’s own budget.",
+      "expected": "Weekly household visibility without merging data"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-04",
+      "severity": "medium",
+      "customer": "D-Sam-Alex",
+      "day": "week 4",
+      "action": "Repeat partner sharing weekly",
+      "result": "Privacy and separation are excellent, but each update requires creating, transporting, opening a file and re-entering the passphrase.",
+      "expected": "The listing and guide should set expectations that this is manual snapshot sharing, not live household sync.",
+      "screenshot": "shots/005-D-Sam-Alex-week-4-manual-sharing.png"
+    }
+  ],
+  "moneyChecks": [
+    {
+      "customer": "D-Sam-Alex",
+      "date": "2026-10-09",
+      "check": "Account ledger",
+      "expected": "1837.50",
+      "actual": "1850.00",
+      "result": "Mismatch"
+    },
+    {
+      "customer": "D-Sam-Alex",
+      "date": "2026-10-16",
+      "check": "Account ledger",
+      "expected": "1824.00",
+      "actual": "1836.50",
+      "result": "Mismatch"
+    },
+    {
+      "customer": "D-Sam-Alex",
+      "date": "2026-10-23",
+      "check": "Account ledger",
+      "expected": "1809.50",
+      "actual": "1822.00",
+      "result": "Mismatch"
+    },
+    {
+      "customer": "D-Sam-Alex",
+      "date": "2026-10-30",
+      "check": "Account ledger",
+      "expected": "1794.00",
+      "actual": "1806.50",
+      "result": "Mismatch"
+    }
+  ],
+  "runtimeProblems": [],
+  "actionCounts": {
+    "D-Sam-Alex": 8
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "generatedAt": "2026-10-09T10:18:46.589Z",
+  "observations": [
+    {
+      "customer": "C-Priya",
+      "day": "2026-10-09",
+      "action": "Log irregular client income $600",
+      "result": "$55",
+      "expected": "Income is reflected without creating a regular schedule"
+    },
+    {
+      "customer": "C-Priya",
+      "day": "2026-10-20",
+      "action": "Log irregular client income $1450",
+      "result": "$234",
+      "expected": "Income is reflected without creating a regular schedule"
+    },
+    {
+      "customer": "C-Priya",
+      "day": "2026-11-04",
+      "action": "Log irregular client income $2400",
+      "result": "$189",
+      "expected": "Income is reflected without creating a regular schedule"
+    },
+    {
+      "customer": "C-Priya",
+      "day": "2026-10-13",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$66",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "C-Priya",
+      "day": "2026-10-20",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$228",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "C-Priya",
+      "day": "2026-10-27",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$530",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "C-Priya",
+      "day": "2026-11-04",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$180",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "C-Priya",
+      "day": "2026-11-09",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$221",
+      "expected": "A clear current daily number"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-03",
+      "severity": "medium",
+      "customer": "C-Priya",
+      "day": "day 1",
+      "action": "Choose “I don’t have regular pay”",
+      "result": "The app clearly switches to planning until month-end, but offers no irregular-income forecast, expected invoice date, or cash-flow scenario.",
+      "expected": "Freelancers need a lightweight way to enter likely incoming invoices without pretending they are regular pay.",
+      "screenshot": "shots/001-C-Priya-day-1-no-regular-pay.png"
+    }
+  ],
+  "moneyChecks": [
+    {
+      "customer": "C-Priya",
+      "date": "2026-10-13",
+      "check": "Account ledger",
+      "expected": "1311.70",
+      "actual": "1311.70",
+      "result": "Pass"
+    },
+    {
+      "customer": "C-Priya",
+      "date": "2026-10-20",
+      "check": "Account ledger",
+      "expected": "2744.50",
+      "actual": "2744.50",
+      "result": "Pass"
+    },
+    {
+      "customer": "C-Priya",
+      "date": "2026-10-27",
+      "check": "Account ledger",
+      "expected": "2651.75",
+      "actual": "2651.75",
+      "result": "Pass"
+    },
+    {
+      "customer": "C-Priya",
+      "date": "2026-11-04",
+      "check": "Account ledger",
+      "expected": "4948.65",
+      "actual": "4948.65",
+      "result": "Pass"
+    },
+    {
+      "customer": "C-Priya",
+      "date": "2026-11-09",
+      "check": "Account ledger",
+      "expected": "4948.65",
+      "actual": "4948.65",
+      "result": "Pass"
+    }
+  ],
+  "runtimeProblems": [],
+  "actionCounts": {
+    "C-Priya": 8
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "generatedAt": "2026-10-09T10:18:17.906Z",
+  "observations": [
+    {
+      "customer": "B-Tom",
+      "day": "2026-10-11",
+      "action": "Import weekly statement tom-week-1.csv",
+      "result": "Imported 3 transactions",
+      "expected": "Rows imported once and recognised clearly"
+    },
+    {
+      "customer": "B-Tom",
+      "day": "2026-10-11",
+      "action": "Import the identical CSV again",
+      "result": "0 new transactions3 already imported before — skipped",
+      "expected": "Duplicates should not be counted twice"
+    },
+    {
+      "customer": "B-Tom",
+      "day": "2026-10-11",
+      "action": "Open Today and check safe-to-spend",
+      "result": "£22",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "B-Tom",
+      "day": "2026-10-18",
+      "action": "Import weekly statement tom-week-2.csv",
+      "result": "Imported 3 transactions",
+      "expected": "Rows imported once and recognised clearly"
+    },
+    {
+      "customer": "B-Tom",
+      "day": "2026-10-18",
+      "action": "Open Today and check safe-to-spend",
+      "result": "£0",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "B-Tom",
+      "day": "2026-10-25",
+      "action": "Move £200 from current account to savings before importing the bank row",
+      "result": "Completed",
+      "expected": "Statement import should link the overlap instead of adding it twice"
+    },
+    {
+      "customer": "B-Tom",
+      "day": "2026-10-25",
+      "action": "Import weekly statement tom-week-3.csv",
+      "result": "Imported 2 transactions",
+      "expected": "Rows imported once and recognised clearly"
+    },
+    {
+      "customer": "B-Tom",
+      "day": "2026-10-25",
+      "action": "Open Today and check safe-to-spend",
+      "result": "£78",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "B-Tom",
+      "day": "2026-11-01",
+      "action": "Import weekly statement tom-week-4.csv",
+      "result": "Imported 3 transactions",
+      "expected": "Rows imported once and recognised clearly"
+    },
+    {
+      "customer": "B-Tom",
+      "day": "2026-11-01",
+      "action": "Open Today and check safe-to-spend",
+      "result": "£0",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "B-Tom",
+      "day": "2026-11-08",
+      "action": "Import weekly statement tom-week-5.csv",
+      "result": "Imported 3 transactions",
+      "expected": "Rows imported once and recognised clearly"
+    },
+    {
+      "customer": "B-Tom",
+      "day": "2026-11-08",
+      "action": "Open Today and check safe-to-spend",
+      "result": "£40",
+      "expected": "A clear current daily number"
+    }
+  ],
+  "findings": [],
+  "moneyChecks": [
+    {
+      "customer": "B-Tom",
+      "date": "2026-10-11",
+      "check": "Account ledger",
+      "expected": "776.10",
+      "actual": "776.10",
+      "result": "Pass"
+    },
+    {
+      "customer": "B-Tom",
+      "date": "2026-10-18",
+      "check": "Account ledger",
+      "expected": "526.55",
+      "actual": "526.55",
+      "result": "Pass"
+    },
+    {
+      "customer": "B-Tom",
+      "date": "2026-10-25",
+      "check": "Account ledger",
+      "expected": "277.45",
+      "actual": "277.45",
+      "result": "Pass"
+    },
+    {
+      "customer": "B-Tom",
+      "date": "2026-11-01",
+      "check": "Account ledger",
+      "expected": "1487.45",
+      "actual": "1487.45",
+      "result": "Pass"
+    },
+    {
+      "customer": "B-Tom",
+      "date": "2026-11-08",
+      "check": "Account ledger",
+      "expected": "1339.85",
+      "actual": "1339.85",
+      "result": "Pass"
+    }
+  ],
+  "runtimeProblems": [],
+  "actionCounts": {
+    "B-Tom": 12
+  }
+}
