@@ -1,0 +1,152 @@
+{
+  "generatedAt": "2026-10-09T10:16:18.342Z",
+  "observations": [
+    {
+      "customer": "A-Maya",
+      "day": "day 1",
+      "action": "Read welcome and start setup",
+      "result": "Welcome readable at phone size; evidence shots/001-A-Maya-day-1-welcome.png",
+      "expected": "Understand the promise and begin without friction"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-06",
+      "action": "Quick-log 4.50 coffee",
+      "result": "$113",
+      "expected": "Safe number should immediately react"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-07",
+      "action": "Quick-log 32.18 groceries",
+      "result": "$98",
+      "expected": "Safe number should immediately react"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-08",
+      "action": "Quick-log 13.40 lunch",
+      "result": "$129",
+      "expected": "Safe number should immediately react"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-09",
+      "action": "Quick-log 7.25 bus",
+      "result": "$156",
+      "expected": "Safe number should immediately react"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-10",
+      "action": "Quick-log 21.00 fun",
+      "result": "$168",
+      "expected": "Safe number should immediately react"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-11",
+      "action": "Quick-log 5.15 coffee",
+      "result": "$218",
+      "expected": "Safe number should immediately react"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-08",
+      "action": "Mark streaming paid",
+      "result": "Completed",
+      "expected": "Already set-aside bill should not unexpectedly change safe-to-spend"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-09",
+      "action": "Edit transaction and category",
+      "result": "Completed",
+      "expected": "Edit should be easy and preserve cents"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-10",
+      "action": "Delete and undo a transaction",
+      "result": "Restored Edited after checking receipt",
+      "expected": "One-tap undo restores it"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-13",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$363",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-16",
+      "action": "Confirm a varying paycheck",
+      "result": "$201",
+      "expected": "Actual amount replaces estimate"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-10-17",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$217",
+      "expected": "A clear current daily number"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "day 23",
+      "action": "Return after 10 days and catch up",
+      "result": "A dedicated catch-up flow appeared and prevented silent assumptions.",
+      "expected": "A low-pressure review of missed pay and bills"
+    },
+    {
+      "customer": "A-Maya",
+      "day": "2026-11-09",
+      "action": "Open Today and check safe-to-spend",
+      "result": "$721",
+      "expected": "A clear current daily number"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F-01",
+      "severity": "medium",
+      "customer": "A-Maya",
+      "day": "day 1",
+      "action": "Set up a credit-card user",
+      "result": "Onboarding only mentions that cards can be added later; Maya must leave setup and find More → Accounts, then separately add the card payment bill.",
+      "expected": "A card balance/minimum could be captured in the guided setup when it materially affects the safe number.",
+      "screenshot": "shots/002-A-Maya-day-1-after-setup.png"
+    }
+  ],
+  "moneyChecks": [
+    {
+      "customer": "A-Maya",
+      "date": "2026-10-13",
+      "check": "Account ledger",
+      "expected": "1089.26",
+      "actual": "1089.26",
+      "result": "Pass"
+    },
+    {
+      "customer": "A-Maya",
+      "date": "2026-10-17",
+      "check": "Account ledger",
+      "expected": "2884.76",
+      "actual": "2884.76",
+      "result": "Pass"
+    },
+    {
+      "customer": "A-Maya",
+      "date": "2026-10-28",
+      "check": "Backup → wipe → restore safe number",
+      "expected": "$1,442",
+      "actual": "$1,442",
+      "result": "Pass"
+    }
+  ],
+  "runtimeProblems": [],
+  "actionCounts": {
+    "A-Maya": 15
+  }
+}
