@@ -6,3 +6,4 @@ playwright-report
 screenshots
 site
 .site-build
+listing/.build

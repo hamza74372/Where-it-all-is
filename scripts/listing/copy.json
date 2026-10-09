@@ -1,0 +1,108 @@
+{
+  "_readme": "All listing copy. Edit here, then run `npm run listing` (images) or `npm run listing:video`. Rules (checked by test/listingCopy.test.ts): no stars, ratings or reviews; no made-up numbers; ADHD only as \"ADHD-friendly\" — never \"treats\", \"manages\" or \"reduces\" ADHD; never \"behind\" or \"missed\".",
+  "images": [
+    {
+      "file": "01-stop-typing.jpg",
+      "headline": "Stop typing every purchase.",
+      "sub": "ADHD-friendly budget app that knows what’s safe to spend today.",
+      "chips": ["Instant download", "No subscription", "Works offline"]
+    },
+    {
+      "file": "02-one-number.jpg",
+      "headline": "One number: what’s safe to spend today.",
+      "sub": "Bills and payday are already taken out. Tap to see exactly how it’s made.",
+      "captionHero": "Today",
+      "captionBreakdown": "How this number is made"
+    },
+    {
+      "file": "03-import.jpg",
+      "headline": "Drop in your bank statement. It does the logging.",
+      "callouts": ["Skips duplicates", "Checks against your bank balance", "Nothing changes until you confirm"]
+    },
+    {
+      "file": "04-bills.jpg",
+      "headline": "Bills and payday, already counted.",
+      "sub": "Every bill and payday on one calendar, set aside before it’s due.",
+      "captionList": "Bills",
+      "captionCalendar": "Calendar"
+    },
+    {
+      "file": "05-quick-log.jpg",
+      "headline": "Log a spend in one tap.",
+      "sub": "Tap a chip, or type “4.50 coffee”. It picks the category; you can change it.",
+      "captionChips": "One-tap chips",
+      "captionBox": "Or type it"
+    },
+    {
+      "file": "06-plan.jpg",
+      "headline": "Envelopes, goals and a debt-free date.",
+      "captionEnvelopes": "Envelopes",
+      "captionGoals": "Goals",
+      "captionDebt": "Debt-free date"
+    },
+    {
+      "file": "07-insights.jpg",
+      "headline": "See where it all went.",
+      "sub": "Spending by category, and six months of money in and out.",
+      "captionDonut": "This month",
+      "captionFlow": "Six months"
+    },
+    {
+      "file": "08-welcome-back.jpg",
+      "headline": "Away for a week? No guilt.",
+      "sub": "Come back to one question at a time.",
+      "steps": ["What’s your balance today?", "Confirm what happened", "Your new number"]
+    },
+    {
+      "file": "09-private.jpg",
+      "headline": "Private by design.",
+      "points": [
+        { "icon": "landmark", "title": "No bank login", "text": "Import a statement file instead." },
+        { "icon": "user-x", "title": "No account", "text": "No sign-up, no email, no password." },
+        { "icon": "smartphone", "title": "Stays on your device", "text": "Your data never leaves it." },
+        { "icon": "shield-check", "title": "Backups checked", "text": "Every backup is opened again to make sure it works." }
+      ]
+    },
+    {
+      "file": "10-together.jpg",
+      "headline": "Budget together.",
+      "sub": "Send your partner a locked file. They see your plan, read-only.",
+      "captionShare": "Locked with a passphrase",
+      "captionView": "Their read-only view"
+    },
+    {
+      "file": "11-works-everywhere.jpg",
+      "headline": "Works on everything you own.",
+      "rows": [
+        ["iPhone / iPad", "Safari"],
+        ["Android", "Chrome"],
+        ["Windows", "Chrome or Edge"],
+        ["Mac", "Safari or Chrome"]
+      ],
+      "notes": ["Internet only needed to download", "No subscription"]
+    },
+    {
+      "file": "12-what-you-get.jpg",
+      "headline": "What you get.",
+      "badge": "DIGITAL DOWNLOAD — no physical item",
+      "items": [
+        { "icon": "smartphone", "title": "The app", "text": "A link for your phone, plus an offline file for your computer." },
+        { "icon": "file-text", "title": "Start-Here PDF", "text": "Set up in minutes. Letter and A4." },
+        { "icon": "infinity", "title": "Lifetime use", "text": "Of this version. No subscription." }
+      ],
+      "notes": ["Download on Etsy.com in a web browser, not the Etsy app.", "Try the free demo first — link in the description."]
+    }
+  ],
+  "videos": [
+    {
+      "file": "video-1-quick-log.mp4",
+      "headline": "Log a spend in one tap.",
+      "sub": "The number updates straight away. Changed your mind? Undo."
+    },
+    {
+      "file": "video-2-import.mp4",
+      "headline": "Drop in your bank statement.",
+      "sub": "Duplicates skipped, your entries matched, your balance checked."
+    }
+  ]
+}

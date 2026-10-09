@@ -176,23 +176,7 @@
         "smallTargets": [],
         "clipped": [],
         "overlaps": [],
-        "lowContrast": [
-          {
-            "text": "This covers today to Thursday, October 2",
-            "ratio": 1.25,
-            "need": 4.5
-          },
-          {
-            "text": "Looking ahead: your next pay (about $1,5",
-            "ratio": 1.25,
-            "need": 4.5
-          },
-          {
-            "text": "Savings and accounts you've left out of ",
-            "ratio": 1.25,
-            "need": 4.5
-          }
-        ],
+        "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
         "bg": "rgb(247, 243, 234)"
@@ -421,23 +405,7 @@
         "smallTargets": [],
         "clipped": [],
         "overlaps": [],
-        "lowContrast": [
-          {
-            "text": "This covers today to Thursday, October 2",
-            "ratio": 1.25,
-            "need": 4.5
-          },
-          {
-            "text": "Looking ahead: your next pay (about $1,5",
-            "ratio": 1.25,
-            "need": 4.5
-          },
-          {
-            "text": "Savings and accounts you've left out of ",
-            "ratio": 1.25,
-            "need": 4.5
-          }
-        ],
+        "lowContrast": [],
         "horizontalScroll": false,
         "theme": "auto",
         "bg": "rgb(247, 243, 234)"

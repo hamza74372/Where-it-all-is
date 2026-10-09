@@ -17,7 +17,9 @@
     "sheets": "esbuild scripts/make-debt-sheets.ts --bundle --platform=node --format=esm --log-level=warning --outfile=node_modules/.cache/make-debt-sheets.mjs && node node_modules/.cache/make-debt-sheets.mjs",
     "build:site": "node scripts/build-site.mjs",
     "build:pdf": "node scripts/build-pdf.mjs",
-    "package": "npm run build:all && npm run build:site && npm run build:pdf"
+    "package": "npm run build:all && npm run build:site && npm run build:pdf",
+    "listing": "node scripts/listing/render.mjs",
+    "listing:video": "node scripts/listing/video.mjs"
   },
   "author": "Hamza",
   "license": "UNLICENSED",
@@ -33,6 +35,7 @@
     "@preact/preset-vite": "^2.10.6",
     "@types/node": "^26.6.4",
     "fake-indexeddb": "^6.2.5",
+    "ffmpeg-static": "^5.3.0",
     "lucide": "^1.52.0",
     "opentype.js": "^2.0.0",
     "pdfjs-dist": "^6.4.299",

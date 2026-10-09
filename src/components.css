@@ -248,6 +248,13 @@
 .hero .muted {
   color: var(--hero-muted);
 }
+/* Sheets opened from the hero sit on cream, not navy: normal text colours there. */
+.hero .sheet .muted {
+  color: var(--text-muted);
+}
+.hero .sheet .link-btn {
+  color: var(--link);
+}
 
 /* "Next up": one card for the next bill or pay. */
 .next-up {

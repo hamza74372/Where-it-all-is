@@ -282,3 +282,20 @@ test.describe('currency from the device locale', () => {
     expect(problems).toEqual([]);
   });
 });
+
+test('the breakdown sheet opened from the hero uses normal text colours (not the pale hero ones)', async ({ page }) => {
+  await start(page);
+  await page.getByRole('button', { name: 'Try with example numbers' }).click();
+  await page.getByRole('button', { name: 'How is this worked out?' }).last().click();
+  const note = page.locator('.sheet-body .muted').first();
+  await expect(note).toBeVisible();
+  const [text, bg] = await note.evaluate((el) => {
+    const panel = el.closest('.sheet-panel')!;
+    return [getComputedStyle(el).color, getComputedStyle(panel).backgroundColor];
+  });
+  const muted = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--text-muted').trim());
+  const rgb = (c: string) => c.match(/\d+/g)!.slice(0, 3).map(Number);
+  const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  expect(rgb(text)).toEqual(hex(muted));
+  expect(rgb(text)).not.toEqual(rgb(bg));
+});
