@@ -8,3 +8,5 @@ site
 .site-build
 listing/.build
 qa/customer-test/downloads
+video/out/raw
+video/out/stills

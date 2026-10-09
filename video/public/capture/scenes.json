@@ -1,0 +1,245 @@
+{
+  "app": {
+    "width": 430,
+    "height": 932
+  },
+  "today": {
+    "number": "$380",
+    "hero": {
+      "x": 16,
+      "y": 98.890625,
+      "width": 398,
+      "height": 403.5
+    },
+    "heroNumber": {
+      "x": 52,
+      "y": 161.640625,
+      "width": 150.8125,
+      "height": 79
+    }
+  },
+  "coffee": {
+    "tapAt": 1.2,
+    "length": 3.4670000076293945,
+    "chip": {
+      "x": 33,
+      "y": 766.578125,
+      "width": 153.375,
+      "height": 44
+    },
+    "before": "$380",
+    "after": "$376",
+    "toast": "Logged $4.50 · Coffee"
+  },
+  "breakdown": {
+    "lines": [
+      "Everyday accountBalance now$1,217.06",
+      "Spent today (counted separately below)+$4.50",
+      "ElectricDue Thu, Oct 15−$80.00",
+      "Left for the period$1,141.56",
+      "Shared over 3 daysRounded down$380.52",
+      "Already spent today−$4.50",
+      "Safe to spend todayShown on Today rounded down to a whole amount$376.02"
+    ]
+  },
+  "calendar": {
+    "cells": [
+      {
+        "label": "Thu, Oct 15, Electric",
+        "kind": "bill",
+        "rect": {
+          "x": 243.3125,
+          "y": 365.15625,
+          "width": 52.578125,
+          "height": 52.578125
+        }
+      },
+      {
+        "label": "Fri, Oct 16, payday",
+        "kind": "payday",
+        "rect": {
+          "x": 297.890625,
+          "y": 365.15625,
+          "width": 52.578125,
+          "height": 52.578125
+        }
+      },
+      {
+        "label": "Tue, Oct 20, Internet",
+        "kind": "bill",
+        "rect": {
+          "x": 134.15625,
+          "y": 419.734375,
+          "width": 52.578125,
+          "height": 52.578125
+        }
+      },
+      {
+        "label": "Sun, Oct 25, Credit card",
+        "kind": "bill",
+        "rect": {
+          "x": 25,
+          "y": 474.3125,
+          "width": 52.578125,
+          "height": 52.578125
+        }
+      },
+      {
+        "label": "Fri, Oct 30, payday",
+        "kind": "payday",
+        "rect": {
+          "x": 297.890625,
+          "y": 474.3125,
+          "width": 52.578125,
+          "height": 52.578125
+        }
+      }
+    ]
+  },
+  "import": {
+    "dropZone": {
+      "x": 16,
+      "y": 132.390625,
+      "width": 398,
+      "height": 241.78125
+    },
+    "preview": {
+      "rect": {
+        "x": 16,
+        "y": 224.890625,
+        "width": 398,
+        "height": 946.59375
+      },
+      "rows": [
+        {
+          "rect": {
+            "x": 17,
+            "y": 88.09375,
+            "width": 364,
+            "height": 73
+          },
+          "tag": "already imported",
+          "text": "Corner ShopFri, Oct 2 · already imported-$6.20"
+        },
+        {
+          "rect": {
+            "x": 17,
+            "y": 161.09375,
+            "width": 364,
+            "height": 73
+          },
+          "tag": "already imported",
+          "text": "Fuel StationSat, Oct 3 · already imported-$40.00"
+        },
+        {
+          "rect": {
+            "x": 17,
+            "y": 234.09375,
+            "width": 364,
+            "height": 73
+          },
+          "tag": "already imported",
+          "text": "PharmacyMon, Oct 5 · already imported-$9.80"
+        },
+        {
+          "rect": {
+            "x": 17,
+            "y": 307.09375,
+            "width": 364,
+            "height": 95.5
+          },
+          "tag": "matches your entry",
+          "text": "Grocery MarketThu, Oct 8 · matches something you logged-$28.75"
+        },
+        {
+          "rect": {
+            "x": 17,
+            "y": 402.59375,
+            "width": 364,
+            "height": 95.5
+          },
+          "tag": "matches your entry",
+          "text": "BookshopFri, Oct 9 · matches something you logged-$12.99"
+        },
+        {
+          "rect": {
+            "x": 17,
+            "y": 498.09375,
+            "width": 364,
+            "height": 73
+          },
+          "tag": "new",
+          "text": "Music SubscriptionSat, Oct 10-$10.99"
+        },
+        {
+          "rect": {
+            "x": 17,
+            "y": 571.09375,
+            "width": 364,
+            "height": 95.5
+          },
+          "tag": "matches your entry",
+          "text": "Transit CardSun, Oct 11 · matches something you logged-$18.00"
+        },
+        {
+          "rect": {
+            "x": 17,
+            "y": 666.59375,
+            "width": 364,
+            "height": 95.5
+          },
+          "tag": "matches your entry",
+          "text": "SupermarketMon, Oct 12 · matches something you logged-$34.20"
+        },
+        {
+          "rect": {
+            "x": 17,
+            "y": 762.09375,
+            "width": 364,
+            "height": 95.5
+          },
+          "tag": "matches your entry",
+          "text": "Coffee ShopMon, Oct 12 · matches something you logged-$4.50"
+        },
+        {
+          "rect": {
+            "x": 17,
+            "y": 857.59375,
+            "width": 364,
+            "height": 72
+          },
+          "tag": "new",
+          "text": "Burrito BarTue, Oct 13-$11.40"
+        }
+      ]
+    },
+    "counts": {
+      "skipped": 3,
+      "linked": 5,
+      "new": 2
+    },
+    "both": "$1,143.17"
+  },
+  "todayAfterImport": {
+    "before": "$380",
+    "after": "$346",
+    "heroNumber": {
+      "x": 52,
+      "y": 161.640625,
+      "width": 148.75,
+      "height": 79
+    }
+  },
+  "typing": {
+    "box": {
+      "x": 33,
+      "y": 704.578125,
+      "width": 265.734375,
+      "height": 50
+    },
+    "length": 3.9769999980926514,
+    "before": "$380",
+    "after": "$368"
+  },
+  "capturedOn": "2026-10-13T05:00:00.000Z"
+}
